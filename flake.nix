@@ -7,25 +7,32 @@
     flake-utils.url = "github:numtide/flake-utils";
   };
 
-  outputs = { self, nixpkgs, starpu, flake-utils }: 
-   flake-utils.lib.eachDefaultSystem (system: 
-   let 
-    		pkgs = import nixpkgs { inherit system; };
+  outputs =
+    {
+      self,
+      nixpkgs,
+      starpu,
+      flake-utils,
+    }:
+    flake-utils.lib.eachDefaultSystem (
+      system:
+      let
+        pkgs = import nixpkgs { inherit system; };
         chameleon = pkgs.callPackage ./chameleon.nix {
           starpu = starpu.packages.${system}.default.override {
             enableMPI = false;
-            };
-            parsec = pkgs.callPackage ./parsec.nix {};
+          };
+          parsec = pkgs.callPackage ./parsec.nix { };
         };
-      in 
+      in
       {
-        packages.parsec = pkgs.callPackage ./parsec.nix {};
+        packages.parsec = pkgs.callPackage ./parsec.nix { };
         packages.chameleon = chameleon;
         devShells.default = pkgs.mkShell {
-         buildInputs = [
-          chameleon
-         ];
+          buildInputs = [
+            chameleon
+          ];
         };
       }
-   );
+    );
 }

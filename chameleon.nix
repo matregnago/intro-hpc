@@ -1,15 +1,16 @@
-{ stdenv
-, fetchurl
-, cmake
-, pkg-config
-, gfortran
-, openblas
-, lapack
-, hwloc
-, openmpi
-, starpu,
-parsec
-, python3
+{
+  stdenv,
+  fetchurl,
+  cmake,
+  pkg-config,
+  gfortran,
+  openblas,
+  lapack,
+  hwloc,
+  openmpi,
+  starpu,
+  parsec,
+  python3,
 }:
 
 stdenv.mkDerivation rec {
@@ -37,12 +38,10 @@ stdenv.mkDerivation rec {
     parsec
   ];
 
-
-
-cmakeFlags = [
-  "-DBUILD_SHARED_LIBS=ON"
-  "-DCHAMELEON_SCHED=PARSEC"
-  "-DCHAMELEON_USE_MPI=ON"
-  "-DCMAKE_POLICY_VERSION_MINIMUM=3.5"
-];
+  cmakeFlags = [
+    "-DBUILD_SHARED_LIBS=ON"
+    "-DCHAMELEON_SCHED=PARSEC"
+    "-DCHAMELEON_USE_MPI=ON"
+    "-DCMAKE_POLICY_VERSION_MINIMUM=3.5"
+  ];
 }
