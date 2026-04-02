@@ -34,7 +34,6 @@ Matheus Augusto Tregnago
 
 <div class="small">
 Universidade Federal do Rio Grande do Sul — Instituto de Informática
-CMP270 - Introduction to High-Performance Computing
 </div>
 
 ---
@@ -51,7 +50,7 @@ CMP270 - Introduction to High-Performance Computing
 
 # Objetivo
 
-Este trabalho tem como objetivo analisar o impacto de diferentes **políticas de escalonamento** e **modelos de execução** de runtimes task-based no desempenho de algoritmos de álgebra linear densa.
+Este trabalho tem como objetivo analisar o impacto de diferentes **modelos de execução** de runtimes task-based no desempenho de algoritmos de álgebra linear densa.
 
 - Comparar **StarPU** vs **PaRSEC** usando Chameleon como framework unificado
 - Identificar cenários em que cada runtime é mais vantajoso
@@ -63,37 +62,38 @@ Este trabalho tem como objetivo analisar o impacto de diferentes **políticas de
 - O algoritmo é decomposto em **tarefas** com dependências de dados explícitas
 - As tarefas formam um grafo (DAG) que o runtime escalona dinamicamente
 
-![center w:700](part1/images/dag.svg)
+![center w:700](images/dag.svg)
 
 ---
 
 # Sequential Task Flow (STF)
 
 - Modelo predominante de interação com runtimes task-based
-- Uma **thread principal** insere as tarefas na ordem sequencial do algoritmo
+- Uma thread principal insere as tarefas na ordem sequencial do algoritmo
 - O runtime descobre automaticamente as dependências a partir do modo de acesso aos dados
+
+![center w:900](images/stf.png)
+
 
 ---
 
 # StarPU
 
 - Runtime task-based desenvolvido pelo **Inria** (França)
-- Suporte nativo a **CPU + GPU** e **memória distribuída (MPI)**
+- Suporte nativo a **CPU + GPU** e **MPI**
 - Transferências de dados automáticas entre memórias (host e device)
 
 
-![center w:300](part1/images/starpu.png)
+![center w:300](images/starpu.png)
 
 ---
 
 # PaRSEC
 
-- Runtime task-based desenvolvido pelo **ICL / University of Tennessee**
+- Runtime task-based desenvolvido pela University of Tennessee
 - Escalabilidade para sistemas distribuídos de larga escala
-- Cada processo insere apenas as tarefas relevantes (graph trimming)
-- Suporte a broadcast otimizado (chain e binomial trees)
 
-![center w:450](part1/images/parsec.png)
+![center w:600](images/parsec.png)
 
 ---
 
@@ -103,7 +103,7 @@ Este trabalho tem como objetivo analisar o impacto de diferentes **políticas de
 - Baseada no PLASMA, estendida para **GPUs** e **memória distribuída**
 - Interface genérica com múltiplos runtimes: **StarPU**, **PaRSEC**, QUARK, OpenMP
 
-![center](part1/images/chameleon.svg)
+![center](images/chameleon.svg)
 
 ---
 
@@ -115,12 +115,12 @@ Este trabalho tem como objetivo analisar o impacto de diferentes **políticas de
 
 **Escalonadores selecionados:**
 
-| Runtime | Escalonador | Descrição |
-|---------|-------------|-----------|
-| StarPU  | `lws`       | Work stealing local |
-| StarPU  | `dmda`      | Data-aware, minimiza transferências |
-| PaRSEC  | default     | Escalonador padrão do DTD |
-| PaRSEC  | com trimming | Graph trimming habilitado |
+| Runtime | Escalonador |
+|---------|-------------|
+| StarPU  | `lws`       |
+| StarPU  | `dmda`      |
+| PaRSEC  | `LFQ`     |
+| PaRSEC  |  `PBQ` |
 
 ---
 
@@ -146,7 +146,7 @@ Mantido pelo LPPD (Laboratório de Processamento Paralelo e Distribuído), vincu
 - **Placa-Mãe**: Gigabyte Z790 UD AX 
 
 
-![center w:350](part1/images/poti.svg)
+![center w:350](images/poti.svg)
 
 ---
 
@@ -156,7 +156,7 @@ Mantido pelo LPPD (Laboratório de Processamento Paralelo e Distribuído), vincu
 - Desempenho (GFLOPS)
 - Utilização de CPU/GPU
 
-![center w:800](part1/images/trace_qr.jpg)
+![center w:800](images/trace_qr.jpg)
 
 ---
 
@@ -168,4 +168,5 @@ Mantido pelo LPPD (Laboratório de Processamento Paralelo e Distribuído), vincu
 3. Agullo, E. et al. "Chameleon: A dense linear algebra software for heterogeneous architectures." Inria.
 4. Pei, Y., Bosilca, G., Dongarra, J. "Sequential Task Flow Runtime Model: Improvements and Limitations."
 5. Bosilca, G. et al. "PaRSEC: A programming paradigm exploiting heterogeneity for enhancing scalability." *SC25*.
-
+6. Thibault, S. "On Runtime Systems for Task-based Programming on
+Heterogeneous Platforms." Inria.
