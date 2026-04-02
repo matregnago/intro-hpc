@@ -11,7 +11,7 @@
   python3,
 }:
 
-stdenv.mkDerivation rec {
+stdenv.mkDerivation {
   pname = "parsec";
   version = "mymaster";
 

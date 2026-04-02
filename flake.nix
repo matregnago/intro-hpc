@@ -5,6 +5,7 @@
     nixpkgs.url = "github:nixos/nixpkgs?ref=nixos-unstable";
     starpu.url = "github:Sacolle/nix-starpu";
     flake-utils.url = "github:numtide/flake-utils";
+    starvz.url = "github:schnorr/starvz";
   };
 
   outputs =
@@ -12,6 +13,7 @@
       self,
       nixpkgs,
       starpu,
+      starvz,
       flake-utils,
     }:
     flake-utils.lib.eachDefaultSystem (
@@ -24,6 +26,7 @@
           };
           parsec = pkgs.callPackage ./parsec.nix { };
         };
+        starvz_pkg = starvz.packages.${system}.default;
       in
       {
         packages.parsec = pkgs.callPackage ./parsec.nix { };
@@ -31,6 +34,10 @@
         devShells.default = pkgs.mkShell {
           buildInputs = [
             chameleon
+            starvz_pkg
+            pkgs.marp-cli
+            pkgs.chromium
+            pkgs.eztrace
           ];
         };
       }

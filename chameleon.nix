@@ -11,6 +11,7 @@
   starpu,
   parsec,
   python3,
+  eztrace,
 }:
 
 stdenv.mkDerivation rec {
@@ -36,12 +37,14 @@ stdenv.mkDerivation rec {
     openmpi
     starpu
     parsec
+    eztrace
   ];
 
   cmakeFlags = [
     "-DBUILD_SHARED_LIBS=ON"
     "-DCHAMELEON_SCHED=PARSEC"
-    "-DCHAMELEON_USE_MPI=ON"
+    "-DCHAMELEON_USE_MPI=OFF"
     "-DCMAKE_POLICY_VERSION_MINIMUM=3.5"
+    "-DCHAMELEON_KERNELS_TRACE=ON"
   ];
 }
