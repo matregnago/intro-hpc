@@ -20,25 +20,65 @@
       system:
       let
         pkgs = import nixpkgs { inherit system; };
-        chameleon = pkgs.callPackage ./chameleon.nix {
-          starpu = starpu.packages.${system}.default.override {
-            enableMPI = false;
-          };
-          parsec = pkgs.callPackage ./parsec.nix { };
+
+        starpuPkg = starpu.packages.${system}.default.override {
+          enableMPI = false;
+          enableTrace = true;
+          compileAsRelease = true;
         };
-        starvz_pkg = starvz.packages.${system}.default;
+
+        parsecPkg = pkgs.callPackage ./parsec.nix {
+          stdenv = pkgs.gcc13Stdenv;
+        };
+
+        chameleon_starpu = pkgs.callPackage ./chameleon.nix {
+          starpu = starpuPkg;
+          parsec = parsecPkg;
+          runtime = "starpu";
+        };
+
+        chameleon_parsec = pkgs.callPackage ./chameleon.nix {
+          starpu = starpuPkg;
+          parsec = parsecPkg;
+          runtime = "parsec";
+        };
+
+        starvz_tools = starvz.packages.${system}.default;
+        starvz_r = starvz.packages.${system}.starvz;
+        pyEnv = pkgs.python3.withPackages (ps: with ps; [
+          matplotlib
+          pandas
+          numpy
+        ]);
       in
       {
-        packages.parsec = pkgs.callPackage ./parsec.nix { };
-        packages.chameleon = chameleon;
-        devShells.default = pkgs.mkShell {
-          buildInputs = [
-            chameleon
-            starvz_pkg
-            pkgs.marp-cli
-            pkgs.chromium
-            pkgs.eztrace
-          ];
+        packages = {
+          parsec = parsecPkg;
+          chameleon-starpu = chameleon_starpu;
+          chameleon-parsec = chameleon_parsec;
+          default = chameleon_starpu;
+        };
+        devShells = {
+          parsec = pkgs.mkShell {
+            buildInputs = [
+              chameleon_parsec
+              pkgs.eztrace
+            ];
+          };
+          starpu = pkgs.mkShell {
+            buildInputs = [
+              chameleon_starpu
+              starvz_tools
+              starvz_r
+            ];
+          };
+          default = pkgs.mkShell {
+            buildInputs = [
+              pkgs.marp-cli
+              pkgs.chromium
+              pyEnv
+            ];
+          };
         };
       }
     );

@@ -1,6 +1,7 @@
 {
   stdenv,
-  fetchurl,
+  lib,
+  fetchgit,
   cmake,
   pkg-config,
   gfortran,
@@ -12,17 +13,28 @@
   parsec,
   python3,
   eztrace,
+  runtime ? "starpu",
 }:
 
-stdenv.mkDerivation rec {
-  pname = "chameleon";
+let
+  schedMap = {
+    starpu = "STARPU";
+    parsec = "PARSEC";
+  };
+  sched = schedMap.${runtime};
+in
+stdenv.mkDerivation {
+  pname = "chameleon-${runtime}";
   version = "1.4.0";
 
-  src = fetchurl {
-    url = "https://gitlab.inria.fr/api/v4/projects/616/packages/generic/source/v${version}/chameleon-${version}.tar.gz";
-    hash = "sha256-e2WmFo69/BGhyZlEVO5HRnP8kjSNWqhyToPDT9UBCq8=";
+  src = fetchgit {
+    url = "https://gitlab.inria.fr/solverstack/chameleon/";
+    rev = "a907fde133b122b51418f04528d15fa387b6ad28";
+    fetchSubmodules = true;
+    hash = "sha256-qqKrdzybcFVtmcp+2gVECChvEuD53rVSBT1LTflRuQY=";
   };
 
+  # patches = [ ./chameleon.patch ];
   nativeBuildInputs = [
     cmake
     pkg-config
@@ -35,16 +47,14 @@ stdenv.mkDerivation rec {
     lapack
     hwloc
     openmpi
-    starpu
-    parsec
     eztrace
-  ];
+  ]
+  ++ lib.optional (runtime == "starpu") starpu
+  ++ lib.optional (runtime == "parsec") parsec;
 
   cmakeFlags = [
     "-DBUILD_SHARED_LIBS=ON"
-    "-DCHAMELEON_SCHED=PARSEC"
+    "-DCHAMELEON_SCHED=${sched}"
     "-DCHAMELEON_USE_MPI=OFF"
-    "-DCMAKE_POLICY_VERSION_MINIMUM=3.5"
-    "-DCHAMELEON_KERNELS_TRACE=ON"
   ];
 }

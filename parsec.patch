@@ -1,0 +1,36 @@
+diff --git a/tools/profiling/dbp2paje.c b/tools/profiling/dbp2paje.c
+index 7d58db2e5..2fbd34ba2 100644
+--- a/tools/profiling/dbp2paje.c
++++ b/tools/profiling/dbp2paje.c
+@@ -144,20 +144,6 @@ static void parse_arguments(int argc, char **argv)
+ 
+ #define max(a, b) ((a)>(b)?(a):(b))
+ 
+-FILE *pajeGetProcFile();
+-
+-static trace_return_t pajeSetState2(varPrec time, const char* type,
+-                                    const char *cont, const char* val)
+-{
+-    FILE *procFile = pajeGetProcFile();
+-    if (procFile){
+-        fprintf (procFile, "10 %.13e \"%s\" \"%s\" \"%s\"\n",
+-                 time, type, cont, val);
+-        return TRACE_SUCCESS;
+-    }
+-    return TRACE_ERR_WRITE;
+-}
+-
+ typedef struct {
+     int nb_matchsuccess;
+     int nb_matchthreads;
+@@ -756,8 +742,8 @@ static int dump_one_paje( const dbp_multifile_reader_t *dbp,
+             }
+             assert( s < nb_steps );
+             sprintf(cont_step_name, "%s-%d", cont_thread_name, s);
+-            pajeSetState2( ((double)cev->start) * 1e-3, "ST_TS", cont_step_name, keyid );
+-            pajeSetState2( ((double)cev->end)   * 1e-3, "ST_TS", cont_step_name, "Wait");
++            pajeSetState( ((double)cev->start) * 1e-3, "ST_TS", cont_step_name, keyid );
++            pajeSetState( ((double)cev->end)   * 1e-3, "ST_TS", cont_step_name, "Wait");
+         }
+         if( (cev->start_thread != cev->end_thread) &&
+             USERFLAGS.split_events_link ) {

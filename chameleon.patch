@@ -1,0 +1,56 @@
+diff --git a/runtime/parsec/control/runtime_control.c b/runtime/parsec/control/runtime_control.c
+--- a/runtime/parsec/control/runtime_control.c	2026-04-26 20:18:37.454311123 -0300
++++ b/runtime/parsec/control/runtime_control.c	2026-04-26 20:23:17.873039136 -0300
+@@ -22,6 +22,8 @@
+  */
+ #include "chameleon_parsec.h"
+ 
++#include <stdlib.h>
++#include <string.h>
+ #if defined(CHAMELEON_USE_MPI)
+ #include <mpi.h>
+ #endif
+@@ -37,14 +39,41 @@
+     int hres = CHAMELEON_ERR_NOT_INITIALIZED;
+     int default_ncores = -1;
+     int *argc = (int *)malloc(sizeof(int));
+-    *argc = 0;
++    char **argv = NULL;
++    char ***pargv = NULL;
++    char *dot_env = getenv("CHAMELEON_PARSEC_DOT");
++    char *dot_arg = NULL;
+ 
+     /* Initializing parsec context */
+     if( 0 < ncpus ) {
+         default_ncores = ncpus;
+     }
+     chamctxt->parallel_enabled = CHAMELEON_TRUE;
+-    chamctxt->schedopt = (void *)parsec_init(default_ncores, argc, NULL);
++
++    /* Build a synthetic argv so PaRSEC sees --dot=<file> when
++     * CHAMELEON_PARSEC_DOT is set. parsec_init only parses argv when
++     * pargv != NULL and *argc != 0, and Chameleon normally passes NULL. */
++    if ( dot_env != NULL && dot_env[0] != '\0' ) {
++        dot_arg = strdup(dot_env);
++        argv = (char **)malloc(4 * sizeof(char *));
++        argv[0] = strdup("chameleon");
++        argv[1] = strdup("--dot");
++        argv[2] = dot_arg;
++        argv[3] = NULL;
++        *argc = 3;
++        pargv = &argv;
++    } else {
++        *argc = 0;
++    }
++
++    chamctxt->schedopt = (void *)parsec_init(default_ncores, argc, pargv);
++
++    if ( argv != NULL ) {
++        free(argv[0]);
++        free(argv[1]);
++        free(dot_arg);
++        free(argv);
++    }
+ 
+     if ( NULL != chamctxt->schedopt ) {
+         chamctxt->nworkers = ncpus;
