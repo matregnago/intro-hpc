@@ -1,0 +1,45 @@
+diff --git a/parsec/devices/cuda/dev_cuda.c b/parsec/devices/cuda/dev_cuda.c
+--- a/parsec/devices/cuda/dev_cuda.c
++++ b/parsec/devices/cuda/dev_cuda.c
+@@ -101,10 +101,41 @@ static int parsec_cuda_device_lookup_cudamp_floprate(int major, int minor, int *
+         *trate = *srate = 128;
+         *drate = 4;
+     } else if (major == 7 && minor == 0) {
++        /* Volta (V100) */
+         *hrate = 128;
+         *trate = 512;
+         *srate = 64;
+         *drate = 32;
++    } else if (major == 7 && minor == 5) {
++        /* Turing (RTX 2000 series, T4) */
++        *hrate = 128;
++        *trate = 512;
++        *srate = 64;
++        *drate = 2;
++    } else if (major == 8 && minor == 0) {
++        /* Ampere (A100) */
++        *hrate = 128;
++        *trate = 512;
++        *srate = 64;
++        *drate = 32;
++    } else if (major == 8 && (minor == 6 || minor == 7)) {
++        /* Ampere (RTX 3000 series, A10, A40) */
++        *hrate = 256;
++        *trate = 512;
++        *srate = 128;
++        *drate = 2;
++    } else if (major == 8 && minor == 9) {
++        /* Ada Lovelace (RTX 4000 series, L40S) */
++        *hrate = 256;
++        *trate = 512;
++        *srate = 128;
++        *drate = 2;
++    } else if (major == 9 && minor == 0) {
++        /* Hopper (H100) */
++        *hrate = 256;
++        *trate = 1024;
++        *srate = 128;
++        *drate = 64;
+     } else {
+         parsec_debug_verbose(3, parsec_cuda_output_stream, "Unsupported GPU %d, %d, skipping.", major, minor);
+         return PARSEC_ERROR;
