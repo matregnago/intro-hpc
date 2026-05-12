@@ -12,9 +12,10 @@ rsync --verbose --progress --recursive --links --times \
     --exclude='.claude/' \
     --exclude='.venv/' \
     --exclude='.direnv/' \
-    --exclude='traces_parsec' \
-    --exclude='full_factorial_780418/' \
-    --exclude='results_pcad/' \
+    --exclude='.zed/' \
+    --exclude='context' \
+    --exclude='data/' \
+    --exclude='plots/' \
     --exclude='tex/' \
     --exclude='slides/' \
     --exclude='analysis.ipynb' \

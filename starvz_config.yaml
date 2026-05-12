@@ -72,7 +72,7 @@ default:
     aggregation: # If enable, aggregates the visualization tasks inside a time step.
       active: FALSE # Enable
       method: "static" # Method Used for aggregation "static" / "dynamic" (For Worker aggregation) or "nodes" for node Aggregation
-      states: ["dgemm"] # Option for dynamic aggregation, Tasks for aggregation
+      states: ["dgemm", "", ""] # Option for dynamic aggregation, Tasks for aggregation
       step: 1000 # Time step used for aggregation
     cpb_mpi: # Show Critical Path bound makespan considering MPI
       active: FALSE # Enable
@@ -127,7 +127,7 @@ default:
     height:
 
   ready:
-    active: TRUE
+    active: FALSE
     height: 2
     legend: TRUE
     limit:
@@ -174,7 +174,7 @@ default:
     step: 100
 
   submitted:
-    active: TRUE
+    active: FALSE
     legend: TRUE
     height: 1.1
     limit:

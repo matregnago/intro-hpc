@@ -45,11 +45,17 @@
 
         starvz_tools = starvz.packages.${system}.default;
         starvz_r = starvz.packages.${system}.starvz;
-        pyEnv = pkgs.python3.withPackages (ps: with ps; [
-          matplotlib
-          pandas
-          numpy
-        ]);
+        rEnv = pkgs.rWrapper.override {
+          packages = with pkgs.rPackages; [
+            languageserver
+            lintr
+            here
+            DoE_base
+            FrF2
+            tidyverse
+            janitor
+          ];
+        };
       in
       {
         packages = {
@@ -76,7 +82,7 @@
             buildInputs = [
               pkgs.marp-cli
               pkgs.chromium
-              pyEnv
+              rEnv
             ];
           };
         };

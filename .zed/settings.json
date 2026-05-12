@@ -1,0 +1,15 @@
+{
+  "languages": {
+    "r": {
+      "language_servers": ["languageserver"],
+    },
+  },
+  "lsp": {
+    "languageserver": {
+      "binary": {
+        "path": "direnv",
+        "arguments": ["exec", ".", "languageserver"],
+      },
+    },
+  },
+}

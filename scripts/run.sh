@@ -3,19 +3,19 @@
 set -euo pipefail
 
 RUNTIME_FILTER="${1:?usage: $0 <starpu|parsec>}"
-RESULTS_DIR="results"
-DESIGN_FILE="experiments.csv"
+RESULTS_DIR="${RESULTS_DIR:-results}"
+DESIGN_FILE="${DESIGN_FILE:-doe_n_size.csv}"
 RESULTS_FILE="${RESULTS_DIR}/results.csv"
-LOGS_DIR="${RESULTS_DIR}/logs"
-TRACES_DIR="${RESULTS_DIR}/traces"
+RUNS_DIR="${RESULTS_DIR}/runs"
 
-TRACE="${TRACE:-1}"
+TRACE="${TRACE:-0}"
 
+threads=24
 
-mkdir -p "$RESULTS_DIR" "$LOGS_DIR" "$TRACES_DIR"
+mkdir -p "$RESULTS_DIR" "$RUNS_DIR"
 
 if [[ ! -f "$RESULTS_FILE" ]]; then
-    echo "runtime,scheduler,algorithm,n,b,threads,rep,time,gflops,exit_status" > "$RESULTS_FILE"
+    echo "runtime,scheduler,algorithm,n,b,threads,rep,time,gflops" > "$RESULTS_FILE"
 fi
 
 export OPENBLAS_NUM_THREADS=1
@@ -25,16 +25,24 @@ export MKL_NUM_THREADS=1
 export STARPU_SILENT=1
 
 idx=0
-while IFS=',' read -r runtime scheduler algorithm n b threads rep; do
+while IFS=',' read -r -a fields; do
     idx=$((idx + 1))
+    algorithm="${fields[0]}"
+    n="${fields[1]}"
+    b="${fields[2]}"
+    runtime="${fields[3]}"
+    scheduler="${fields[4]}"
+    rep="${fields[-1]}"
     if [[ "$runtime" != "$RUNTIME_FILTER" ]]; then
         continue
     fi
 
-    RUN_ID="$(printf '%04d' "$idx")_${runtime}_${scheduler}_${algorithm}_n${n}_b${b}_r${rep}"
-    LOG_FILE="${LOGS_DIR}/${RUN_ID}.log"
-    TRACE_DIR="${TRACES_DIR}/${RUN_ID}"
-    mkdir -p "$TRACE_DIR"
+    rep_tag="${rep#.}"
+    RUN_ID="$(printf '%04d' "$idx")_${runtime}_${scheduler}_${algorithm}_n${n}_b${b}_rep${rep_tag}"
+    RUN_DIR="${RUNS_DIR}/${RUN_ID}"
+    LOG_FILE="${RUN_DIR}/${RUN_ID}.log"
+    TRACE_DIR="$RUN_DIR"
+    mkdir -p "$RUN_DIR"
 
     echo "[$(date +%T)] ${RUN_ID}"
 
@@ -87,7 +95,7 @@ while IFS=',' read -r runtime scheduler algorithm n b threads rep; do
         gflops="NA"
     fi
 
-    echo "${runtime},${scheduler},${algorithm},${n},${b},${threads},${rep},${time},${gflops},${status}" \
+    echo "${runtime},${scheduler},${algorithm},${n},${b},${threads},${rep},${time},${gflops}" \
         >> "$RESULTS_FILE"
 
 done < <(tail -n +2 "$DESIGN_FILE")

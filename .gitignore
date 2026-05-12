@@ -2,3 +2,7 @@ traces
 logs
 context
 .claude
+.ipynb_checkpoints
+.direnv
+teste
+chameleon-runtimes_782056
