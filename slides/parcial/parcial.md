@@ -82,14 +82,14 @@ Este trabalho tem como objetivo analisar o impacto de diferentes **modelos de ex
 
 # Design Experimental: Fatorial Completo
 **Fatores**:
-- Runtime e escalonador
-- Tamanho do problema
-- Algoritmo (Cholesky, QR)
+- Runtime e escalonador(`starpu/lws`, `starpu/ws`, `parsec/gd`, `parsec/lfq`)
+- Tamanho do problema (5x até 60x o tamanho do bloco. Passos de 5)
+- Algoritmo (`dpotrf`, `dgeqrf`)
 
 **Parâmetros fixos**: tamanho do bloco = 480, 10 replicações
 
 **Etapa preliminar — escolha do tamanho do bloco**:
-- Fator: tamanho do bloco
+- Fator: número de iterações (96, 75, 60, 50, 40, 30, 20)
 - Tamanho do problema fixo em 19200
 
 ---
