@@ -61,20 +61,11 @@ Este trabalho tem como objetivo analisar o impacto de diferentes **modelos de ex
 # StarVZ
 - Biblioteca em R para análise de performance de aplicações *task-based* que utilizam o runtime **StarPU**
 - Executa em duas etapas: 
-  1. Conversão dos dados para arquivos `csv`
-  2. Geração dos gráficos
-- Não possui suporte nativo aos traces do **PaRSEC**
+  1. Pré-processamento dos dados
+  2. Visualização dos dados
 - Possui suporte a leitura de traces no formato `.paje`
-
----
-
-# Solução: Corrigir a fase 1 para suportar o PaRSEC
-- Transformação dos traces do **PaRSEC** em um arquivo `trace.paje`
-- Correção nos eventos com identificador `"0"`
-- Ajuste no nome dos estados das threads:
-  - "Thread State" -> "Worker State"
-- Ajustes nas cores dos eventos
-- **Informações limitadas**: o trace do **PaRSEC** não traz tantas informações como o trace do **StarPU**
+- Não possui suporte nativo aos traces do **PaRSEC**
+- Solução: Ajustar a fase 1 para suportar o trace do **PaRSEC**
 
 ---
 
@@ -152,7 +143,6 @@ Este trabalho tem como objetivo analisar o impacto de diferentes **modelos de ex
   - Apresentou maior GFLOPS na maioria das execuções
   - Menor tempo em *idle*
 - Os escalonadores não apresentaram diferenças significativas na fatoração QR
-
 
 ---
 
