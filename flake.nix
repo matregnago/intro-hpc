@@ -5,7 +5,7 @@
     nixpkgs.url = "github:nixos/nixpkgs?ref=nixos-unstable";
     starpu.url = "github:Sacolle/nix-starpu";
     flake-utils.url = "github:numtide/flake-utils";
-    starvz.url = "github:schnorr/starvz";
+    starvz.url = "github:matregnago/starvz";
   };
 
   outputs =
@@ -46,7 +46,10 @@
         starvz_tools = starvz.packages.${system}.default;
         starvz_r = starvz.packages.${system}.starvz;
         rEnv = pkgs.rWrapper.override {
-          packages = with pkgs.rPackages; [
+          packages = [
+            starvz_r
+          ]
+          ++ (with pkgs.rPackages; [
             languageserver
             lintr
             here
@@ -54,7 +57,7 @@
             FrF2
             tidyverse
             janitor
-          ];
+          ]);
         };
       in
       {
@@ -68,20 +71,19 @@
           parsec = pkgs.mkShell {
             buildInputs = [
               chameleon_parsec
-              pkgs.eztrace
+              parsecPkg
             ];
           };
           starpu = pkgs.mkShell {
             buildInputs = [
               chameleon_starpu
-              starvz_tools
-              starvz_r
             ];
           };
           default = pkgs.mkShell {
             buildInputs = [
               pkgs.marp-cli
               pkgs.chromium
+              starvz_tools
               rEnv
             ];
           };

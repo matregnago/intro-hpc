@@ -80,7 +80,7 @@ Este trabalho tem como objetivo analisar o impacto de diferentes **modelos de ex
 
 # Reprodutibilidade
 - Toda a pilha de software foi portada para o gerenciador de pacotes `nix`
-- Os scripts de experimentação e anális estão disponíveis no **GitHub**
+- Os scripts de experimentação e análise estão disponíveis no **GitHub**
 - Contém documentação detalhada de como rodar os experimentos
 - Flake com 3 shells:
   - Chameleon compilado com **StarPU**
@@ -91,14 +91,15 @@ Este trabalho tem como objetivo analisar o impacto de diferentes **modelos de ex
 
 # Design Experimental: Fatorial Completo
 **Fatores**:
-- Runtime e Escalonadores
+- Runtime e escalonador
 - Tamanho do problema
-- Algoritmos
-Tamanho do bloco: 480
-Replicações: 10
-- Para a escolha do tamanho do bloco:
-  - Fator tamanho do bloco: 
-  - Tamanho do problema fixo em 19200
+- Algoritmo (Cholesky, QR)
+
+**Parâmetros fixos**: tamanho do bloco = 480, 10 replicações
+
+**Etapa preliminar — escolha do tamanho do bloco**:
+- Fator: tamanho do bloco
+- Tamanho do problema fixo em 19200
 
 ---
 
@@ -129,15 +130,37 @@ Replicações: 10
 
 ---
 
-# Traces das execuções
+# Trace: StarPU WS
+![center w:1100 h:530](../../plots/trace_panel_st_starpu_ws.png)
+
+---
+# Trace: StarPU LWS
+![center w:1100 h:530](../../plots/trace_panel_st_starpu_lws.png)
+
+---
+# Trace: PaRSEC GD
+![center w:1100 h:530](../../plots/trace_panel_st_parsec_gd.png)
+
+---
+# Trace: PaRSEC LFQ
+![center w:1100 h:530](../../plots/trace_panel_st_parsec_lfq.png)
 
 ---
 
 # Conclusões preliminares
+- Na fatoração Cholesky o `GD` do **PaRSEC** se saiu melhor
+  - Apresentou maior GFLOPS na maioria das execuções
+  - Menor tempo em *idle*
+- Os escalonadores não apresentaram diferenças significativas na fatoração QR
+
 
 ---
 
 # Próximos passos
+- Coletar mais métricas do **PaRSEC** dentro das informações disponibilizadas pelo seu trace
+- Avaliar novos algoritmos e escalonadores de ambos runtimes
+- Executar em GPU
+- Testar a partir de uma aplicação real que utiliza o **Chameleon** como dependência
 
 ---
 

@@ -82,6 +82,7 @@ while IFS=',' read -r -a fields; do
         -n "$n" \
         -b "$b" \
         -t "$threads" \
+        --nowarmup \
         "${EXTRA_FLAGS[@]}" \
         > "$LOG_FILE" 2>&1
     status=$?

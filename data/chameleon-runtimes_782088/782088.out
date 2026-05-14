@@ -1,0 +1,24 @@
+===============================================================
+Date        : Wed May 13 10:49:48 AM -03 2026
+SubmitHost  : cei3
+SubmitDir   : /home/users/matregnago/intro_hpc
+JobID       : 782088
+Node(s)     : cei3
+===============================================================
+[10:50:00] 0001_starpu_lws_dpotrf_n19200_b480_rep1
+[10:50:04] 0002_starpu_ws_dgeqrf_n19200_b480_rep1
+[10:50:27] 0004_starpu_lws_dgeqrf_n19200_b480_rep1
+[10:50:50] 0006_starpu_ws_dpotrf_n19200_b480_rep1
+[10:50:54] 0009_starpu_lws_dgeqrf_n19200_b480_rep2
+[10:51:17] 0010_starpu_ws_dpotrf_n19200_b480_rep2
+[10:51:21] 0012_starpu_lws_dpotrf_n19200_b480_rep2
+[10:51:26] 0014_starpu_ws_dgeqrf_n19200_b480_rep2
+[10:51:53] 0003_parsec_gd_dgeqrf_n19200_b480_rep1
+[10:52:15] 0005_parsec_lfq_dgeqrf_n19200_b480_rep1
+[10:52:38] 0007_parsec_gd_dpotrf_n19200_b480_rep1
+[10:52:42] 0008_parsec_lfq_dpotrf_n19200_b480_rep1
+[10:52:47] 0011_parsec_gd_dpotrf_n19200_b480_rep2
+[10:52:51] 0013_parsec_lfq_dpotrf_n19200_b480_rep2
+[10:52:55] 0015_parsec_gd_dgeqrf_n19200_b480_rep2
+[10:53:18] 0016_parsec_lfq_dgeqrf_n19200_b480_rep2
+/scratch/matregnago//intro_hpc/results/chameleon-runtimes_782088 -> /home/users/matregnago/intro_hpc/data/chameleon-runtimes_782088

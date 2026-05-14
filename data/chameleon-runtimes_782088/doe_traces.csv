@@ -1,0 +1,17 @@
+algorithm,n,b,runtime,scheduler,Blocks
+dpotrf,19200,480,starpu,lws,.1
+dgeqrf,19200,480,starpu,ws,.1
+dgeqrf,19200,480,parsec,gd,.1
+dgeqrf,19200,480,starpu,lws,.1
+dgeqrf,19200,480,parsec,lfq,.1
+dpotrf,19200,480,starpu,ws,.1
+dpotrf,19200,480,parsec,gd,.1
+dpotrf,19200,480,parsec,lfq,.1
+dgeqrf,19200,480,starpu,lws,.2
+dpotrf,19200,480,starpu,ws,.2
+dpotrf,19200,480,parsec,gd,.2
+dpotrf,19200,480,starpu,lws,.2
+dpotrf,19200,480,parsec,lfq,.2
+dgeqrf,19200,480,starpu,ws,.2
+dgeqrf,19200,480,parsec,gd,.2
+dgeqrf,19200,480,parsec,lfq,.2

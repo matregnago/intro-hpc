@@ -1,3 +1,0 @@
-WARNING: A runtime environment variable or a configuration file has overridden the number of required threads from 24 to 1
-Id;Function;threads;gpus;P;Q;mtxfmt;nb;ib;m;n;lda;qra;seedA;tsub;time;gflops
-0;dgeqrf;1;0;1;1;1;480;48;24000;24000;24000;4;181928346;0.000000e+00;4.191166e+01;4.398097e+02
