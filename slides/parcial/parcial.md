@@ -50,7 +50,7 @@ Este trabalho tem como objetivo analisar o impacto de diferentes **modelos de ex
 # Dificuldades encontradas
 - Compatibilidade entre **Chameleon** e **PaRSEC**:
   - **Chameleon** não tinha suporte para compilação com **PaRSEC** no modo `profiling`
-  - Foi criada uma *issue* e após 3 semanas o problema foi corrigido
+  - Foi criada uma *issue* e após 2 semanas o problema foi corrigido
 - Falta de documentação no **PaRSEC**:
   - Variáveis de ambiente sem documentação
   - Busca no código fonte para descobrir 
