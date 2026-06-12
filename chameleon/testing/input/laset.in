@@ -1,0 +1,20 @@
+# You can enumerate each parameter's values as an explicit list separated by commas or by a range start:end[:step]
+# Not given parameters will receive default values
+
+# LASET
+# nb:   Tile size
+# uplo: Part of the matrix to be set (0 for Upper, 1 for Lower and 2 for UpperLower)
+# M:    Number of rows of matrix A
+# N:    Number of columns of matrix A
+# LDA:  Leading dimension of matrix A
+# alpha: Scalar used for off-diagonal entries
+# beta:  Scalar used for diagonal entries
+
+op    = laset
+nb    = 16, 32, 38
+uplo  = 0:2
+m     = 13:45:66
+n     = 15:52:72
+lda   = 65
+alpha = 0., 3.45
+beta  = 0., -4.86

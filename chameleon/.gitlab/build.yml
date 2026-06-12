@@ -1,0 +1,162 @@
+---
+.build_script_common:
+  stage: build
+  extends: .only-master-mr
+  variables:
+    CMAKE_BUILD_PARALLEL_LEVEL: 4
+  artifacts:
+    name: "$CI_JOB_NAME-$CI_COMMIT_REF_SLUG"
+    expire_in: 1 week
+    untracked: true
+    when: always
+
+.build_script_linux:
+  extends: .build_script_common
+  tags: ['ci.inria.fr', 'linux', 'large']
+  variables:
+    GIT_CLONE_PATH: $CI_BUILDS_DIR/$CI_PROJECT_NAMESPACE/$CI_PROJECT_NAME
+    SYSTEM: linux
+  script:
+    - bash .gitlab/build.sh | tee ${LOGNAME}.log
+
+build_hmat:
+  extends: .build_script_linux
+  variables:
+    VERSION: hmat
+    LOGNAME: "chameleon-build-${SYSTEM}-${VERSION}"
+    BUILD_OPTIONS: "-DCHAMELEON_USE_CUDA=OFF
+                    -DCHAMELEON_USE_MPI=ON
+                    -DCHAMELEON_USE_HMATOSS=ON"
+
+build_openmp:
+  extends: .build_script_linux
+  variables:
+    VERSION: openmp
+    LOGNAME: "chameleon-build-${SYSTEM}-${VERSION}"
+    BUILD_OPTIONS: "-DCHAMELEON_SCHED=OPENMP"
+
+build_parsec:
+  extends: .build_script_linux
+  variables:
+    VERSION: parsec
+    LOGNAME: "chameleon-build-${SYSTEM}-${VERSION}"
+    BUILD_OPTIONS: "-DCHAMELEON_SCHED=PARSEC"
+
+build_quark:
+  extends: .build_script_linux
+  variables:
+    VERSION: quark
+    LOGNAME: "chameleon-build-${SYSTEM}-${VERSION}"
+    BUILD_OPTIONS: "-DCHAMELEON_SCHED=QUARK"
+
+build_starpu:
+  extends: .build_script_linux
+  variables:
+    VERSION: starpu
+    LOGNAME: "chameleon-build-${SYSTEM}-${VERSION}"
+    BUILD_OPTIONS: "-DCHAMELEON_USE_CUDA=OFF
+                    -DCHAMELEON_USE_MPI=ON
+                    -DCHAMELEON_USE_EZTRACE=ON"
+
+.build_script_guix:
+  tags: ['plafrim']
+  extends: .build_script_common
+  variables:
+    SYSTEM: guix
+    CMAKE_BUILD_PARALLEL_LEVEL: 20
+  script:
+    - guix time-machine
+      --channels=./.gitlab/guix-channels-${VARIANT}.scm
+      -- shell --fallback --pure --preserve=SYSTEM --preserve=VERSION
+      --preserve=LOGNAME --preserve=BUILD_OPTIONS --preserve=CMAKE_BUILD_PARALLEL_LEVEL
+      -D chameleon-${VARIANT} eztrace coreutils bash-minimal
+      -- bash .gitlab/build.sh | tee ${LOGNAME}.log
+
+build_starpu_cuda:
+  extends: .build_script_guix
+  variables:
+    VERSION: starpu_cuda
+    VARIANT: "cuda-mkl"
+    LOGNAME: "chameleon-build-${SYSTEM}-${VERSION}"
+    BUILD_OPTIONS: "-DCHAMELEON_USE_CUDA=ON
+                    -DCHAMELEON_USE_MPI=OFF
+                    -DCHAMELEON_USE_EZTRACE=ON
+                    -DBLA_VENDOR=Intel10_64lp_seq"
+
+build_starpu_hip:
+  extends: .build_script_guix
+  needs: ["build_starpu_cuda"]
+  dependencies: []
+  variables:
+    VERSION: starpu_hip
+    VARIANT: hip-rocm
+    LOGNAME: "chameleon-build-${SYSTEM}-${VERSION}"
+    BUILD_OPTIONS: "-DCHAMELEON_USE_HIP=ON
+                    -DCHAMELEON_USE_MPI=OFF
+                    -DBLA_VENDOR=OpenBLAS
+                    -DCMAKE_C_COMPILER=gcc
+                    -DCMAKE_Fortran_COMPILER=gfortran"
+  script:
+    - guix time-machine
+      --channels=./.gitlab/guix-channels-${VARIANT}.scm
+      -- shell --fallback --pure --preserve=SYSTEM --preserve=VERSION
+      --preserve=LOGNAME --preserve=BUILD_OPTIONS --preserve=CMAKE_BUILD_PARALLEL_LEVEL
+      -D chameleon-${VARIANT} --with-branch=starpu-${VARIANT}=master --without-tests=starpu-${VARIANT}
+      eztrace coreutils bash-minimal
+      -- bash .gitlab/build.sh | tee ${LOGNAME}.log
+
+build_starpu_simgrid:
+  extends: .build_script_linux
+  variables:
+    VERSION: starpu_simgrid
+    LOGNAME: "chameleon-build-${SYSTEM}-${VERSION}"
+    CHAM_CI_ENV_ARG: simgrid
+    BUILD_OPTIONS: "-DCHAMELEON_SIMULATION=ON
+                    -DCHAMELEON_USE_CUDA=ON
+                    -DCHAMELEON_USE_MPI=OFF"
+
+build_starpu_macosx:
+  extends: .only-master-mr
+  stage: build
+  tags: ['macosx']
+  variables:
+    SYSTEM: macosx
+    VERSION: starpu
+    LOGNAME: "chameleon-build-${SYSTEM}-${VERSION}"
+    CMAKE_BUILD_PARALLEL_LEVEL: 4
+  script:
+    - bash .gitlab/build.sh | tee ${LOGNAME}.log
+  artifacts:
+    name: "$CI_JOB_NAME-$CI_COMMIT_REF_SLUG"
+    expire_in: 1 week
+    when: always
+    paths:
+      - ${LOGNAME}.log
+  cache:
+    key: "${SYSTEM}-${VERSION}-$CI_COMMIT_REF_SLUG"
+    untracked: true
+    policy: push
+
+.build_starpu_windows:
+  extends: .only-master-mr
+  stage: build
+  tags: ['windows']
+  variables:
+    SYSTEM: windows
+    CHERE_INVOKING: "yes"
+    MSYSTEM: UCRT64
+    VERSION: starpu
+    LOGNAME: "chameleon-build-${SYSTEM}-${VERSION}"
+    CMAKE_BUILD_PARALLEL_LEVEL: 4
+  script:
+    - bash -lc .gitlab/build.sh | tee "$env:LOGNAME.log"
+  artifacts:
+    name: "$CI_JOB_NAME-$CI_COMMIT_REF_SLUG"
+    expire_in: 1 week
+    when: always
+    paths:
+      - ${LOGNAME}.log
+  cache:
+    key: "${SYSTEM}-${VERSION}-$CI_COMMIT_REF_SLUG"
+    untracked: true
+    policy: push

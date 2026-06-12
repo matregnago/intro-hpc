@@ -1,0 +1,41 @@
+#+TITLE: README for developers
+#+LANGUAGE:  en
+#+OPTIONS: H:3 num:t \n:nil @:t ::t |:t _:nil ^:nil -:t f:t *:t <:t
+#+OPTIONS: TeX:t LaTeX:t skip:nil d:nil pri:nil tags:not-in-toc html-style:nil
+
+This page is dedicated to rules and conventions that HQR's
+developers must follow and that should be read by contributors.
+
+* Gitlab flow: how to contribute to HQR
+
+  Please read and follow guidelines given in the [[file:CONTRIBUTING.org][CONTRIBUTING file]].
+
+* Documentation
+  <<sec:doc>>
+** Generate the documentation
+*** Prerequisites
+
+     To generate the documentation you need to have [[http://www.stack.nl/~dimitri/doxygen/][Doxygen]] and
+     [[https://www.gnu.org/software/texinfo/][Texinfo]] installed on your system.
+
+     For example, on Debian systems:
+     #+begin_src sh
+     sudo apt install doxygen texinfo texlive texlive-latex-extra emacs
+     #+end_src
+
+*** configure + make documentation
+
+    Enter into the Chameleon's source root directory and configure
+    with *LIBHQR_ENABLE_DOC=ON*, then generate the documentation
+    with ~make doc~
+
+    #+begin_src sh
+    cd chameleon
+    mkdir build && cd build
+    cmake .. -DLIBHQR_ENABLE_DOC=ON
+    make doc
+    #+end_src
+
+** Rules about source code documentation
+
+   Please refer to this file for the documentation guidelines [[file:doc/doxygen/README.org][README]].

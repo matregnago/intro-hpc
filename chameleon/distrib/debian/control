@@ -1,0 +1,21 @@
+Source: chameleon
+Priority: optional
+Maintainer: Florent Pruvost <florent.pruvost@inria.fr>
+Build-Depends: debhelper-compat (= 12), cmake, python, pkg-config, libopenblas-dev, liblapacke-dev, libstarpu-dev, libopenmpi-dev, libhwloc-dev
+Standards-Version: 4.4.1
+Section: libs
+Homepage: https://gitlab.inria.fr/solverstack/chameleon
+
+Package: chameleon
+Architecture: any
+Depends: ${shlibs:Depends}, ${misc:Depends}, libopenblas-dev, liblapacke-dev, libstarpu-dev, libopenmpi-dev
+Description: Dense linear algebra subroutines for heterogeneous and distributed architectures
+ Chameleon is a C library providing parallel algorithms to perform
+ BLAS/LAPACK operations exploiting fully modern architectures.
+ Chameleon dense linear algebra software relies on sequential
+ task-based algorithms where sub-tasks of the overall algorithms are
+ submitted to a Runtime system. Such a system is a layer between the
+ application and the hardware which handles the scheduling and the
+ effective execution of tasks on the processing units. A Runtime
+ system such as StarPU is able to manage automatically data transfers
+ between not shared memory area (CPUs-GPUs, distributed nodes).

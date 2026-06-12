@@ -1,0 +1,46 @@
+#+TITLE: How to link with Chameleon
+#+LANGUAGE:  en
+#+OPTIONS: H:3 num:t \n:nil @:t ::t |:t _:nil ^:nil -:t f:t *:t <:t
+#+OPTIONS: TeX:t LaTeX:t skip:nil d:nil pri:nil tags:not-in-toc html-style:nil
+
+Install Chameleon and its dependencies, please refer to this [[https://solverstack.gitlabpages.inria.fr/chameleon/#orga9a42d3][section]].
+#+begin_src
+# example on a Debian/Ubuntu
+sudo apt-get update
+sudo apt-get install -y libopenblas-dev liblapacke-dev libstarpu-dev
+git clone --recursive https://gitlab.inria.fr/solverstack/chameleon.git
+cd chameleon && mkdir -p build && cd build
+CHAMELEON_ROOT=$PWD/install
+cmake .. -DCMAKE_INSTALL_PREFIX=$CHAMELEON_ROOT && make -j5 install
+# chameleon is installed in $CHAMELEON_ROOT
+
+# if your work in a cmake project you can use the CHAMELEONConfig.cmake file
+# installed under <prefix>/lib/cmake/chameleon/ by setting your
+# CMAKE_PREFIX_PATH with the path of installation. In your cmake project, use
+# find_package(CHAMELEON) and link your libraries and/or executables with the
+# library target CHAMELEON::chameleon
+cmake . -DCMAKE_PREFIX_PATH=$CHAMELEON_ROOT
+# if your work outside of cmake you can use the pkg-config file provided
+export PKG_CONFIG_PATH=$CHAMELEON_ROOT/lib/pkgconfig:$PKG_CONFIG_PATH
+# then configure/build your program using pkg-config infos
+# pkg-config --cflags [--static] chameleon
+# pkg-config --libs [--static] chameleon
+# ...
+#+end_src
+
+Example to link with chameleon in CMake project, see the
+~CMakeLists.txt~ file
+#+begin_src
+mkdir build
+cd build
+cmake .. -DCMAKE_PREFIX_PATH=$CHAMELEON_ROOT
+make VERBOSE=1
+./link_chameleon_c
+./link_chameleon_f
+#+end_src
+
+Example using directly the pkg-config file and if chameleon is a static library (remove --static if dynamic)
+#+begin_src
+gcc      `pkg-config --cflags chameleon` -o link_chameleon_c link_chameleon.c   `pkg-config --libs --static chameleon`
+gfortran `pkg-config --cflags chameleon` -o link_chameleon_f link_chameleon.f90 `pkg-config --libs --static chameleon`
+#+end_src

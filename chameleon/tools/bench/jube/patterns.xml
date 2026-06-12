@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<jube>
+    <!-- Regex pattern -->
+    <patternset name="chameleon">
+        <pattern name="cputime" type="float">^$jube_pat_nint;$jube_pat_nwrd;.*;$jube_pat_fp;$jube_pat_nfp$</pattern>
+        <pattern name="gflops"  type="float">^$jube_pat_nint;$jube_pat_nwrd;.*;$jube_pat_nfp;$jube_pat_fp$</pattern>
+    </patternset>
+</jube>

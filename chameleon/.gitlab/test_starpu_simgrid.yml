@@ -1,0 +1,14 @@
+---
+test_starpu_simgrid_simu_all:
+  extends:
+    - .test_script_linux
+    - .only-master-mr
+  needs: [build_starpu_simgrid]
+  variables:
+    STARPU_WORKERS_NOBIND: 1
+    CHAM_CI_ENV_ARG: simgrid
+    VERSION: starpu_simgrid
+    CATEGORY: simu
+    PRECISION: all
+    LOGNAME: "chameleon-test-${SYSTEM}-${VERSION}-${CATEGORY}-${PRECISION}"
+    TESTS_RESTRICTION: "-R _${CATEGORY}"

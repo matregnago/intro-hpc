@@ -1,0 +1,47 @@
+#+TITLE: Howto: Debian packaging
+
+Example installation of Chameleon using git and CMake is given in the
+script ~install_dependencies.sh~.
+
+How to generate a debian package with available dockerfiles. You need
+to be maintainer on the chameleon gitlab project. Then create your
+gitlab token, go to Users settings, Personal Access Tokens, scope api,
+set in ~GITLABTOKEN~ environment variable.
+
+Be sure "Packages" are enabled in your gitlab project, see in
+Settings, General, Visibility, project features, permissions ->
+Packages, save changes.
+
+Install Docker, see example [[https://gitlab.inria.fr/sed-bso/hpclib/-/blob/master/tools/install_docker.sh][installation on Ubuntu]].
+
+The following will create a new package and upload it on the chameleon
+[[https://gitlab.inria.fr/solverstack/chameleon/-/packages][gitlab packages page]]
+#+begin_src sh
+GITLABTOKEN=
+docker build -t chameleon_ubuntu20.04 -f dockerfile-ubuntu20.04 --build-arg GITLABTOKEN=$GITLABTOKEN .
+docker build -t chameleon_ubuntu20.10 -f dockerfile-ubuntu20.10 --build-arg GITLABTOKEN=$GITLABTOKEN .
+docker build -t chameleon_debiantesting -f dockerfile-debian-testing --build-arg GITLABTOKEN=$GITLABTOKEN .
+#+end_src
+We use default variables here concerning package details (release
+number, url, ...). One can change the release to consider by giving
+additional information, one or more of the following
+#+begin_src sh
+GITLABTOKEN=
+GITLABPROJNUM=616
+DEBIANDIST=ubuntu_20.04 # or debian_testing for ex.
+RELEASEVER="1.1.0"
+DEBIANARCH="1_amd64" # or "amd64 for debian"
+RELEASETAR=chameleon-$RELEASEVER.tar.gz
+RELEASEURL=https://gitlab.inria.fr/solverstack/chameleon/uploads/b299d6037d7636c6be16108c89bc2aab/$RELEASETAR
+
+docker build -t chameleon_ubuntu20.04 \
+             -f dockerfile-ubuntu20.04 \
+             --build-arg GITLABTOKEN=$GITLABTOKEN \
+             --build-arg GITLABPROJNUM=$GITLABPROJNUM \
+             --build-arg DEBIANDIST=$DEBIANDIST \
+             --build-arg RELEASEVER=$RELEASEVER \
+             --build-arg DEBIANARCH=$DEBIANARCH \
+             --build-arg RELEASETAR=$RELEASETAR \
+             --build-arg RELEASEURL=$RELEASEURL \
+             .
+#+end_src

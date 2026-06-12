@@ -1,0 +1,16 @@
+# You can enumerate each parameter's values as an explicit list separated by commas or by a range start:end[:step]
+# Not given parameters will receive default values
+
+# GETRF
+
+# nb: Tile size
+# m: Number of rows of the matrix A
+# n: Number of columns of the matrix A
+# lda: Leading dimension of matrix A
+
+op = getrf
+nb = 16, 17
+ib = 16, 5
+m = 13, 17, 35, 130
+n = 15, 19, 33, 115
+lda = 131

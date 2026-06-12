@@ -1,0 +1,100 @@
+#+TITLE: HQR: A library to generate hierachical trees adapted to distributed many-cores architectures for QR/LQ tile algorithms
+#+LANGUAGE:  en
+#+OPTIONS: H:3 num:t \n:nil @:t ::t |:t _:nil ^:nil -:t f:t *:t <:t
+#+OPTIONS: TeX:t LaTeX:t skip:nil d:nil pri:nil tags:not-in-toc html-style:nil
+
+HQR is a C library providing tools to generate hierarchical trees
+adapted to 2D block-cyclic data distribution and algorithms based on
+tiled QR/algorithms. This library is used in [[https://gitlab.inria.fr/solverstack/chameleon][Chameleon]] and [[https://bitbucket.org/mfaverge/parsec][DPLASMA]].
+
+This libraries provides generation of trees for various configuration
+and intent to provide an automatically generated tree adapted to the
+matrix size, and the targeted architecture.
+
+Tools to draw the trees in SVG and DOT formats are provided to display
+the generated trees and debug applications, as well as tools to
+provide critical path length.
+
+* Get HQR
+
+  To use last development states of the HQR library, please clone the master
+  branch. Note that Chameleon already contains the HQR library as a submodule.
+  To get sources please use these commands:
+
+  #+begin_src sh
+    git clone git@gitlab.inria.fr:solverstack/hqr.git
+  #+end_src
+
+# * Documentation
+# ** User guide
+#    The user guide is available directly in the sources as emacs
+#    org-mode files, see :
+#    1) [[file:doc/orgmode/chapters/introduction.org][Introduction]] : description of the scientific context
+#    2) [[file:doc/orgmode/chapters/installing.org][Installing]] :
+#       * Getting Chameleon
+#       * Prerequisites for installing Chameleon
+#       * Distribution of Chameleon using Spack
+#       * Build and install Chameleon with CMake
+#    3) [[file:doc/orgmode/chapters/using.org][Using]] :
+#       * Linking an external application with Chameleon libraries
+#       * Using Chameleon executables
+#       * Chameleon API
+
+#    This documentation could also be generated in html and/or pdf :
+#    #+begin_src
+#    # build the doc with cmake (emacs with org-mode and latex are required), e.g.
+#    cmake .. -DCHAMELEON_ENABLE_DOC=ON
+#    make doc
+#    #+end_src
+
+# ** Source code documentation (doxygen)
+#    There is no up-to-date documentation of Chameleon.  We would like to
+#    provide a Doxygen documentation hosted on [[https://about.gitlab.com/2016/04/07/gitlab-pages-setup/][gitlab]] in the
+#    future. Please refer to the section 2.1 of [[file:READMEDEV.org][READMEDEV]] to get
+#    information about the documentation generation.
+
+# ** For developers
+#    Please refer to the [[file:READMEDEV.org][READMEDEV]] page.
+
+# * Get involved!
+# ** Mailing list
+
+#    To contact the developers send an email to
+#    [[mailto:morse-devel@lists.gforge.inria.fr][morse-devel@lists.gforge.inria.fr]]
+
+# ** Contributions
+
+#   [[file:CONTRIBUTING.org][CONTRIBUTING]]
+
+* Authors
+
+ The following people contributed to the development of the HQR library:
+ * Guillaume Aupy
+ * Raphael Boucherie
+ * Mathieu Faverge, PI
+ * Thomas Herault
+ * Mathias Jacquelin
+ * Julien Langou
+ * Yves Robert
+
+ If we forgot your name, please let us know that we can fix that mistake.
+
+* Citing HQR
+
+Feel free to use the following publications to reference the HQR library:
+
+  * Original paper that initiated the hierarchical QR algorithms:
+    - Henricus Bouwmeester, Mathias Jacquelin, Julien Langou, Yves Robert. *Tiled QR factorization algorithms*, /in SC '11 Proceedings of 2011 International Conference for High Performance Computing, Networking, Storage and Analysis/ [[https://dl.acm.org/citation.cfm?id=2063393][acm]] [[https://arxiv.org/pdf/1104.4475.pdf][arxiv]]
+
+  * Hierarchical trees for distributed memory:
+    - Jack Dongarra, Mathieu Faverge, Thomas Hérault, Mathias Jacquelin, Julien Langou, et Yves Robert. *Hierarchical QR factorization algorithms for multi-core clusters*. /Parallel Computing, Elsevier, 2013, 39 (4-5), pp.212-232/. [[http://dx.doi.org/10.1016/j.parco.2013.01.003][parco.2013.01.003]] [[https://hal.inria.fr/hal-00809770][hal-00809770]]
+
+  * Systolic trees for the QR factorization:
+    - Guillaume Aupy, Mathieu Faverge, Yves Robert, Jakub Kurzak, Piotr Luszczek, et Jack Dongarra. *Implementing a systolic algorithm for QR factorization on multicore clusters with PaRSEC*. /PROPER 2013 - 6th Workshop on Productivity and Performance, Aug 2013, Aachen, Germany. 2013/. [[https://hal.inria.fr/hal-00844492][hal-00844492]]
+
+  * Adapted trees to Bidiagonalization algorithms:
+    - Mathieu Faverge, Julien Langou, Yves Robert, Jack Dongarra. *Bidiagonalization and R-Bidiagonalization: Parallel Tiled Algorithms, Critical Paths and Distributed-Memory Implementation.* /IPDPS'17 - 31st IEEE International Parallel and Distributed Processing Symposium, May 2017, Orlando, United States. 2017/, [[http://ipdps.org][ipdps]] [[https://hal.inria.fr/hal-01484113][hal-01484113]]
+
+# * Licence
+
+  #   [[file:LICENCE.txt][LICENCE]]

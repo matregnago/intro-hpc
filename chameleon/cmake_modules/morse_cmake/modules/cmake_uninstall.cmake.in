@@ -1,0 +1,61 @@
+###
+#
+# @copyright (c) 2012-2020 Inria. All rights reserved.
+# @copyright (c) 2012-2020 Bordeaux INP, CNRS (LaBRI UMR 5800), Inria,
+#                          Univ. Bordeaux. All rights reserved.
+#
+###
+#
+#  @file cmake_uninstall.cmake.in
+#
+#  @project MORSE
+#  MORSE is a software package provided by:
+#     Inria Bordeaux - Sud-Ouest,
+#     Univ. of Tennessee,
+#     King Abdullah Univesity of Science and Technology
+#     Univ. of California Berkeley,
+#     Univ. of Colorado Denver.
+#
+#  @version 0.9.0
+#  @author Mathieu Faverge
+#  @date 13-05-2015
+#
+# This file is a copy-paste of the file propose by the cmake FAQ
+# https://gitlab.kitware.com/cmake/community/-/wikis/FAQ#can-i-do-make-uninstall-with-cmake
+#
+# If you want to use this file in your project, add the following
+# block at the top-level CMakeLists.txt
+#
+# # uninstall target
+# if(NOT TARGET uninstall)
+#     configure_file(
+#         "${MORSE_CMAKE_MODULE_PATH}/cmake_uninstall.cmake.in"
+#         "${CMAKE_CURRENT_BINARY_DIR}/cmake_uninstall.cmake"
+#         IMMEDIATE @ONLY)
+# 
+#     add_custom_target(uninstall
+#         COMMAND ${CMAKE_COMMAND} -P ${CMAKE_CURRENT_BINARY_DIR}/cmake_uninstall.cmake)
+# endif()
+#
+###
+if(NOT EXISTS "@CMAKE_BINARY_DIR@/install_manifest.txt")
+  message(FATAL_ERROR "Cannot find install manifest: @CMAKE_BINARY_DIR@/install_manifest.txt")
+endif(NOT EXISTS "@CMAKE_BINARY_DIR@/install_manifest.txt")
+
+file(READ "@CMAKE_BINARY_DIR@/install_manifest.txt" files)
+string(REGEX REPLACE "\n" ";" files "${files}")
+foreach(file ${files})
+  message(STATUS "Uninstalling $ENV{DESTDIR}${file}")
+  if(IS_SYMLINK "$ENV{DESTDIR}${file}" OR EXISTS "$ENV{DESTDIR}${file}")
+    exec_program(
+      "@CMAKE_COMMAND@" ARGS "-E remove \"$ENV{DESTDIR}${file}\""
+      OUTPUT_VARIABLE rm_out
+      RETURN_VALUE rm_retval
+      )
+    if(NOT "${rm_retval}" STREQUAL 0)
+      message(FATAL_ERROR "Problem when removing $ENV{DESTDIR}${file}")
+    endif(NOT "${rm_retval}" STREQUAL 0)
+  else(IS_SYMLINK "$ENV{DESTDIR}${file}" OR EXISTS "$ENV{DESTDIR}${file}")
+    message(STATUS "File $ENV{DESTDIR}${file} does not exist.")
+  endif(IS_SYMLINK "$ENV{DESTDIR}${file}" OR EXISTS "$ENV{DESTDIR}${file}")
+endforeach(file)

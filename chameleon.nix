@@ -12,7 +12,9 @@
   starpu,
   parsec,
   python3,
-  eztrace,
+  cudaPackages ? null,
+  autoAddDriverRunpath ? null,
+  enableCuda ? true,
   runtime ? "starpu",
 }:
 
@@ -27,11 +29,9 @@ stdenv.mkDerivation {
   pname = "chameleon-${runtime}";
   version = "1.4.0";
 
-  src = fetchgit {
-    url = "https://gitlab.inria.fr/solverstack/chameleon/";
-    rev = "a907fde133b122b51418f04528d15fa387b6ad28";
-    fetchSubmodules = true;
-    hash = "sha256-qqKrdzybcFVtmcp+2gVECChvEuD53rVSBT1LTflRuQY=";
+  src = builtins.path {
+    path = /. + "${builtins.getEnv "PWD"}/chameleon";
+    name = "chameleon-source";
   };
 
   nativeBuildInputs = [
@@ -39,6 +39,10 @@ stdenv.mkDerivation {
     pkg-config
     gfortran
     python3
+  ]
+  ++ lib.optionals enableCuda [
+    cudaPackages.cuda_nvcc
+    autoAddDriverRunpath
   ];
 
   buildInputs = [
@@ -46,7 +50,14 @@ stdenv.mkDerivation {
     lapack
     hwloc
     openmpi
-    eztrace
+  ]
+  ++ lib.optionals enableCuda [
+    cudaPackages.cuda_cudart # CUDA::cudart
+    cudaPackages.cuda_cccl # nv/target (included by cuda_fp16.h in CUDA 12+)
+    cudaPackages.cuda_nvml_dev # nvml.h (starpu_cuda.h includes it when StarPU was built with NVML)
+    cudaPackages.libcublas # CUDA::cublas
+    cudaPackages.libcusolver # CUDA::cusolver
+    cudaPackages.libcusparse # cusparse.h (starpu_cusparse.h includes it when StarPU was built with cuSPARSE)
   ]
   ++ lib.optional (runtime == "starpu") starpu
   ++ lib.optional (runtime == "parsec") parsec;
@@ -55,5 +66,16 @@ stdenv.mkDerivation {
     "-DBUILD_SHARED_LIBS=ON"
     "-DCHAMELEON_SCHED=${sched}"
     "-DCHAMELEON_USE_MPI=OFF"
-  ];
+  ]
+  ++ (
+    if enableCuda then
+      [
+        "-DCHAMELEON_USE_CUDA=ON"
+        "-DCMAKE_CUDA_COMPILER=${lib.getExe' cudaPackages.cuda_nvcc "nvcc"}"
+      ]
+    else
+      [
+        "-DCHAMELEON_USE_CUDA=OFF"
+      ]
+  );
 }

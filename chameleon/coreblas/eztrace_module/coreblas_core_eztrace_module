@@ -1,0 +1,1181 @@
+BEGIN_MODULE
+NAME chameleon_core
+DESC "Module for Chameleon CORE functions"
+ID 0
+
+void CORE_scasum(int storev, int uplo, int M, int N,
+                 void *A, int lda, float *work);
+int CORE_cgeadd(int M, int N, void *alpha,
+                void *A, int LDA,
+                      void *B, int LDB);
+int  CORE_cgelqt(int M, int N, int IB,
+                 void *A, int LDA,
+                 void *T, int LDT,
+                 void *TAU,
+                 void *WORK);
+void CORE_cgemm(int transA, int transB,
+                int M, int N, int K,
+                void *alpha, void *A, int LDA,
+                             void *B, int LDB,
+                void *beta,        void *C, int LDC);
+int  CORE_cgeqrt(int M, int N, int IB,
+                 void *A, int LDA,
+                 void *T, int LDT,
+                 void *TAU, void *WORK);
+int CORE_cgesplit(int side, int diag,
+                  int M, int N,
+                  void *A, int LDA,
+                  void *B, int LDB);
+int  CORE_cgessm(int M, int N, int K, int IB,
+                 const int *IPIV,
+                 void *L, int LDL,
+                 void *A, int LDA);
+int  CORE_cgessq(int storev, int M, int N,
+                 void *A, int LDA,
+                 float *sclssq);
+int CORE_cgetf2_nopiv(int M, int N,
+                  void *A, int LDA);
+int  CORE_cgetrf(int M, int N,
+                 void *A, int LDA,
+                 int *IPIV, int *INFO);
+int  CORE_cgetrf_incpiv(int M, int N, int IB,
+                        void *A, int LDA,
+                        int *IPIV, int *INFO);
+int CORE_cgetrf_nopiv(int M, int N, int IB,
+                      void *A, int LDA,
+                      int *INFO);
+int  CORE_cgetrf_reclap(int M, int N,
+                        void *A, int LDA,
+                        int *IPIV, int *info);
+int  CORE_cgetrf_rectil(void *A, int *IPIV, int *info);
+void CORE_cgetrip(int m, int n, void *A,
+                  void *work);
+void CORE_chegst(int itype, int uplo, int N,
+                 void *A, int LDA,
+                 void *B, int LDB, int *INFO);
+
+void CORE_chemm(int side, int uplo,
+                int M, int N,
+                void *alpha, void *A, int LDA,
+                                          void *B, int LDB,
+                void *beta,        void *C, int LDC);
+void CORE_cherk(int uplo, int trans,
+                int N, int K,
+                float alpha, void *A, int LDA,
+                float beta,        void *C, int LDC);
+void CORE_cher2k(int uplo, int trans,
+                 int N, int K,
+                 void *alpha, void *A, int LDA,
+                                           void *B, int LDB,
+                 float beta,                    void *C, int LDC);
+int  CORE_chessq(int storev, int uplo, int N,
+                 void *A, int LDA,
+                 float *sclssq);
+
+int  CORE_cherfb(int uplo, int N, int K, int IB, int NB,
+                 void *A,    int LDA,
+                 void *T,    int LDT,
+                       void *C,    int LDC,
+                       void *WORK, int LDWORK);
+void CORE_clacpy(int uplo, int M, int N,
+                 void *A, int LDA,
+                       void *B, int LDB);
+void CORE_clange(int norm, int M, int N,
+                 void *A, int LDA,
+                 float *work, float *normA);
+
+void CORE_clanhe(int norm, int uplo, int N,
+                 void *A, int LDA,
+                 float *work, float *normA);
+
+void CORE_clansy(int norm, int uplo, int N,
+                 void *A, int LDA,
+                 float *work, float *normA);
+void CORE_clantr(int norm, int uplo, int diag, int M, int N,
+                 void *A, int LDA,
+                 float *work, float *normA);
+int CORE_clarfb_gemm(int side, int trans, int direct, int storev,
+                     int M, int N, int K,
+                     void *V, int LDV,
+                     void *T, int LDT,
+                           void *C, int LDC,
+                           void *WORK, int LDWORK);
+int CORE_clarfx2(int side, int N,
+                 void *V,
+                 void *TAU,
+                 void *C1, int LDC1,
+                 void *C2, int LDC2);
+int CORE_clarfx2c(int uplo,
+                  void *V,
+                  void *TAU,
+                  void *C1,
+                  void *C2,
+                  void *C3);
+int CORE_clarfx2ce(int uplo,
+                   void *V,
+                   void *TAU,
+                   void *C1,
+                   void *C2,
+                   void *C3);
+void CORE_clarfy(int N,
+                 void *A, int LDA,
+                 void *V,
+                 void *TAU,
+                 void *WORK);
+void CORE_claset(int uplo, int n1, int n2,
+                 void *alpha, void *beta,
+                 void *tileA, int ldtilea);
+void CORE_claset2(int uplo, int n1, int n2, void *alpha,
+                  void *tileA, int ldtilea);
+void CORE_claswp(int N, void *A, int LDA,
+                 int I1,  int I2, const int *IPIV, int INC);
+int  CORE_claswp_ontile( void *descA, int i1, int i2, const int *ipiv, int inc);
+int  CORE_claswpc_ontile(void *descA, int i1, int i2, const int *ipiv, int inc);
+int  CORE_clatro(int uplo, int trans,
+                 int M, int N,
+                 void *A, int LDA,
+                       void *B, int LDB);
+void CORE_clauum(int uplo, int N, void *A, int LDA);
+int CORE_cpamm(int op, int side, int storev,
+               int M, int N, int K, int L,
+               void *A1, int LDA1,
+                     void *A2, int LDA2,
+               void *V, int LDV,
+                     void *W, int LDW);
+int  CORE_cparfb(int side, int trans, int direct, int storev,
+                 int M1, int N1, int M2, int N2, int K, int L,
+                       void *A1, int LDA1,
+                       void *A2, int LDA2,
+                 void *V, int LDV,
+                 void *T, int LDT,
+                       void *WORK, int LDWORK);
+int CORE_cpemv(int trans, int storev,
+               int M, int N, int L,
+               void *ALPHA,
+               void *A, int LDA,
+               void *X, int INCX,
+               void *BETA,
+               void *Y, int INCY,
+               void *WORK);
+void CORE_cplghe(float bump, int m, int n, void *A, int lda,
+                 int bigM, int m0, int n0, unsigned long long int seed );
+void CORE_cplgsy(void *bump, int m, int n, void *A, int lda,
+                 int bigM, int m0, int n0, unsigned long long int seed );
+void CORE_cplrnt(int m, int n, void *A, int lda,
+                 int bigM, int m0, int n0, unsigned long long int seed );
+void CORE_cpotrf(int uplo, int N, void *A, int LDA, int *INFO);
+void CORE_cshift(int s, int m, int n, int L,
+                 void *A);
+void CORE_cshiftw(int s, int cl, int m, int n, int L,
+                  void *A, void *W);
+int  CORE_cssssm(int M1, int N1, int M2, int N2, int K, int IB,
+                       void *A1, int LDA1,
+                       void *A2, int LDA2,
+                 void *L1, int LDL1,
+                 void *L2, int LDL2,
+                 const int *IPIV);
+void CORE_csymm(int side, int uplo,
+                int M, int N,
+                void *alpha, void *A, int LDA,
+                                          void *B, int LDB,
+                void *beta,        void *C, int LDC);
+void CORE_csyrk(int uplo, int trans,
+                int N, int K,
+                void *alpha, void *A, int LDA,
+                void *beta,        void *C, int LDC);
+void CORE_csyr2k(int uplo, int trans,
+                 int N, int K,
+                 void *alpha, void *A, int LDA,
+                                           void *B, int LDB,
+                 void *beta,        void *C, int LDC);
+int  CORE_csyssq(int storev, int uplo, int N,
+                 void *A, int LDA,
+                 float *sclssq);
+int CORE_csytf2_nopiv(int uplo, int n, void *A, int lda);
+void CORE_ctrmm(int side, int uplo,
+                int transA, int diag,
+                int M, int N,
+                void *alpha, void *A, int LDA,
+                                                void *B, int LDB);
+void CORE_ctrsm(int side, int uplo,
+                int transA, int diag,
+                int M, int N,
+                void *alpha, void *A, int LDA,
+                                                void *B, int LDB);
+void CORE_ctrtri(int uplo, int diag, int N,
+                 void *A, int LDA, int *info);
+int  CORE_ctslqt(int M, int N, int IB,
+                 void *A1, int LDA1,
+                 void *A2, int LDA2,
+                 void *T, int LDT,
+                 void *TAU, void *WORK);
+int  CORE_ctsmlq(int side, int trans,
+                 int M1, int N1, int M2, int N2, int K, int IB,
+                 void *A1, int LDA1,
+                 void *A2, int LDA2,
+                 void *V, int LDV,
+                 void *T, int LDT,
+                 void *WORK, int LDWORK);
+int CORE_ctsmlq_corner( int m1, int n1, int m2, int n2, int m3, int n3,
+                        int k, int ib, int nb,
+                        void *A1, int lda1,
+                        void *A2, int lda2,
+                        void *A3, int lda3,
+                        void *V, int ldv,
+                        void *T, int ldt,
+                        void *WORK, int ldwork);
+int CORE_ctsmlq_hetra1( int side, int trans,
+                        int m1, int n1, int m2, int n2,
+                        int k, int ib,
+                        void *A1, int lda1,
+                        void *A2, int lda2,
+                        void *V, int ldv,
+                        void *T, int ldt,
+                        void *WORK, int ldwork);
+int  CORE_ctsmqr(int side, int trans,
+                 int M1, int N1, int M2, int N2, int K, int IB,
+                 void *A1, int LDA1,
+                 void *A2, int LDA2,
+                 void *V, int LDV,
+                 void *T, int LDT,
+                 void *WORK, int LDWORK);
+int CORE_ctsmqr_corner( int m1, int n1, int m2, int n2, int m3, int n3,
+                        int k, int ib, int nb,
+                        void *A1, int lda1,
+                        void *A2, int lda2,
+                        void *A3, int lda3,
+                        void *V, int ldv,
+                        void *T, int ldt,
+                        void *WORK, int ldwork);
+int CORE_ctsmqr_hetra1( int side, int trans,
+                        int m1, int n1, int m2, int n2,
+                        int k, int ib,
+                        void *A1, int lda1,
+                        void *A2, int lda2,
+                        void *V, int ldv,
+                        void *T, int ldt,
+                        void *WORK, int ldwork);
+int  CORE_ctsqrt(int M, int N, int IB,
+                 void *A1, int LDA1,
+                 void *A2, int LDA2,
+                 void *T, int LDT,
+                 void *TAU, void *WORK);
+int  CORE_ctstrf(int M, int N, int IB, int NB,
+                 void *U, int LDU,
+                 void *A, int LDA,
+                 void *L, int LDL,
+                 int *IPIV, void *WORK,
+                 int LDWORK, int *INFO);
+int  CORE_cttmqr(int side, int trans,
+                 int M1, int N1, int M2, int N2, int K, int IB,
+                 void *A1, int LDA1,
+                 void *A2, int LDA2,
+                 void *V, int LDV,
+                 void *T, int LDT,
+                 void *WORK, int LDWORK);
+int  CORE_cttqrt(int M, int N, int IB,
+                 void *A1, int LDA1,
+                 void *A2, int LDA2,
+                 void *T, int LDT,
+                 void *TAU,
+                 void *WORK);
+int  CORE_cttmlq(int side, int trans,
+                 int M1, int N1, int M2, int N2, int K, int IB,
+                 void *A1, int LDA1,
+                 void *A2, int LDA2,
+                 void *V, int LDV,
+                 void *T, int LDT,
+                 void *WORK, int LDWORK);
+int  CORE_cttlqt(int M, int N, int IB,
+                 void *A1, int LDA1,
+                 void *A2, int LDA2,
+                 void *T, int LDT,
+                 void *TAU,
+                 void *WORK);
+int  CORE_cunmlq(int side, int trans,
+                 int M, int N, int IB, int K,
+                 void *V, int LDV,
+                 void *T, int LDT,
+                 void *C, int LDC,
+                 void *WORK, int LDWORK);
+int  CORE_cunmqr(int side, int trans,
+                 int M, int N, int K, int IB,
+                 void *V, int LDV,
+                 void *T, int LDT,
+                 void *C, int LDC,
+                 void *WORK, int LDWORK);
+
+void CORE_dasum(int storev, int uplo, int M, int N,
+                 const double *A, int lda, double *work);
+int CORE_dgeadd(int M, int N, double alpha,
+                const double *A, int LDA,
+                      double *B, int LDB);
+int  CORE_dgelqt(int M, int N, int IB,
+                 double *A, int LDA,
+                 double *T, int LDT,
+                 double *TAU,
+                 double *WORK);
+void CORE_dgemm(int transA, int transB,
+                int M, int N, int K,
+                double alpha, const double *A, int LDA,
+                                          const double *B, int LDB,
+                double beta,        double *C, int LDC);
+int  CORE_dgeqrt(int M, int N, int IB,
+                 double *A, int LDA,
+                 double *T, int LDT,
+                 double *TAU, double *WORK);
+int CORE_dgesplit(int side, int diag,
+                  int M, int N,
+                  double *A, int LDA,
+                  double *B, int LDB);
+int  CORE_dgessm(int M, int N, int K, int IB,
+                 const int *IPIV,
+                 const double *L, int LDL,
+                 double *A, int LDA);
+int  CORE_dgessq(int storev, int M, int N,
+                 const double *A, int LDA,
+                 double *sclssq);
+int CORE_dgetf2_nopiv(int M, int N,
+                  double *A, int LDA);
+int  CORE_dgetrf(int M, int N,
+                 double *A, int LDA,
+                 int *IPIV, int *INFO);
+int  CORE_dgetrf_incpiv(int M, int N, int IB,
+                        double *A, int LDA,
+                        int *IPIV, int *INFO);
+int CORE_dgetrf_nopiv(int M, int N, int IB,
+                      double *A, int LDA,
+                      int *INFO);
+int  CORE_dgetrf_reclap(int M, int N,
+                        double *A, int LDA,
+                        int *IPIV, int *info);
+int  CORE_dgetrf_rectil(void *A, int *IPIV, int *info);
+void CORE_dgetrip(int m, int n, double *A,
+                  double *work);
+void CORE_dsygst(int itype, int uplo, int N,
+                 double *A, int LDA,
+                 double *B, int LDB, int *INFO);
+
+void CORE_dsymm(int side, int uplo,
+                int M, int N,
+                double alpha, const double *A, int LDA,
+                                          const double *B, int LDB,
+                double beta,        double *C, int LDC);
+void CORE_dsyrk(int uplo, int trans,
+                int N, int K,
+                double alpha, const double *A, int LDA,
+                double beta,        double *C, int LDC);
+void CORE_dsyr2k(int uplo, int trans,
+                 int N, int K,
+                 double alpha, const double *A, int LDA,
+                                           const double *B, int LDB,
+                 double beta,                    double *C, int LDC);
+int  CORE_dsyssq(int storev, int uplo, int N,
+                 const double *A, int LDA,
+                 double *sclssq);
+
+int  CORE_dsyrfb(int uplo, int N, int K, int IB, int NB,
+                 const double *A,    int LDA,
+                 const double *T,    int LDT,
+                       double *C,    int LDC,
+                       double *WORK, int LDWORK);
+void CORE_dlacpy(int uplo, int M, int N,
+                 const double *A, int LDA,
+                       double *B, int LDB);
+void CORE_dlange(int norm, int M, int N,
+                 const double *A, int LDA,
+                 double *work, double *normA);
+
+void CORE_dlansy(int norm, int uplo, int N,
+                 const double *A, int LDA,
+                 double *work, double *normA);
+
+void CORE_dlantr(int norm, int uplo, int diag, int M, int N,
+                 const double *A, int LDA,
+                 double *work, double *normA);
+int CORE_dlarfb_gemm(int side, int trans, int direct, int storev,
+                     int M, int N, int K,
+                     const double *V, int LDV,
+                     const double *T, int LDT,
+                           double *C, int LDC,
+                           double *WORK, int LDWORK);
+int CORE_dlarfx2(int side, int N,
+                 double V,
+                 double TAU,
+                 double *C1, int LDC1,
+                 double *C2, int LDC2);
+int CORE_dlarfx2c(int uplo,
+                  double V,
+                  double TAU,
+                  double *C1,
+                  double *C2,
+                  double *C3);
+int CORE_dlarfx2ce(int uplo,
+                   double *V,
+                   double *TAU,
+                   double *C1,
+                   double *C2,
+                   double *C3);
+void CORE_dlarfy(int N,
+                 double *A, int LDA,
+                 const double *V,
+                 const double *TAU,
+                 double *WORK);
+void CORE_dlaset(int uplo, int n1, int n2,
+                 double alpha, double beta,
+                 double *tileA, int ldtilea);
+void CORE_dlaset2(int uplo, int n1, int n2, double alpha,
+                  double *tileA, int ldtilea);
+void CORE_dlaswp(int N, double *A, int LDA,
+                 int I1,  int I2, const int *IPIV, int INC);
+int  CORE_dlaswp_ontile( void *descA, int i1, int i2, const int *ipiv, int inc);
+int  CORE_dlaswpc_ontile(void *descA, int i1, int i2, const int *ipiv, int inc);
+int  CORE_dlatro(int uplo, int trans,
+                 int M, int N,
+                 const double *A, int LDA,
+                       double *B, int LDB);
+void CORE_dlauum(int uplo, int N, double *A, int LDA);
+int CORE_dpamm(int op, int side, int storev,
+               int M, int N, int K, int L,
+               const double *A1, int LDA1,
+                     double *A2, int LDA2,
+               const double *V, int LDV,
+                     double *W, int LDW);
+int  CORE_dparfb(int side, int trans, int direct, int storev,
+                 int M1, int N1, int M2, int N2, int K, int L,
+                       double *A1, int LDA1,
+                       double *A2, int LDA2,
+                 const double *V, int LDV,
+                 const double *T, int LDT,
+                       double *WORK, int LDWORK);
+int CORE_dpemv(int trans, int storev,
+               int M, int N, int L,
+               double ALPHA,
+               const double *A, int LDA,
+               const double *X, int INCX,
+               double BETA,
+               double *Y, int INCY,
+               double *WORK);
+void CORE_dplgsy(double bump, int m, int n, double *A, int lda,
+                 int bigM, int m0, int n0, unsigned long long int seed );
+void CORE_dplrnt(int m, int n, double *A, int lda,
+                 int bigM, int m0, int n0, unsigned long long int seed );
+void CORE_dpotrf(int uplo, int N, double *A, int LDA, int *INFO);
+void CORE_dshift(int s, int m, int n, int L,
+                 double *A);
+void CORE_dshiftw(int s, int cl, int m, int n, int L,
+                  double *A, double *W);
+int  CORE_dssssm(int M1, int N1, int M2, int N2, int K, int IB,
+                       double *A1, int LDA1,
+                       double *A2, int LDA2,
+                 const double *L1, int LDL1,
+                 const double *L2, int LDL2,
+                 const int *IPIV);
+int CORE_dsytf2_nopiv(int uplo, int n, double *A, int lda);
+void CORE_dtrmm(int side, int uplo,
+                int transA, int diag,
+                int M, int N,
+                double alpha, const double *A, int LDA,
+                                                double *B, int LDB);
+void CORE_dtrsm(int side, int uplo,
+                int transA, int diag,
+                int M, int N,
+                double alpha, const double *A, int LDA,
+                                                double *B, int LDB);
+void CORE_dtrtri(int uplo, int diag, int N,
+                 double *A, int LDA, int *info);
+int  CORE_dtslqt(int M, int N, int IB,
+                 double *A1, int LDA1,
+                 double *A2, int LDA2,
+                 double *T, int LDT,
+                 double *TAU, double *WORK);
+int  CORE_dtsmlq(int side, int trans,
+                 int M1, int N1, int M2, int N2, int K, int IB,
+                 double *A1, int LDA1,
+                 double *A2, int LDA2,
+                 const double *V, int LDV,
+                 const double *T, int LDT,
+                 double *WORK, int LDWORK);
+int CORE_dtsmlq_corner( int m1, int n1, int m2, int n2, int m3, int n3,
+                        int k, int ib, int nb,
+                        double *A1, int lda1,
+                        double *A2, int lda2,
+                        double *A3, int lda3,
+                        const double *V, int ldv,
+                        const double *T, int ldt,
+                        double *WORK, int ldwork);
+int CORE_dtsmlq_sytra1( int side, int trans,
+                        int m1, int n1, int m2, int n2,
+                        int k, int ib,
+                        double *A1, int lda1,
+                        double *A2, int lda2,
+                        const double *V, int ldv,
+                        const double *T, int ldt,
+                        double *WORK, int ldwork);
+int  CORE_dtsmqr(int side, int trans,
+                 int M1, int N1, int M2, int N2, int K, int IB,
+                 double *A1, int LDA1,
+                 double *A2, int LDA2,
+                 const double *V, int LDV,
+                 const double *T, int LDT,
+                 double *WORK, int LDWORK);
+int CORE_dtsmqr_corner( int m1, int n1, int m2, int n2, int m3, int n3,
+                        int k, int ib, int nb,
+                        double *A1, int lda1,
+                        double *A2, int lda2,
+                        double *A3, int lda3,
+                        const double *V, int ldv,
+                        const double *T, int ldt,
+                        double *WORK, int ldwork);
+int CORE_dtsmqr_sytra1( int side, int trans,
+                        int m1, int n1, int m2, int n2,
+                        int k, int ib,
+                        double *A1, int lda1,
+                        double *A2, int lda2,
+                        const double *V, int ldv,
+                        const double *T, int ldt,
+                        double *WORK, int ldwork);
+int  CORE_dtsqrt(int M, int N, int IB,
+                 double *A1, int LDA1,
+                 double *A2, int LDA2,
+                 double *T, int LDT,
+                 double *TAU, double *WORK);
+int  CORE_dtstrf(int M, int N, int IB, int NB,
+                 double *U, int LDU,
+                 double *A, int LDA,
+                 double *L, int LDL,
+                 int *IPIV, double *WORK,
+                 int LDWORK, int *INFO);
+int  CORE_dttmqr(int side, int trans,
+                 int M1, int N1, int M2, int N2, int K, int IB,
+                 double *A1, int LDA1,
+                 double *A2, int LDA2,
+                 const double *V, int LDV,
+                 const double *T, int LDT,
+                 double *WORK, int LDWORK);
+int  CORE_dttqrt(int M, int N, int IB,
+                 double *A1, int LDA1,
+                 double *A2, int LDA2,
+                 double *T, int LDT,
+                 double *TAU,
+                 double *WORK);
+int  CORE_dttmlq(int side, int trans,
+                 int M1, int N1, int M2, int N2, int K, int IB,
+                 double *A1, int LDA1,
+                 double *A2, int LDA2,
+                 const double *V, int LDV,
+                 const double *T, int LDT,
+                 double *WORK, int LDWORK);
+int  CORE_dttlqt(int M, int N, int IB,
+                 double *A1, int LDA1,
+                 double *A2, int LDA2,
+                 double *T, int LDT,
+                 double *TAU,
+                 double *WORK);
+int  CORE_dormlq(int side, int trans,
+                 int M, int N, int IB, int K,
+                 const double *V, int LDV,
+                 const double *T, int LDT,
+                 double *C, int LDC,
+                 double *WORK, int LDWORK);
+int  CORE_dormqr(int side, int trans,
+                 int M, int N, int K, int IB,
+                 const double *V, int LDV,
+                 const double *T, int LDT,
+                 double *C, int LDC,
+                 double *WORK, int LDWORK);
+
+void CORE_slag2d(int m, int n,
+                 const float *A, int lda,
+                 double *B, int ldb);
+void CORE_dlag2s(int m, int n,
+                 const double *A, int lda,
+                 float *B, int ldb, int *info);
+
+void CORE_sasum(int storev, int uplo, int M, int N,
+                 const float *A, int lda, float *work);
+int CORE_sgeadd(int M, int N, float alpha,
+                const float *A, int LDA,
+                      float *B, int LDB);
+int  CORE_sgelqt(int M, int N, int IB,
+                 float *A, int LDA,
+                 float *T, int LDT,
+                 float *TAU,
+                 float *WORK);
+void CORE_sgemm(int transA, int transB,
+                int M, int N, int K,
+                float alpha, const float *A, int LDA,
+                                          const float *B, int LDB,
+                float beta,        float *C, int LDC);
+int  CORE_sgeqrt(int M, int N, int IB,
+                 float *A, int LDA,
+                 float *T, int LDT,
+                 float *TAU, float *WORK);
+int CORE_sgesplit(int side, int diag,
+                  int M, int N,
+                  float *A, int LDA,
+                  float *B, int LDB);
+int  CORE_sgessm(int M, int N, int K, int IB,
+                 const int *IPIV,
+                 const float *L, int LDL,
+                 float *A, int LDA);
+int  CORE_sgessq(int storev, int M, int N,
+                 const float *A, int LDA,
+                 float *sclssq);
+int CORE_sgetf2_nopiv(int M, int N,
+                  float *A, int LDA);
+int  CORE_sgetrf(int M, int N,
+                 float *A, int LDA,
+                 int *IPIV, int *INFO);
+int  CORE_sgetrf_incpiv(int M, int N, int IB,
+                        float *A, int LDA,
+                        int *IPIV, int *INFO);
+int CORE_sgetrf_nopiv(int M, int N, int IB,
+                      float *A, int LDA,
+                      int *INFO);
+int  CORE_sgetrf_reclap(int M, int N,
+                        float *A, int LDA,
+                        int *IPIV, int *info);
+int  CORE_sgetrf_rectil(void *A, int *IPIV, int *info);
+void CORE_sgetrip(int m, int n, float *A,
+                  float *work);
+void CORE_ssygst(int itype, int uplo, int N,
+                 float *A, int LDA,
+                 float *B, int LDB, int *INFO);
+
+void CORE_ssymm(int side, int uplo,
+                int M, int N,
+                float alpha, const float *A, int LDA,
+                                          const float *B, int LDB,
+                float beta,        float *C, int LDC);
+void CORE_ssyrk(int uplo, int trans,
+                int N, int K,
+                float alpha, const float *A, int LDA,
+                float beta,        float *C, int LDC);
+void CORE_ssyr2k(int uplo, int trans,
+                 int N, int K,
+                 float alpha, const float *A, int LDA,
+                                           const float *B, int LDB,
+                 float beta,                    float *C, int LDC);
+int  CORE_ssyssq(int storev, int uplo, int N,
+                 const float *A, int LDA,
+                 float *sclssq);
+
+int  CORE_ssyrfb(int uplo, int N, int K, int IB, int NB,
+                 const float *A,    int LDA,
+                 const float *T,    int LDT,
+                       float *C,    int LDC,
+                       float *WORK, int LDWORK);
+void CORE_slacpy(int uplo, int M, int N,
+                 const float *A, int LDA,
+                       float *B, int LDB);
+void CORE_slange(int norm, int M, int N,
+                 const float *A, int LDA,
+                 float *work, float *normA);
+
+void CORE_slansy(int norm, int uplo, int N,
+                 const float *A, int LDA,
+                 float *work, float *normA);
+
+void CORE_slantr(int norm, int uplo, int diag, int M, int N,
+                 const float *A, int LDA,
+                 float *work, float *normA);
+int CORE_slarfb_gemm(int side, int trans, int direct, int storev,
+                     int M, int N, int K,
+                     const float *V, int LDV,
+                     const float *T, int LDT,
+                           float *C, int LDC,
+                           float *WORK, int LDWORK);
+int CORE_slarfx2(int side, int N,
+                 float V,
+                 float TAU,
+                 float *C1, int LDC1,
+                 float *C2, int LDC2);
+int CORE_slarfx2c(int uplo,
+                  float V,
+                  float TAU,
+                  float *C1,
+                  float *C2,
+                  float *C3);
+int CORE_slarfx2ce(int uplo,
+                   float *V,
+                   float *TAU,
+                   float *C1,
+                   float *C2,
+                   float *C3);
+void CORE_slarfy(int N,
+                 float *A, int LDA,
+                 const float *V,
+                 const float *TAU,
+                 float *WORK);
+void CORE_slaset(int uplo, int n1, int n2,
+                 float alpha, float beta,
+                 float *tileA, int ldtilea);
+void CORE_slaset2(int uplo, int n1, int n2, float alpha,
+                  float *tileA, int ldtilea);
+void CORE_slaswp(int N, float *A, int LDA,
+                 int I1,  int I2, const int *IPIV, int INC);
+int  CORE_slaswp_ontile( void *descA, int i1, int i2, const int *ipiv, int inc);
+int  CORE_slaswpc_ontile(void *descA, int i1, int i2, const int *ipiv, int inc);
+int  CORE_slatro(int uplo, int trans,
+                 int M, int N,
+                 const float *A, int LDA,
+                       float *B, int LDB);
+void CORE_slauum(int uplo, int N, float *A, int LDA);
+int CORE_spamm(int op, int side, int storev,
+               int M, int N, int K, int L,
+               const float *A1, int LDA1,
+                     float *A2, int LDA2,
+               const float *V, int LDV,
+                     float *W, int LDW);
+int  CORE_sparfb(int side, int trans, int direct, int storev,
+                 int M1, int N1, int M2, int N2, int K, int L,
+                       float *A1, int LDA1,
+                       float *A2, int LDA2,
+                 const float *V, int LDV,
+                 const float *T, int LDT,
+                       float *WORK, int LDWORK);
+int CORE_spemv(int trans, int storev,
+               int M, int N, int L,
+               float ALPHA,
+               const float *A, int LDA,
+               const float *X, int INCX,
+               float BETA,
+               float *Y, int INCY,
+               float *WORK);
+void CORE_splgsy(float bump, int m, int n, float *A, int lda,
+                 int bigM, int m0, int n0, unsigned long long int seed );
+void CORE_splrnt(int m, int n, float *A, int lda,
+                 int bigM, int m0, int n0, unsigned long long int seed );
+void CORE_spotrf(int uplo, int N, float *A, int LDA, int *INFO);
+void CORE_sshift(int s, int m, int n, int L,
+                 float *A);
+void CORE_sshiftw(int s, int cl, int m, int n, int L,
+                  float *A, float *W);
+int  CORE_sssssm(int M1, int N1, int M2, int N2, int K, int IB,
+                       float *A1, int LDA1,
+                       float *A2, int LDA2,
+                 const float *L1, int LDL1,
+                 const float *L2, int LDL2,
+                 const int *IPIV);
+int CORE_ssytf2_nopiv(int uplo, int n, float *A, int lda);
+void CORE_strmm(int side, int uplo,
+                int transA, int diag,
+                int M, int N,
+                float alpha, const float *A, int LDA,
+                                                float *B, int LDB);
+void CORE_strsm(int side, int uplo,
+                int transA, int diag,
+                int M, int N,
+                float alpha, const float *A, int LDA,
+                                                float *B, int LDB);
+void CORE_strtri(int uplo, int diag, int N,
+                 float *A, int LDA, int *info);
+int  CORE_stslqt(int M, int N, int IB,
+                 float *A1, int LDA1,
+                 float *A2, int LDA2,
+                 float *T, int LDT,
+                 float *TAU, float *WORK);
+int  CORE_stsmlq(int side, int trans,
+                 int M1, int N1, int M2, int N2, int K, int IB,
+                 float *A1, int LDA1,
+                 float *A2, int LDA2,
+                 const float *V, int LDV,
+                 const float *T, int LDT,
+                 float *WORK, int LDWORK);
+int CORE_stsmlq_corner( int m1, int n1, int m2, int n2, int m3, int n3,
+                        int k, int ib, int nb,
+                        float *A1, int lda1,
+                        float *A2, int lda2,
+                        float *A3, int lda3,
+                        const float *V, int ldv,
+                        const float *T, int ldt,
+                        float *WORK, int ldwork);
+int CORE_stsmlq_sytra1( int side, int trans,
+                        int m1, int n1, int m2, int n2,
+                        int k, int ib,
+                        float *A1, int lda1,
+                        float *A2, int lda2,
+                        const float *V, int ldv,
+                        const float *T, int ldt,
+                        float *WORK, int ldwork);
+int  CORE_stsmqr(int side, int trans,
+                 int M1, int N1, int M2, int N2, int K, int IB,
+                 float *A1, int LDA1,
+                 float *A2, int LDA2,
+                 const float *V, int LDV,
+                 const float *T, int LDT,
+                 float *WORK, int LDWORK);
+int CORE_stsmqr_corner( int m1, int n1, int m2, int n2, int m3, int n3,
+                        int k, int ib, int nb,
+                        float *A1, int lda1,
+                        float *A2, int lda2,
+                        float *A3, int lda3,
+                        const float *V, int ldv,
+                        const float *T, int ldt,
+                        float *WORK, int ldwork);
+int CORE_stsmqr_sytra1( int side, int trans,
+                        int m1, int n1, int m2, int n2,
+                        int k, int ib,
+                        float *A1, int lda1,
+                        float *A2, int lda2,
+                        const float *V, int ldv,
+                        const float *T, int ldt,
+                        float *WORK, int ldwork);
+int  CORE_stsqrt(int M, int N, int IB,
+                 float *A1, int LDA1,
+                 float *A2, int LDA2,
+                 float *T, int LDT,
+                 float *TAU, float *WORK);
+int  CORE_ststrf(int M, int N, int IB, int NB,
+                 float *U, int LDU,
+                 float *A, int LDA,
+                 float *L, int LDL,
+                 int *IPIV, float *WORK,
+                 int LDWORK, int *INFO);
+int  CORE_sttmqr(int side, int trans,
+                 int M1, int N1, int M2, int N2, int K, int IB,
+                 float *A1, int LDA1,
+                 float *A2, int LDA2,
+                 const float *V, int LDV,
+                 const float *T, int LDT,
+                 float *WORK, int LDWORK);
+int  CORE_sttqrt(int M, int N, int IB,
+                 float *A1, int LDA1,
+                 float *A2, int LDA2,
+                 float *T, int LDT,
+                 float *TAU,
+                 float *WORK);
+int  CORE_sttmlq(int side, int trans,
+                 int M1, int N1, int M2, int N2, int K, int IB,
+                 float *A1, int LDA1,
+                 float *A2, int LDA2,
+                 const float *V, int LDV,
+                 const float *T, int LDT,
+                 float *WORK, int LDWORK);
+int  CORE_sttlqt(int M, int N, int IB,
+                 float *A1, int LDA1,
+                 float *A2, int LDA2,
+                 float *T, int LDT,
+                 float *TAU,
+                 float *WORK);
+int  CORE_sormlq(int side, int trans,
+                 int M, int N, int IB, int K,
+                 const float *V, int LDV,
+                 const float *T, int LDT,
+                 float *C, int LDC,
+                 float *WORK, int LDWORK);
+int  CORE_sormqr(int side, int trans,
+                 int M, int N, int K, int IB,
+                 const float *V, int LDV,
+                 const float *T, int LDT,
+                 float *C, int LDC,
+                 float *WORK, int LDWORK);
+
+void CORE_dzasum(int storev, int uplo, int M, int N,
+                 void *A, int lda, double *work);
+int CORE_zgeadd(int M, int N, void *alpha,
+                void *A, int LDA,
+                      void *B, int LDB);
+int  CORE_zgelqt(int M, int N, int IB,
+                 void *A, int LDA,
+                 void *T, int LDT,
+                 void *TAU,
+                 void *WORK);
+void CORE_zgemm(int transA, int transB,
+                int M, int N, int K,
+                void *alpha, void *A, int LDA,
+                                          void *B, int LDB,
+                void *beta,        void *C, int LDC);
+int  CORE_zgeqrt(int M, int N, int IB,
+                 void *A, int LDA,
+                 void *T, int LDT,
+                 void *TAU, void *WORK);
+int CORE_zgesplit(int side, int diag,
+                  int M, int N,
+                  void *A, int LDA,
+                  void *B, int LDB);
+int  CORE_zgessm(int M, int N, int K, int IB,
+                 const int *IPIV,
+                 void *L, int LDL,
+                 void *A, int LDA);
+int  CORE_zgessq(int storev, int M, int N,
+                 void *A, int LDA,
+                 double *sclssq);
+int CORE_zgetf2_nopiv(int M, int N,
+                  void *A, int LDA);
+int  CORE_zgetrf(int M, int N,
+                 void *A, int LDA,
+                 int *IPIV, int *INFO);
+int  CORE_zgetrf_incpiv(int M, int N, int IB,
+                        void *A, int LDA,
+                        int *IPIV, int *INFO);
+int CORE_zgetrf_nopiv(int M, int N, int IB,
+                      void *A, int LDA,
+                      int *INFO);
+int  CORE_zgetrf_reclap(int M, int N,
+                        void *A, int LDA,
+                        int *IPIV, int *info);
+int  CORE_zgetrf_rectil(void *A, int *IPIV, int *info);
+void CORE_zgetrip(int m, int n, void *A,
+                  void *work);
+void CORE_zhegst(int itype, int uplo, int N,
+                 void *A, int LDA,
+                 void *B, int LDB, int *INFO);
+
+void CORE_zhemm(int side, int uplo,
+                int M, int N,
+                void *alpha, void *A, int LDA,
+                                          void *B, int LDB,
+                void *beta,        void *C, int LDC);
+void CORE_zherk(int uplo, int trans,
+                int N, int K,
+                double alpha, void *A, int LDA,
+                double beta,        void *C, int LDC);
+void CORE_zher2k(int uplo, int trans,
+                 int N, int K,
+                 void *alpha, void *A, int LDA,
+                                           void *B, int LDB,
+                 double beta,                    void *C, int LDC);
+int  CORE_zhessq(int storev, int uplo, int N,
+                 void *A, int LDA,
+                 double *sclssq);
+
+int  CORE_zherfb(int uplo, int N, int K, int IB, int NB,
+                 void *A,    int LDA,
+                 void *T,    int LDT,
+                       void *C,    int LDC,
+                       void *WORK, int LDWORK);
+void CORE_zlacpy(int uplo, int M, int N,
+                 void *A, int LDA,
+                       void *B, int LDB);
+void CORE_zlange(int norm, int M, int N,
+                 void *A, int LDA,
+                 double *work, double *normA);
+
+void CORE_zlanhe(int norm, int uplo, int N,
+                 void *A, int LDA,
+                 double *work, double *normA);
+
+void CORE_zlansy(int norm, int uplo, int N,
+                 void *A, int LDA,
+                 double *work, double *normA);
+void CORE_zlantr(int norm, int uplo, int diag, int M, int N,
+                 void *A, int LDA,
+                 double *work, double *normA);
+int CORE_zlarfb_gemm(int side, int trans, int direct, int storev,
+                     int M, int N, int K,
+                     void *V, int LDV,
+                     void *T, int LDT,
+                           void *C, int LDC,
+                           void *WORK, int LDWORK);
+int CORE_zlarfx2(int side, int N,
+                 void *V,
+                 void *TAU,
+                 void *C1, int LDC1,
+                 void *C2, int LDC2);
+int CORE_zlarfx2c(int uplo,
+                  void *V,
+                  void *TAU,
+                  void *C1,
+                  void *C2,
+                  void *C3);
+int CORE_zlarfx2ce(int uplo,
+                   void *V,
+                   void *TAU,
+                   void *C1,
+                   void *C2,
+                   void *C3);
+void CORE_zlarfy(int N,
+                 void *A, int LDA,
+                 void *V,
+                 void *TAU,
+                 void *WORK);
+void CORE_zlaset(int uplo, int n1, int n2,
+                 void *alpha, void *beta,
+                 void *tileA, int ldtilea);
+void CORE_zlaset2(int uplo, int n1, int n2, void *alpha,
+                  void *tileA, int ldtilea);
+void CORE_zlaswp(int N, void *A, int LDA,
+                 int I1,  int I2, const int *IPIV, int INC);
+int  CORE_zlaswp_ontile( void *descA, int i1, int i2, const int *ipiv, int inc);
+int  CORE_zlaswpc_ontile(void *descA, int i1, int i2, const int *ipiv, int inc);
+int  CORE_zlatro(int uplo, int trans,
+                 int M, int N,
+                 void *A, int LDA,
+                       void *B, int LDB);
+void CORE_zlauum(int uplo, int N, void *A, int LDA);
+int  CORE_zparfb(int side, int trans, int direct, int storev,
+                 int M1, int N1, int M2, int N2, int K, int L,
+                       void *A1, int LDA1,
+                       void *A2, int LDA2,
+                 void *V, int LDV,
+                 void *T, int LDT,
+                       void *WORK, int LDWORK);
+int CORE_zpemv(int trans, int storev,
+               int M, int N, int L,
+               void *ALPHA,
+               void *A, int LDA,
+               void *X, int INCX,
+               void *BETA,
+               void *Y, int INCY,
+               void *WORK);
+void CORE_zplghe(double bump, int m, int n, void *A, int lda,
+                 int bigM, int m0, int n0, unsigned long long int seed );
+void CORE_zplgsy(void *bump, int m, int n, void *A, int lda,
+                 int bigM, int m0, int n0, unsigned long long int seed );
+void CORE_zplrnt(int m, int n, void *A, int lda,
+                 int bigM, int m0, int n0, unsigned long long int seed );
+int CORE_zplssq( int storev, int M, int N,
+                 double *sclssqin, double *sclssqout );
+int CORE_zplssq2( int N, double *sclssq );
+void CORE_zpotrf(int uplo, int N, void *A, int LDA, int *INFO);
+void CORE_zshift(int s, int m, int n, int L,
+                 void *A);
+void CORE_zshiftw(int s, int cl, int m, int n, int L,
+                  void *A, void *W);
+int  CORE_zssssm(int M1, int N1, int M2, int N2, int K, int IB,
+                       void *A1, int LDA1,
+                       void *A2, int LDA2,
+                 void *L1, int LDL1,
+                 void *L2, int LDL2,
+                 const int *IPIV);
+void CORE_zsymm(int side, int uplo,
+                int M, int N,
+                void *alpha, void *A, int LDA,
+                                          void *B, int LDB,
+                void *beta,        void *C, int LDC);
+void CORE_zsyrk(int uplo, int trans,
+                int N, int K,
+                void *alpha, void *A, int LDA,
+                void *beta,        void *C, int LDC);
+void CORE_zsyr2k(int uplo, int trans,
+                 int N, int K,
+                 void *alpha, void *A, int LDA,
+                                           void *B, int LDB,
+                 void *beta,        void *C, int LDC);
+int  CORE_zsyssq(int storev, int uplo, int N,
+                 void *A, int LDA,
+                 double *sclssq);
+int CORE_zsytf2_nopiv(int uplo, int n, void *A, int lda);
+void CORE_ztrmm(int side, int uplo,
+                int transA, int diag,
+                int M, int N,
+                void *alpha, void *A, int LDA,
+                                                void *B, int LDB);
+void CORE_ztrsm(int side, int uplo,
+                int transA, int diag,
+                int M, int N,
+                void *alpha, void *A, int LDA,
+                                                void *B, int LDB);
+void CORE_ztrtri(int uplo, int diag, int N,
+                 void *A, int LDA, int *info);
+int  CORE_ztslqt(int M, int N, int IB,
+                 void *A1, int LDA1,
+                 void *A2, int LDA2,
+                 void *T, int LDT,
+                 void *TAU, void *WORK);
+int  CORE_ztsmlq(int side, int trans,
+                 int M1, int N1, int M2, int N2, int K, int IB,
+                 void *A1, int LDA1,
+                 void *A2, int LDA2,
+                 void *V, int LDV,
+                 void *T, int LDT,
+                 void *WORK, int LDWORK);
+int CORE_ztsmlq_corner( int m1, int n1, int m2, int n2, int m3, int n3,
+                        int k, int ib, int nb,
+                        void *A1, int lda1,
+                        void *A2, int lda2,
+                        void *A3, int lda3,
+                        void *V, int ldv,
+                        void *T, int ldt,
+                        void *WORK, int ldwork);
+int CORE_ztsmlq_hetra1( int side, int trans,
+                        int m1, int n1, int m2, int n2,
+                        int k, int ib,
+                        void *A1, int lda1,
+                        void *A2, int lda2,
+                        void *V, int ldv,
+                        void *T, int ldt,
+                        void *WORK, int ldwork);
+int  CORE_ztsmqr(int side, int trans,
+                 int M1, int N1, int M2, int N2, int K, int IB,
+                 void *A1, int LDA1,
+                 void *A2, int LDA2,
+                 void *V, int LDV,
+                 void *T, int LDT,
+                 void *WORK, int LDWORK);
+int CORE_ztsmqr_corner( int m1, int n1, int m2, int n2, int m3, int n3,
+                        int k, int ib, int nb,
+                        void *A1, int lda1,
+                        void *A2, int lda2,
+                        void *A3, int lda3,
+                        void *V, int ldv,
+                        void *T, int ldt,
+                        void *WORK, int ldwork);
+int CORE_ztsmqr_hetra1( int side, int trans,
+                        int m1, int n1, int m2, int n2,
+                        int k, int ib,
+                        void *A1, int lda1,
+                        void *A2, int lda2,
+                        void *V, int ldv,
+                        void *T, int ldt,
+                        void *WORK, int ldwork);
+int  CORE_ztsqrt(int M, int N, int IB,
+                 void *A1, int LDA1,
+                 void *A2, int LDA2,
+                 void *T, int LDT,
+                 void *TAU, void *WORK);
+int  CORE_ztstrf(int M, int N, int IB, int NB,
+                 void *U, int LDU,
+                 void *A, int LDA,
+                 void *L, int LDL,
+                 int *IPIV, void *WORK,
+                 int LDWORK, int *INFO);
+int  CORE_zttmqr(int side, int trans,
+                 int M1, int N1, int M2, int N2, int K, int IB,
+                 void *A1, int LDA1,
+                 void *A2, int LDA2,
+                 void *V, int LDV,
+                 void *T, int LDT,
+                 void *WORK, int LDWORK);
+int  CORE_zttqrt(int M, int N, int IB,
+                 void *A1, int LDA1,
+                 void *A2, int LDA2,
+                 void *T, int LDT,
+                 void *TAU,
+                 void *WORK);
+int  CORE_zttmlq(int side, int trans,
+                 int M1, int N1, int M2, int N2, int K, int IB,
+                 void *A1, int LDA1,
+                 void *A2, int LDA2,
+                 void *V, int LDV,
+                 void *T, int LDT,
+                 void *WORK, int LDWORK);
+int  CORE_zttlqt(int M, int N, int IB,
+                 void *A1, int LDA1,
+                 void *A2, int LDA2,
+                 void *T, int LDT,
+                 void *TAU,
+                 void *WORK);
+int  CORE_zunmlq(int side, int trans,
+                 int M, int N, int IB, int K,
+                 void *V, int LDV,
+                 void *T, int LDT,
+                 void *C, int LDC,
+                 void *WORK, int LDWORK);
+int  CORE_zunmqr(int side, int trans,
+                 int M, int N, int K, int IB,
+                 void *V, int LDV,
+                 void *T, int LDT,
+                 void *C, int LDC,
+                 void *WORK, int LDWORK);
+
+void CORE_clag2z(int m, int n,
+                 void *A, int lda,
+                 void *B, int ldb);
+void CORE_zlag2c(int m, int n,
+                 void *A, int lda,
+                 void *B, int ldb, int *info);
+
+END_MODULE

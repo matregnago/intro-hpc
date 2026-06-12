@@ -1,0 +1,41 @@
+#
+#  @file Dockerfile-pages
+#
+#  @copyright 2024-2025 Bordeaux INP, CNRS (LaBRI UMR 5800), Inria,
+#                       Univ. Bordeaux. All rights reserved.
+#
+#  @version 1.4.0
+#  @author Florent Pruvost
+#  @date 2025-12-19
+#
+# This docker image is used to test the package during gitlab-ci pipelines.
+# It should be stored in the gitlab's project container registry:
+# https://gitlab.inria.fr/solverstack/chameleon/container_registry
+#
+FROM registry.gitlab.inria.fr/solverstack/chameleon
+
+USER root
+
+# Chameleon tools/pages.sh script additional dependencies
+RUN apt-get -y update && \
+    apt-get -y upgrade --no-install-recommends \
+    emacs \
+    emacs-goodies-el \
+    elpa-htmlize \
+    python3-click \
+    python3-elasticsearch \
+    python3-pandas \
+    r-cran-ggplot2 \
+    r-cran-plyr \
+    r-cran-reshape2
+
+RUN apt-get autoremove -y
+RUN apt-get autoclean -y
+RUN apt-get purge -y
+
+USER gitlab
+
+# Set some default environment variables
+ENV LIBRARY_PATH=/usr/local/lib
+ENV LD_LIBRARY_PATH=/usr/local/lib
+ENV PKG_CONFIG_PATH=/home/gitlab/install/starpu/lib/pkgconfig

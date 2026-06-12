@@ -1,0 +1,104 @@
+/**
+ *
+ * @file starpu/chameleon_starpu.h
+ *
+ * @copyright 2009-2014 The University of Tennessee and The University of
+ *                      Tennessee Research Foundation. All rights reserved.
+ * @copyright 2012-2025 Bordeaux INP, CNRS (LaBRI UMR 5800), Inria,
+ *                      Univ. Bordeaux. All rights reserved.
+ *
+ ***
+ *
+ * @brief Chameleon StarPU runtime header
+ *
+ * @version 1.4.0
+ * @author Mathieu Faverge
+ * @author Cedric Castagnede
+ * @author Florent Pruvost
+ * @author Philippe Swartvagher
+ * @author Samuel Thibault
+ * @author Loris Lucido
+ * @author Terry Cojean
+ * @author Matthieu Kuhn
+ * @author Alycia Lisito
+ * @date 2025-12-19
+ *
+ */
+#ifndef _chameleon_starpu_h_
+#define _chameleon_starpu_h_
+
+#include <chameleon.h>
+
+/* StarPU options */
+#cmakedefine HAVE_STARPU_IDLE_PREFETCH
+#cmakedefine HAVE_STARPU_ITERATION_PUSH
+#cmakedefine HAVE_STARPU_DATA_WONT_USE
+#cmakedefine HAVE_STARPU_DATA_SET_COORDINATES
+#cmakedefine HAVE_STARPU_MALLOC_ON_NODE_SET_DEFAULT_FLAGS
+#cmakedefine HAVE_STARPU_DATA_SET_OOC_FLAG
+#cmakedefine HAVE_STARPU_INTERFACE_COPY2D
+#cmakedefine HAVE_STARPU_DATA_PEEK
+#cmakedefine HAVE_STARPU_SET_LIMIT_SUBMITTED_TASKS
+#cmakedefine HAVE_STARPU_REUSE_DATA_ON_NODE
+#cmakedefine HAVE_STARPU_PARALLEL_WORKER
+#cmakedefine HAVE_STARPU_NONE_NONZERO
+
+#cmakedefine HAVE_STARPU_MPI_DATA_MIGRATE
+#cmakedefine HAVE_STARPU_MPI_DATA_REGISTER
+#cmakedefine HAVE_STARPU_MPI_COMM_RANK
+#cmakedefine HAVE_STARPU_MPI_CACHED_RECEIVE
+#cmakedefine HAVE_STARPU_MPI_COMM_GET_ATTR
+#cmakedefine HAVE_STARPU_MPI_INIT_CONF
+#cmakedefine HAVE_STARPU_MPI_WAIT_FOR_ALL
+#cmakedefine HAVE_STARPU_MPI_INTERFACE_DATATYPE_NODE_REGISTER
+#cmakedefine HAVE_STARPU_MPI_INTERFACE_DATATYPE_REGISTER
+#cmakedefine HAVE_STARPU_MPI_REDUX
+#cmakedefine HAVE_STARPU_MPI_REDUX_WRAPUP
+#cmakedefine HAVE_STARPU_MPI_DATA_CPY_PRIORITY
+#cmakedefine HAVE_STARPU_MPI_EXCHANGE_DATA_BEFORE_EXECUTION
+#cmakedefine HAVE_STARPU_MPI_TAGS_ALLOCATE
+
+#cmakedefine CHAMELEON_STARPU_USE_INSERT
+
+#if (!defined(HAVE_STARPU_MPI_INTERFACE_DATATYPE_NODE_REGISTER) && !defined(HAVE_STARPU_MPI_INTERFACE_DATATYPE_REGISTER)) && defined(CHAMELEON_USE_MPI_DATATYPES)
+#error "This version of StarPU does not support MPI datatypes (Please compile with -DCHAMELEON_USE_MPI_DATATYPES=OFF)"
+#endif
+
+#if defined(CHAMELEON_USE_MPI)
+#include <starpu_mpi.h>
+#else
+#include <starpu.h>
+#endif
+
+#include <starpu_profiling.h>
+
+#if defined(CHAMELEON_USE_CUDA) && !defined(CHAMELEON_SIMULATION)
+#include <starpu_scheduler.h>
+#include <starpu_cuda.h>
+
+#include <cublas_v2.h>
+#include <starpu_cublas_v2.h>
+
+#include <cusolverDn.h>
+#include <starpu_cusolver.h>
+#endif
+
+#if defined(CHAMELEON_USE_HIP) && !defined(CHAMELEON_SIMULATION)
+#include <starpu_scheduler.h>
+#include <starpu_hip.h>
+
+#include <hipblas/hipblas.h>
+#include <starpu_hipblas.h>
+#endif
+
+#if defined(CHAMELEON_SIMULATION)
+# if !defined(STARPU_SIMGRID)
+#  error "Starpu was not built with simgrid support (--enable-simgrid). Can not run Chameleon with simulation support."
+# endif
+#else
+# if defined(STARPU_SIMGRID)
+#  warning "Starpu was built with simgrid support. Better build Chameleon with simulation support (-DCHAMELEON_SIMULATION=YES)."
+# endif
+#endif
+
+#endif /* _chameleon_starpu_h_ */

@@ -1,0 +1,47 @@
+/**
+ *
+ * @file @NAME@.c
+ *
+ * @copyright 2025-2025 Bordeaux INP, CNRS (LaBRI UMR 5800), Inria,
+ *                      Univ. Bordeaux. All rights reserved.
+ *
+ ***
+ *
+ * @brief Eztrace module file generated from @NAME@.h
+ *
+ * @version 1.4.0
+ * @author Brieuc Nicolas
+ * @date 2025-12-19
+ * @precisions @PRECISION@
+ *
+ */
+#ifndef _REENTRANT
+#define _REENTRANT
+#endif
+
+#include <eztrace-core/eztrace_config.h>
+#include <eztrace-instrumentation/pptrace.h>
+#include <eztrace-lib/eztrace.h>
+#include <eztrace-lib/eztrace_module.h>
+@INCLUDE@
+
+/* set to 1 when all the hooks are set.
+ * This is usefull in order to avoid recursive calls to mutex_lock for example
+ */
+static volatile int _@PLUGIN_NAME@_initialized = 0;
+
+#define CURRENT_MODULE @PLUGIN_NAME@
+DECLARE_CURRENT_MODULE;
+
+/* pointers to actual @PLUGIN_NAME@ functions */
+
+@CALLBACK_VARIABLES@
+
+
+/* Wrapper functions */
+
+@WRAPPER_FUNCTIONS@
+
+PPTRACE_START_INTERCEPT_FUNCTIONS(@PLUGIN_NAME@)
+@INTERCEPTIONS@
+PPTRACE_END_INTERCEPT_FUNCTIONS(@PLUGIN_NAME@)

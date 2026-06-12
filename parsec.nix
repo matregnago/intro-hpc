@@ -1,5 +1,6 @@
 {
   stdenv,
+  lib,
   fetchgit,
   cmake,
   pkg-config,
@@ -14,6 +15,9 @@
   automake,
   libtool,
   zlib,
+  cudaPackages ? null,
+  autoAddDriverRunpath ? null,
+  enableCuda ? true,
 }:
 
 let
@@ -43,11 +47,9 @@ stdenv.mkDerivation {
   pname = "parsec";
   version = "mymaster";
 
-  src = fetchgit {
-    url = "https://bitbucket.org/mfaverge/parsec.git";
-    rev = "6022a61dc96c25f11dd2aeabff2a5b3d7bce867d";
-    fetchSubmodules = true;
-    hash = "sha256-iJEIJLdakIxGFz+qXNTcbGOISzXbI/XLVq45k4GqhoM=";
+  src = builtins.path {
+    path = /. + "${builtins.getEnv "PWD"}/parsec";
+    name = "parsec-source";
   };
 
   nativeBuildInputs = [
@@ -57,25 +59,41 @@ stdenv.mkDerivation {
     flex
     bison
     python3
+  ]
+  ++ lib.optionals enableCuda [
+    cudaPackages.cuda_nvcc
+    autoAddDriverRunpath
   ];
 
   buildInputs = [
     hwloc
-    openmpi
     stdenv.cc.cc.lib
     gtg
-  ];
+  ]
+  ++ lib.optional enableCuda cudaPackages.cuda_cudart;
   patches = [ ./parsec.patch ];
 
   cmakeFlags = [
     "-DBUILD_SHARED_LIBS=ON"
     "-DCMAKE_POLICY_VERSION_MINIMUM=3.5"
+    "-DPARSEC_DIST_WITH_MPI=OFF"
     "-DPARSEC_PROF_TRACE=ON"
     "-DPINS_ENABLE=ON"
     "-DPARSEC_PROF_GRAPHER=ON"
     "-DPARSEC_PROF_TRACE_SCHEDULING_EVENTS=ON"
     "-DPARSEC_PROF_TRACE_ACTIVE_ARENA_SET=ON"
-  ];
+  ]
+  ++ (
+    if enableCuda then
+      [
+        "-DPARSEC_GPU_WITH_CUDA=ON"
+        "-DCMAKE_CUDA_COMPILER=${lib.getExe' cudaPackages.cuda_nvcc "nvcc"}"
+      ]
+    else
+      [
+        "-DPARSEC_GPU_WITH_CUDA=OFF"
+      ]
+  );
   env.NIX_CFLAGS_COMPILE = toString [
     "-Wno-error=implicit-function-declaration"
     "-Wno-error=incompatible-pointer-types"

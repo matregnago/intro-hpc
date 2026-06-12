@@ -1,0 +1,22 @@
+# You can enumerate each parameter's values as an explicit list separated by commas or by a range start:end[:step]
+# Not given parameters will receive default values
+
+# GELS
+# nb: Tile size
+# ib: Inner tile size
+# M: Number of rows of matrix A
+# N: Number of columns of matrix B
+# LDA: Leading dimension of matrix A
+# LDB: Leading dimension of matrix B
+# trans: Whether the system involves A (ChamNoTrans) or A^H *ChamTransConj)
+
+op = gels
+nb = 16, 17
+ib = 8
+m = 17, 31, 35
+n = 15, 29, 33
+nrhs = 1, 11, 27, 37
+lda = 43
+ldb = 45
+trans = 0, 2
+qra = 0, 3

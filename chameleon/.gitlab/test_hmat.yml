@@ -1,0 +1,12 @@
+---
+test_hmat:
+  extends:
+    - .test_script_linux
+    - .only-master-mr
+  needs: [build_hmat]
+  variables:
+    VERSION: hmat
+    CATEGORY: none
+    PRECISION: all
+    LOGNAME: "chameleon-test-${SYSTEM}-${VERSION}-${CATEGORY}-${PRECISION}"
+    TESTS_RESTRICTION: "-R testBEM_"

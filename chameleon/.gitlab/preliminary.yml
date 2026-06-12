@@ -1,0 +1,15 @@
+#
+# This file list the preliminary checks done before trying to compile
+#
+---
+preliminary_checks:
+  stage: pre
+  tags: ['ci.inria.fr', 'linux']
+  image: registry.gitlab.inria.fr/solverstack/docker/pre
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+  parallel:
+    matrix:
+      - TEST: [rebase, draft, header]
+  script:
+    - .gitlab/check_ci.sh $TEST

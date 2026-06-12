@@ -1,0 +1,24 @@
+# You can enumerate each parameter's values as an explicit list separated by commas or by a range start:end[:step]
+# Not given parameters will receive default values
+
+# TRADD
+# nb: Tile size
+# M: Number of rows of matrix A
+# N: Number of columns of matrix B
+# LDA: Leading dimension of matrix A
+# LDB: Leading dimension of matrix B
+# trans: Whether the matrix A is not tranposed, transposed or conjugate transposed (0: not transposed, 1: transposed, 2: conjugate transposed)
+# uplo: matrix parte to be considered (0: Upper, 1: Lower)
+# alpha: Scalar alpha
+# beta: Scalar beta
+
+alpha = 0., 3.45
+beta = 0., -4.86
+op = tradd
+nb = 16, 17
+m = 15, 29, 33
+n = 13, 27, 35
+lda = 39
+ldb = 41
+trans = 0:2
+uplo = 0, 1

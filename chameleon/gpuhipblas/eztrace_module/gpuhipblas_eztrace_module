@@ -1,0 +1,266 @@
+BEGIN_MODULE
+NAME chameleon_hip
+DESC "Module for Chameleon HIP functions"
+ID 7771
+
+int HIP_cgemm(
+        void* transa, void* transb,
+        int m, int n, int k,
+        void *alpha,
+        const void *A, int lda,
+        const void *B, int ldb,
+        void *beta,
+        void *C, int ldc,
+        void* stream);
+int HIP_chemm(
+        void* side, void* uplo,
+        int m, int n,
+        void *alpha,
+        const void *A, int lda,
+        const void *B, int ldb,
+        void *beta,
+        void *C, int ldc,
+        void* stream);
+int HIP_cher2k(
+        void* uplo, void* trans,
+        int n, int k,
+        void *alpha,
+        const void *A, int lda,
+        const void *B, int ldb,
+        float *beta,
+        void *C, int ldc,
+        void* stream);
+int HIP_cherk(
+        void* uplo, void* trans,
+        int n, int k,
+        float *alpha,
+        const void *A, int lda,
+        float *beta,
+        void *B, int ldb,
+        void* stream);
+int HIP_csymm(
+        void* side, void* uplo,
+        int m, int n,
+        void *alpha,
+        const void *A, int lda,
+        const void *B, int ldb,
+        void *beta,
+        void *C, int ldc,
+        void* stream);
+int HIP_csyr2k(
+        void* uplo, void* trans,
+        int n, int k,
+        void *alpha,
+        const void *A, int lda,
+        const void *B, int ldb,
+        void *beta,
+        void *C, int ldc,
+        void* stream);
+int HIP_csyrk(
+        void* uplo, void* trans,
+        int n, int k,
+        void *alpha,
+        const void *A, int lda,
+        void *beta,
+        void *C, int ldc,
+        void* stream);
+int HIP_ctrmm(
+        void* side, void* uplo,
+        void* transa, void* diag,
+        int m, int n,
+        void *alpha,
+        const void *A, int lda,
+        void *B, int ldb,
+        void* stream);
+int HIP_ctrsm(
+        void* side, void* uplo,
+        void* transa, void* diag,
+        int m, int n,
+        void *alpha,
+        const void *A, int lda,
+        void *B, int ldb,
+        void* stream);
+
+int HIP_dgemm(
+        void* transa, void* transb,
+        int m, int n, int k,
+        double *alpha,
+        const double *A, int lda,
+        const double *B, int ldb,
+        double *beta,
+        double *C, int ldc,
+        void* stream);
+int HIP_dsymm(
+        void* side, void* uplo,
+        int m, int n,
+        double *alpha,
+        const double *A, int lda,
+        const double *B, int ldb,
+        double *beta,
+        double *C, int ldc,
+        void* stream);
+int HIP_dsyr2k(
+        void* uplo, void* trans,
+        int n, int k,
+        double *alpha,
+        const double *A, int lda,
+        const double *B, int ldb,
+        double *beta,
+        double *C, int ldc,
+        void* stream);
+int HIP_dsyrk(
+        void* uplo, void* trans,
+        int n, int k,
+        double *alpha,
+        const double *A, int lda,
+        double *beta,
+        double *B, int ldb,
+        void* stream);
+int HIP_dtrmm(
+        void* side, void* uplo,
+        void* transa, void* diag,
+        int m, int n,
+        double *alpha,
+        const double *A, int lda,
+        double *B, int ldb,
+        void* stream);
+int HIP_dtrsm(
+        void* side, void* uplo,
+        void* transa, void* diag,
+        int m, int n,
+        double *alpha,
+        const double *A, int lda,
+        double *B, int ldb,
+        void* stream);
+
+int HIP_sgemm(
+        void* transa, void* transb,
+        int m, int n, int k,
+        float *alpha,
+        const float *A, int lda,
+        const float *B, int ldb,
+        float *beta,
+        float *C, int ldc,
+        void* stream);
+int HIP_ssymm(
+        void* side, void* uplo,
+        int m, int n,
+        float *alpha,
+        const float *A, int lda,
+        const float *B, int ldb,
+        float *beta,
+        float *C, int ldc,
+        void* stream);
+int HIP_ssyr2k(
+        void* uplo, void* trans,
+        int n, int k,
+        float *alpha,
+        const float *A, int lda,
+        const float *B, int ldb,
+        float *beta,
+        float *C, int ldc,
+        void* stream);
+int HIP_ssyrk(
+        void* uplo, void* trans,
+        int n, int k,
+        float *alpha,
+        const float *A, int lda,
+        float *beta,
+        float *B, int ldb,
+        void* stream);
+int HIP_strmm(
+        void* side, void* uplo,
+        void* transa, void* diag,
+        int m, int n,
+        float *alpha,
+        const float *A, int lda,
+        float *B, int ldb,
+        void* stream);
+int HIP_strsm(
+        void* side, void* uplo,
+        void* transa, void* diag,
+        int m, int n,
+        float *alpha,
+        const float *A, int lda,
+        float *B, int ldb,
+        void* stream);
+
+int HIP_zgemm(
+        void* transa, void* transb,
+        int m, int n, int k,
+        void *alpha,
+        const void *A, int lda,
+        const void *B, int ldb,
+        void *beta,
+        void *C, int ldc,
+        void* stream);
+int HIP_zhemm(
+        void* side, void* uplo,
+        int m, int n,
+        void *alpha,
+        const void *A, int lda,
+        const void *B, int ldb,
+        void *beta,
+        void *C, int ldc,
+        void* stream);
+int HIP_zher2k(
+        void* uplo, void* trans,
+        int n, int k,
+        void *alpha,
+        const void *A, int lda,
+        const void *B, int ldb,
+        double *beta,
+        void *C, int ldc,
+        void* stream);
+int HIP_zherk(
+        void* uplo, void* trans,
+        int n, int k,
+        double *alpha,
+        const void *A, int lda,
+        double *beta,
+        void *B, int ldb,
+        void* stream);
+int HIP_zsymm(
+        void* side, void* uplo,
+        int m, int n,
+        void *alpha,
+        const void *A, int lda,
+        const void *B, int ldb,
+        void *beta,
+        void *C, int ldc,
+        void* stream);
+int HIP_zsyr2k(
+        void* uplo, void* trans,
+        int n, int k,
+        void *alpha,
+        const void *A, int lda,
+        const void *B, int ldb,
+        void *beta,
+        void *C, int ldc,
+        void* stream);
+int HIP_zsyrk(
+        void* uplo, void* trans,
+        int n, int k,
+        void *alpha,
+        const void *A, int lda,
+        void *beta,
+        void *C, int ldc,
+        void* stream);
+int HIP_ztrmm(
+        void* side, void* uplo,
+        void* transa, void* diag,
+        int m, int n,
+        void *alpha,
+        const void *A, int lda,
+        void *B, int ldb,
+        void* stream);
+int HIP_ztrsm(
+        void* side, void* uplo,
+        void* transa, void* diag,
+        int m, int n,
+        void *alpha,
+        const void *A, int lda,
+        void *B, int ldb,
+        void* stream);
+
+END_MODULE

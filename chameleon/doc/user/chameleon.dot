@@ -1,0 +1,55 @@
+digraph G{
+
+# Pre-Depends:             purple, bold
+# Depends:                 black
+# Recommends:              grey
+# Suggests:                black, dotted
+# Conflicts:               red
+
+compound=true;
+bgcolor=transparent
+
+node [shape=box];
+
+chameleon [style="filled,bold",fillcolor=lightgrey,color=blue,label=<<B>Chameleon</B>>]
+
+subgraph cluster_runtime {
+        label = "Runtime Systems"
+        style = rounded
+        color = black
+        sched [
+        shape = "record"
+        label = "<sched_openmp> OpenMP | <sched_parsec> PaRSEC | <sched_quark> QUARK | <sched_starpu> StarPU"
+        color=green
+        ]
+        }
+chameleon -> sched [lhead=cluster_runtime]
+sched:sched_starpu -> cuda [color=dimgrey]
+sched:sched_starpu -> mpi [color=dimgrey]
+sched:sched_parsec -> cuda [color=dimgrey]
+
+subgraph cluster_paradigm {
+        label = "Paradigms"
+        style = rounded
+        color = black
+        cuda [color=gold, style=bold,label=<<B>CUDA</B>>]
+        mpi [color=gold, style=bold,label=<<B>MPI</B>>]
+        }
+
+subgraph cluster_kernel {
+        label = "Kernels"
+        style = rounded
+        color = black
+        cublas [color=red, style=bold,label=<<B>cuBLAS</B>>]
+        lapacke [color=red, style=bold,label=<<B>LAPACKE</B>>]
+        cblas [color=red, style=bold,label=<<B>CBLAS</B>>]
+        lapacke -> cblas
+        cublas -> cuda
+        }
+
+chameleon -> cblas
+chameleon -> lapacke
+chameleon -> mpi [color=dimgrey,lhead=cluster_paradigm]
+chameleon -> cublas
+
+}

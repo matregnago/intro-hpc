@@ -1,0 +1,17 @@
+# You can enumerate each parameter's values as an explicit list separated by commas or by a range start:end[:step]
+# Not given parameters will receive default values
+
+# GEPDF_QR
+
+# nb: Tile size
+# ib: Inner tile size
+# m: Number of rows of the A matrix
+# n: Number of columns of the A matrix
+# lda: Leading dimension of the A matrix
+
+op = gepdf_qr
+nb = 8
+ib = 3
+m = 8, 32, 64
+n = 8, 16, 32
+lda = 79

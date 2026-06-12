@@ -32,6 +32,22 @@
         "type": "github"
       }
     },
+    "cudaNixpkgs_3": {
+      "locked": {
+        "lastModified": 1738797219,
+        "narHash": "sha256-KRwX9Z1XavpgeSDVM/THdFd6uH8rNm/6R+7kIbGa+2s=",
+        "owner": "nixos",
+        "repo": "nixpkgs",
+        "rev": "1da52dd49a127ad74486b135898da2cef8c62665",
+        "type": "github"
+      },
+      "original": {
+        "owner": "nixos",
+        "repo": "nixpkgs",
+        "rev": "1da52dd49a127ad74486b135898da2cef8c62665",
+        "type": "github"
+      }
+    },
     "flake-utils": {
       "inputs": {
         "systems": "systems"
@@ -240,6 +256,7 @@
     },
     "root": {
       "inputs": {
+        "cudaNixpkgs": "cudaNixpkgs",
         "flake-utils": "flake-utils",
         "nixpkgs": "nixpkgs",
         "starpu": "starpu",
@@ -248,7 +265,7 @@
     },
     "starpu": {
       "inputs": {
-        "cudaNixpkgs": "cudaNixpkgs",
+        "cudaNixpkgs": "cudaNixpkgs_2",
         "nixpkgs": "nixpkgs_2"
       },
       "locked": {
@@ -267,7 +284,7 @@
     },
     "starpu_2": {
       "inputs": {
-        "cudaNixpkgs": "cudaNixpkgs_2",
+        "cudaNixpkgs": "cudaNixpkgs_3",
         "nixpkgs": "nixpkgs_6"
       },
       "locked": {

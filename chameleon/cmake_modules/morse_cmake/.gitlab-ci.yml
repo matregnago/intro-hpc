@@ -1,0 +1,31 @@
+default:
+  image: $CI_REGISTRY_IMAGE
+  tags: ['ci.inria.fr']
+  interruptible: true
+
+build:
+  stage: build
+  image: docker
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "push"
+      changes:
+        compare_to: 'refs/heads/master'
+        paths:
+          - .gitlab/Dockerfile
+  before_script:
+    - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
+  script:
+    - docker build -t $CI_REGISTRY_IMAGE -f .gitlab/Dockerfile .
+    - docker push $CI_REGISTRY_IMAGE
+
+test:
+  stage: test
+  artifacts:
+    name: find_ctests
+    expire_in: 1 week
+    paths:
+     - build
+    reports:
+      junit: build/report.xml
+  script:
+    - modules/find/tests/run_ctest.sh

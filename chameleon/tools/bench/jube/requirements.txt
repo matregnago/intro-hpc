@@ -1,0 +1,4 @@
+click==7.0
+gitpython==2.1.11
+elasticsearch==6.3.1
+certifi

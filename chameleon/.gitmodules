@@ -1,0 +1,12 @@
+[submodule "cmake_modules/morse_cmake"]
+        path = cmake_modules/morse_cmake
+        url = https://gitlab.inria.fr/solverstack/morse_cmake.git
+[submodule "hqr"]
+        path = hqr
+        url = https://gitlab.inria.fr/solverstack/hqr.git
+[submodule "coreblas/hmat-oss"]
+        path = coreblas/hmat-oss
+        url = https://github.com/jeromerobert/hmat-oss.git
+[submodule "testing/test_fembem"]
+        path = testing/test_fembem
+        url = https://gitlab.inria.fr/solverstack/test_fembem.git

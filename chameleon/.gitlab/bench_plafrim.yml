@@ -1,0 +1,46 @@
+---
+.bench_plafrim_common:
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "schedule"
+  stage: test
+  tags: ['plafrim']
+  timeout: 1 week
+  before_script:
+    - git submodule update --init --recursive
+  script:
+    - ./tools/bench/plafrim/run.sh
+  allow_failure: true
+  artifacts:
+    name: "$CI_JOB_NAME-$CI_COMMIT_REF_SLUG"
+    expire_in: 1 week
+    when: always
+    paths:
+      - "chameleon-$NODE-$MPI-$SLURM_NP.err"
+      - "chameleon-$NODE-$MPI-$SLURM_NP.out"
+      - "chameleon-$NODE-$MPI.csv"
+  variables:
+    PLATFORM: plafrim
+
+bench_plafrim_bora_openmpi:
+  variables:
+    NODE: bora
+    MPI: openmpi
+    SLURM_NP: 9
+    JUBE_ID: "000001"
+  extends: .bench_plafrim_common
+
+bench_plafrim_bora_nmad:
+  variables:
+    NODE: bora
+    MPI: nmad
+    SLURM_NP: 9
+    JUBE_ID: "000002"
+  extends: .bench_plafrim_common
+
+bench_plafrim_sirocco_openmpi:
+  variables:
+    NODE: sirocco
+    MPI: openmpi
+    SLURM_NP: 1
+    JUBE_ID: "000003"
+  extends: .bench_plafrim_common

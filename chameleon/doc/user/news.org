@@ -1,0 +1,14 @@
++ [2026-01-05] *Release 1.4.0* available, see [[https://gitlab.inria.fr/solverstack/chameleon/-/releases/v1.4.0][changes]], [[https://gitlab.inria.fr/api/v4/projects/616/packages/generic/source/v1.4.0/chameleon-1.4.0.tar.gz][download source tarball]].
++ [2025-02-19] *Release 1.3.0* available, see [[https://gitlab.inria.fr/solverstack/chameleon/-/releases/v1.3.0][changes]], [[https://gitlab.inria.fr/api/v4/projects/616/packages/generic/source/v1.3.0/chameleon-1.3.0.tar.gz][download source tarball]].
++ [2023-07-04] *Release 1.2.0* available, see [[https://gitlab.inria.fr/solverstack/chameleon/-/releases/v1.2.0][changes]], [[https://gitlab.inria.fr/api/v4/projects/616/packages/generic/source/v1.2.0/chameleon-1.2.0.tar.gz][download source tarball]].
++ [2023-02-08] *Added support for HIP and hipblas (CUDA and ROC backend)*, see [[https://gitlab.inria.fr/solverstack/chameleon/-/merge_requests/355][MR 355]].
++ [2023-01-18] *Add parallel kernels support*, see [[https://gitlab.inria.fr/solverstack/chameleon/-/merge_requests/206][MR 206]].
++ [2022-08-31] *Add A-stationnary GEMM and SYMM algorithms*, see [[https://gitlab.inria.fr/solverstack/chameleon/-/merge_requests/334][MR 334]].
++ [2022-08-30] *Add a BLAS/LAPACK compatible interface*, see [[https://gitlab.inria.fr/solverstack/chameleon/-/merge_requests/332][MR 332]].
+  - Algorithms: BLAS gemm, hemm, her2k, herk, lauum, symm, syr2k, syrk, trmm, trsm and LAPACK lacpy, lange, lanhe,
+    lansy, lantr, laset, posv, potrf, potri, potrs, trtri
++ [2022-08-22] *Add new performance models for Starpu + Simgrid simulations*, see [[https://gitlab.inria.fr/solverstack/chameleon/-/merge_requests/325][MR 325]].
+  - Algorithms: gemm, symm, potrf, potrs, potri, posv, getrf_nopiv, getrs_nopiv, geqrf, geqrf_hqr, gels, gels_hqr,
+    simple and double precisions for the different sirocco machines (k40m, p100, v100, a100, rtx8000)
++ [2021-04-21] *Release 1.1.0* available, see [[https://gitlab.inria.fr/solverstack/chameleon/-/releases/v1.1.0][changes]], [[https://gitlab.inria.fr/solverstack/chameleon/uploads/b299d6037d7636c6be16108c89bc2aab/chameleon-1.1.0.tar.gz][download source tarball]].
++ [2021-04-06] Chameleon has been successfully integrated into the C++ Randomized SVD library [[https://gitlab.inria.fr/compose/legacystack/fmr][FMR]].

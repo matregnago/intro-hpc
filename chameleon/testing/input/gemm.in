@@ -1,0 +1,28 @@
+# You can enumerate each parameter's values as an explicit list separated by commas or by a range start:end[:step]
+# Not given parameters will receive default values
+
+# GEMM
+# nb: Tile size
+# M: Number of rows of matrix A and C
+# N: Number of columns of matrix B and C
+# K: Number of columns of matrix A and rows of matrix B
+# LDA: Leading dimension of matrix A
+# LDB: Leading dimension of matrix B
+# LDC: Leading dimension of matrix C
+# transA: Whether the matrix A is not tranposed, transposed or conjugate transposed (0: not transposed, 1: transposed, 2: conjugate transposed)
+# transB: Whether the matrix B is not tranposed, transposed or conjugate transposed (0: not transposed, 1: transposed, 2: conjugate transposed)
+# alpha: Scalar alpha
+# beta: Scalar beta
+
+alpha = 0., 3.45
+beta = 0., -4.86
+op = gemm
+nb = 16, 17
+m = 15, 25, 37
+n = 13, 23, 35
+k = 14, 24, 34
+lda = 41
+ldb = 43
+ldc = 41
+transA = 0:2
+transB = 0:2

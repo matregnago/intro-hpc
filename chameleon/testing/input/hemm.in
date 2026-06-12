@@ -1,0 +1,28 @@
+# You can enumerate each parameter's values as an explicit list separated by commas or by a range start:end[:step]
+# Not given parameters will receive default values
+
+# HEMM
+# nb: Tile size
+# side: whether the hermitian matrix A appears on the left or right side of the multiplication operation (0: left, 1: right)
+# uplo: matrix part to be used (0: Upper, 1: Lower)
+# M: Number of rows of matrix A and C
+# N: Number of columns of matrix B and C
+# LDA: Leading dimension of matrix A
+# LDB: Leading dimension of matrix B
+# LDC: Leading dimension of matrix C
+# alpha: Scalar alpha
+# beta: Scalar beta
+# bump: bump value for Hermitian matrices
+
+alpha = 0., 3.45
+beta = 0., -4.86
+op = hemm
+nb = 16, 17
+side = 0:1
+uplo = 0:1
+m = 15, 25, 37
+n = 13, 23, 35
+lda = 41
+ldb = 43
+ldc = 41
+bump = 0

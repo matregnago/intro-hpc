@@ -1,0 +1,18 @@
+# You can enumerate each parameter's values as an explicit list separated by commas or by a range start:end[:step]
+# Not given parameters will receive default values
+
+# LASCAL
+# nb: Tile size
+# M: Number of rows of matrices A and C
+# N: Number of columns of matrices B and C
+# LDA: Leading dimension of matrix A
+# uplo: Part of the matrix to be copied (0 for Upper, 1 for Lower and 2 for UpperLower)
+# alpha: Scale to apply
+
+alpha = 0., 3.45
+op = lascal
+nb = 16, 17
+m = 15, 19, 33
+n = 14, 21, 31
+lda = 41
+uplo = 0:2

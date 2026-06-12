@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<jube>
+    <benchmark name="plafrim" outpath="results">
+        <comment>benchmark chameleon on plafrim</comment>
+
+        <!-- Operation -->
+        <step name="run_gemm" tag="gemm">
+            <use from= "parameters.xml">param_gemm</use>
+            <do>$command</do>
+        </step>
+        <step name="run_potrf" tag="potrf">
+            <use from= "parameters.xml">param_potrf</use>
+            <do>$command</do>
+        </step>
+        <step name="run_geqrf_hqr" tag="geqrf">
+            <use from= "parameters.xml">param_geqrf</use>
+            <do>$command</do>
+        </step>
+
+        <!-- Analyse -->
+        <analyser name="analyse">
+            <!-- use a pattern set -->
+            <use from="../jube/patterns.xml">chameleon</use>
+            <analyse step="run_gemm" tag="gemm">
+                <file>stdout</file> <!-- file which should be scanned -->
+            </analyse>
+            <analyse step="run_potrf" tag="potrf">
+                <file>stdout</file> <!-- file which should be scanned -->
+            </analyse>
+            <analyse step="run_geqrf_hqr" tag="geqrf">
+                <file>stdout</file> <!-- file which should be scanned -->
+            </analyse>
+        </analyser>
+
+        <!-- Create result table -->
+        <result>
+            <use>analyse</use> <!-- use existing analyser -->
+            <!--<table name="result" style="csv" sort="number">-->
+            <table name="result" style="csv">
+                <column>hostname</column>
+                <column>algorithm</column>
+                <column>precision</column>
+                <column>nmpi</column>
+                <column>p</column>
+                <column>q</column>
+                <column>nthr</column>
+                <column>ngpu</column>
+                <column>m</column>
+                <column>n</column>
+                <column>k</column>
+                <column>cputime</column>
+                <column>gflops</column>
+            </table>
+        </result>
+    </benchmark>
+</jube>

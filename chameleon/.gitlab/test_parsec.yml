@@ -1,0 +1,28 @@
+---
+.test_parsec:
+  extends: .test_script_linux
+  needs: [build_parsec]
+  variables:
+    VERSION: parsec
+    CATEGORY: shm
+    LOGNAME: "chameleon-test-${SYSTEM}-${VERSION}-${CATEGORY}-${PRECISION}"
+    TESTS_RESTRICTION: "-R _${CATEGORY}_${PRECISION}"
+
+test_parsec_master:
+  extends: .test_parsec
+  rules:
+    - if: ($CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH ||
+           $CI_COMMIT_BRANCH =~ /^ci-.*$/) &&
+          $CI_PIPELINE_SOURCE != "schedule"
+  parallel:
+    matrix:
+      - PRECISION: [s, d, c, z]
+
+test_parsec_mr:
+  extends: .test_parsec
+  rules:
+    - if: ($CI_PIPELINE_SOURCE == "merge_request_event" &&
+           $CI_MERGE_REQUEST_SOURCE_BRANCH_NAME !~ /^notest-.*$/)
+  parallel:
+    matrix:
+      - PRECISION: [c]

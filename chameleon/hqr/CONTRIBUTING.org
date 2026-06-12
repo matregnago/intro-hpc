@@ -1,0 +1,147 @@
+* To contribute to the project, you need to do it through merge request
+** Create a fork
+   First you need to fork the repository into your own account. You can
+   do that simply by clicking the fork button on the gitlab interface.
+
+   https://gitlab.inria.fr/solverstack/hqr/forks/new
+
+   Then, clone the repository on your laptop:
+   #+begin_src sh
+   git clone git@gitlab.inria.fr:username/forkname.git
+   #+end_src
+
+   Once this is done, you can setup the hqr repository as the
+   upstream of your clone to simplify the update of your fork
+   repository.
+   #+begin_src sh
+   git remote add upstream git@gitlab.inria.fr:solverstack/hqr.git
+   #+end_src
+
+   To update your fork with the upstream hqr's state:
+   #+begin_src sh
+   git pull upstream master
+   git push -u origin master
+   #+end_src
+
+** Create a "Feature" branch in your fork
+
+   To add a new feature, fix a bug, and so on, you need to create a
+   new branch from the last state of the master branch
+   #+begin_src sh
+   git branch your_branch_name
+   git checkout your_branch_name
+   #+end_src
+
+   Apply your modifications in that "Feature" branch. Then, you need
+   to push this branch on your online repository
+   #+begin_src sh
+   git push origin your_branch_name
+   #+end_src
+
+** Merge request
+   Once your branch is online, on the gitlab interface, go to the
+   branches webpage, select the branch you want to push as a merge
+   request, and push the button !!!
+
+   *Be careful to check the 'close after merge' check box, and to push
+   to the solverstack/hqr repository*. By default the checkbox
+   may not be checked, and the default repository is your fork.
+
+   If the pull request is made to fix an issue, please name the branch
+   "issueXX" so it is automatically linked to the issue. In addition,
+   please add "fix issue #xx" in the comment of the pull request to
+   automatically close the issue when the PR is merged.
+
+** Rebase on top of 'master'
+   In some cases your "feature" branch you want to merge into "master"
+   has a long life span so that your branch and the master branch
+   could make some conflicts. To avoid having to handle the possible
+   conflicts at *merge request* time, please rebase your "feature" on
+   top of "master" before pushing the button *merge request*.
+
+   To do that, just go at the HEAD of your "feature" branch and rebase
+   #+begin_src sh
+   git checkout feature
+   git rebase master
+   #+end_src
+
+   Then force to push on your origin
+   #+begin_src sh
+   git push --force origin feature
+   #+end_src
+
+   Then push the button *merge request*.
+
+* Configure a runner to test your branch
+  To be effectively merged, your branch must be tested through the
+  [[https://gitlab.inria.fr/help/ci/README.md][gitlab-ci]] mechanism.
+
+  In order to execute the tests the contributor should define his own
+  /gitlab runner/, /e.g/. his laptop or any other remote machine. To avoid
+  having to install the proper dependencies in every runners we use
+  the [[https://www.docker.com/][Docker]] image /hpclib/hiepacs/ whose recipe is defined
+  [[https://gitlab.inria.fr/sed-bso/hpclib/blob/master/tools/dockerfiles/hiepacs/Dockerfile][here]]. Consequently, to register a compatible runner the requirements
+  on the system are :
+  * OS must be Linux
+  * Docker must be installed, e.g.
+    #+begin_src sh
+    sudo apt-get update && sudo apt-get install -y curl
+    curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo apt-key add -
+    sudo apt install -y software-properties-common
+    sudo add-apt-repository "deb [arch=amd64] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable"
+    sudo apt-get update
+    sudo apt install -y docker-ce
+    sudo usermod -aG docker ${USER}
+    newgrp docker
+    #+end_src
+
+*** Register your runner
+    Please read first the [[https://gitlab.inria.fr/help/ci/runners/README.md][Gitlab documentation]] for general information
+    about runners registration.
+
+    Three steps are required:
+    1) install the gitlab-runner program
+    2) register your runner to your project (your fork of HQR)
+    3) start gitlab-runner as a service
+    #+begin_src sh
+    # install gitlab-runner
+    sudo wget -O /usr/local/bin/gitlab-runner https://gitlab-ci-multi-runner-downloads.s3.amazonaws.com/latest/binaries/gitlab-ci-multi-runner-linux-amd64
+    sudo chmod +x /usr/local/bin/gitlab-runner
+    sudo useradd --comment 'GitLab Runner' --create-home gitlab-runner --shell /bin/bash
+
+    # register runner to https://gitlab.inria.fr/
+    sudo gitlab-runner register # see just after for an example
+
+    # install and run as a service
+    sudo gitlab-runner install --user=gitlab-runner --working-directory=/home/gitlab-runner
+    sudo gitlab-runner start
+    #+end_src
+
+    Example of registering sequence:
+    #+begin_example
+    sudo gitlab-runner register
+    Please enter the gitlab-ci coordinator URL (e.g. https://gitlab.com/):
+    https://gitlab.inria.fr/
+    Please enter the gitlab-ci token for this runner:
+    # copy/paste the project's secret token here
+    Please enter the gitlab-ci description for this runner:
+    [ubuntu1604]:
+    Please enter the gitlab-ci tags for this runner (comma separated):
+    linux, ubuntu
+    Whether to run untagged builds [true/false]:
+    [false]: true
+    Whether to lock Runner to current project [true/false]:
+    [false]:
+    Registering runner... succeeded                     runner=4jknGvoz
+    Please enter the executor: shell, ssh, docker+machine, docker-ssh+machine, kubernetes, docker, parallels, virtualbox, docker-ssh:
+    docker
+    Please enter the default Docker image (e.g. ruby:2.1):
+    ubuntu
+    Runner registered successfully. Feel free to start it, but if it's running already the config should be automatically reloaded!
+    #+end_example
+
+* To review locally a private pull request submitted by someone else
+
+   The gitlab documentation explains simply how to get locally a pull request to try it:
+   https://gitlab.inria.fr/help/user/project/merge_requests/index.md#checkout-merge-requests-locally
+

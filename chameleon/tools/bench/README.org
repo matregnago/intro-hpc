@@ -1,0 +1,36 @@
+#+TITLE: Chameleon benchmarks
+#+LANGUAGE:  en
+#+OPTIONS: H:3 num:t \n:nil @:t ::t |:t _:nil ^:nil -:t f:t *:t <:t
+#+OPTIONS: TeX:t LaTeX:t skip:nil d:nil pri:nil tags:not-in-toc html-style:nil
+
+The scripts located here are used to analyze Chameleon performances in
+a systematic way.  The workflow is as follows:
+
+* Gitlab-ci
+  We use a /schedule/ job that will be triggered with a chosen
+  frequency, the schedule job frequency can be tuned in the CI/CD part
+  in the web interface
+* Guix
+  [[https://guix.gnu.org/][Guix]] is responsible for building an isolated and reproducible
+  environment to build and execute Chameleon, Jube and some python
+  scripts. We can use it on PlaFRIM because Guix and [[https://gitlab.inria.fr/guix-hpc/guix-hpc-non-free][Guix-HPC]] are
+  installed.
+* Jube
+  [[https://apps.fz-juelich.de/jsc/jube/jube2/docu/index.html][Jube]] is used to drive the execution with different parameter spaces
+  and to parse the results in csv files. Appart from the execution
+  parameters such as the problem sizes the number of ressources used
+  and so on we also save in the database the commit date of chameleon
+  and the commit ids of chameleon and guix channels to properly
+  identify the software versions.
+* Elasticsearch
+  [[https://www.elastic.co/fr/][Elasticsearch]] is the database framework. The server is
+  https://elasticsearch.bordeaux.inria.fr. It is only accessible from
+  Inria's networks for now.
+* Kibana
+  [[https://www.elastic.co/fr/][Kibana]] is a web server to visualize the performances on graphs. It
+  looks for data imported in the elasticsearch database. We want to be
+  able to analyze the performances for each commit for which the
+  scheduled job has been performed and to monitor some performances in
+  the course of time/commits. Kibana server is hosted here
+  https://kibana.bordeaux.inria.fr. It is only accessible from Inria's
+  networks for now.

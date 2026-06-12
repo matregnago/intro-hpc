@@ -1,0 +1,23 @@
+---
+.docker_script_common:
+  stage: docker
+  tags: ['ci.inria.fr', 'linux']
+  image: docker
+  when: manual
+  before_script:
+    - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
+  script:
+    - docker build -f $IMAGE_FILE -t $IMAGE_NAME $PWD
+    - docker push $IMAGE_NAME
+
+docker-tests:
+  extends: .docker_script_common
+  variables:
+    IMAGE_FILE: .gitlab/Dockerfile
+    IMAGE_NAME: $CI_REGISTRY_IMAGE
+
+docker-pages:
+  extends: .docker_script_common
+  variables:
+    IMAGE_FILE: .gitlab/Dockerfile-pages
+    IMAGE_NAME: $CI_REGISTRY_IMAGE/pages

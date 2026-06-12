@@ -1,0 +1,87 @@
+---
+.test_script_starpu:
+  extends: .test_script_linux
+  needs: [build_starpu]
+  variables:
+    VERSION: starpu
+    LOGNAME: "chameleon-test-${SYSTEM}-${VERSION}-${CATEGORY}-${PRECISION}"
+    TESTS_RESTRICTION: "-R _${CATEGORY}_${PRECISION}|example"
+
+test_starpu_master:
+  extends: .test_script_starpu
+  rules:
+    - if: ($CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH ||
+           $CI_COMMIT_BRANCH =~ /^ci-.*$/) &&
+           $CI_PIPELINE_SOURCE != "schedule"
+  parallel:
+    matrix:
+      - PRECISION: [s, d, c, z]
+        CATEGORY: [shm, ooc, mpi, cdist]
+
+test_starpu_mr:
+  extends: .test_script_starpu
+  rules:
+    - if: ($CI_PIPELINE_SOURCE == "merge_request_event" &&
+           $CI_MERGE_REQUEST_SOURCE_BRANCH_NAME !~ /^notest-.*$/)
+  parallel:
+    matrix:
+      - PRECISION: [c]
+        CATEGORY: [shm]
+      - PRECISION: [d]
+        CATEGORY: [ooc]
+      - PRECISION: [s]
+        CATEGORY: [mpi]
+      - PRECISION: [z]
+        CATEGORY: [cdist]
+
+test_starpu_macosx:
+  stage: test
+  tags: ['macosx']
+  extends: .only-master-mr
+  needs: [build_starpu_macosx]
+  variables:
+    SYSTEM: macosx
+    VERSION: starpu
+    LOGNAME: "chameleon-test-${SYSTEM}-${VERSION}-example"
+    TESTS_RESTRICTION: "-R example"
+  script:
+    - bash .gitlab/test.sh | tee ${LOGNAME}.log
+  artifacts:
+    name: "$CI_JOB_NAME-$CI_COMMIT_REF_SLUG"
+    expire_in: 1 week
+    when: always
+    paths:
+      - ${LOGNAME}.log
+    reports:
+      junit: ${LOGNAME}-junit.xml
+  cache:
+    key: "${SYSTEM}-${VERSION}-$CI_COMMIT_REF_SLUG"
+    untracked: true
+    policy: pull
+
+.test_starpu_windows:
+  stage: test
+  tags: ['windows']
+  extends: .only-master-mr
+  needs: [build_starpu_windows]
+  variables:
+    SYSTEM: windows
+    CHERE_INVOKING: "yes"
+    MSYSTEM: UCRT64
+    VERSION: starpu
+    LOGNAME: "chameleon-test-${SYSTEM}-${VERSION}-example"
+    TESTS_RESTRICTION: "-R example"
+  script:
+    - bash -lc .gitlab/test.sh | tee "$env:LOGNAME.log"
+  artifacts:
+    name: "$CI_JOB_NAME-$CI_COMMIT_REF_SLUG"
+    expire_in: 1 week
+    when: always
+    paths:
+      - ${LOGNAME}.log
+    reports:
+      junit: ${LOGNAME}-junit.xml
+  cache:
+    key: "${SYSTEM}-${VERSION}-$CI_COMMIT_REF_SLUG"
+    untracked: true
+    policy: pull

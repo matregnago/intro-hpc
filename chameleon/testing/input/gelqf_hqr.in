@@ -1,0 +1,27 @@
+# You can enumerate each parameter's values as an explicit list separated by commas or by a range start:end[:step]
+# Not given parameters will receive default values
+
+# GELQF_HQR
+
+# nb: Tile size
+# ib: Inner tile size
+# m: Number of rows of the A matrix
+# n: Number of columns of the A matrix
+# lda: Leading dimension of the A matrix
+# qra: Size of TS domain
+# qrp: Size of high level tree for distributed mode
+# llvl: Tree used for low level reduction insides nodes
+# hlv: Tree used for high level reduction between nodes, only if qrp > 1
+# domino: Enable/Disable the domino between upper and lower trees
+
+op = gelqf_hqr
+nb = 8, 9
+ib = 3
+m = 13, 17, 35
+n = 15, 19, 33
+lda = 41
+qra = 2
+qrp = -1
+llvl = -1
+hlvl = -1
+domino = -1

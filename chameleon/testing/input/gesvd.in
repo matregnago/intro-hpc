@@ -1,0 +1,18 @@
+# You can enumerate each parameter's values as an explicit list separated by commas or by a range start:end[:step]
+# Not given parameters will receive default values
+
+# GESVD
+# nb: Tile size
+# M: Number of rows of matrix A and C
+# N: Number of columns of matrix B and C
+# LDA: Leading dimension of matrix A
+# JobU: value of jobu
+# JobVt: value of jobvt
+
+op = gesvd
+nb = 3, 4, 16, 17
+m = 15, 32, 37
+n = 13, 24, 35
+jobu = NoVec, AllVec
+jobvt = NoVec, AllVec
+lda = 41

@@ -1,0 +1,36 @@
+#
+#  @file hqr_env.sh
+#
+#  @copyright 2016-2019 Bordeaux INP, CNRS (LaBRI UMR 5800), Inria,
+#                       Univ. Bordeaux. All rights reserved.
+#
+#  @version 6.0.0
+#  @author Mathieu Faverge
+#  @date 2017-06-24
+#
+#!/bin/sh
+
+LIB=hqr
+
+export HQR_DIR=@CMAKE_INSTALL_PREFIX@
+
+for i in PATH DYLD_LIBRARY_PATH LD_LIBRARY_PATH LIBRARY_PATH LD_RUN_PATH INCLUDE INCLUDE_PATH PKG_CONFIG_PATH PYTHONPATH
+do
+
+  for j in /hqr
+  do
+    cmd1="echo \\\"\$$i\\\" | sed -E 's+^(\(.*:|\))[^:]*${j}[^:]*(\(|:.*\))$+\1\2+' | sed 's/::/:/' | sed 's/^://' | sed 's/:$//' "
+    temp=`eval $cmd1`;
+    eval "$i=$temp";
+  done
+done
+
+export PATH=$PATH:$HQR_DIR/bin
+export LD_RUN_PATH=$LD_RUN_PATH:$HQR_DIR/lib
+export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$HQR_DIR/lib
+export DYLD_LIBRARY_PATH=$DYLD_LIBRARY_PATH:$HQR_DIR/lib
+export LIBRARY_PATH=$LIBRARY_PATH:$HQR_DIR/lib
+export PYTHONPATH=$PYTHONPATH:$HQR_DIR/lib/python
+export INCLUDE=$INCLUDE:$HQR_DIR/include
+export INCLUDE_PATH=$INCLUDE_PATH:$HQR_DIR/include
+export PKG_CONFIG_PATH=$PKG_CONFIG_PATH:$HQR_DIR/lib/pkgconfig

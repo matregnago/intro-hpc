@@ -1,0 +1,966 @@
+BEGIN_MODULE
+NAME chameleon_cuda
+DESC "Module for Chameleon CUDA functions"
+ID 7771
+
+int CUDA_cgelqt(
+        void* m, void* n, void* nb,
+        void *da, void* ldda,
+        void *v,  void* ldv,
+        void *dt, void* lddt,
+        void *t,  void* ldt,
+        void *dd,
+        void *d,  void* ldd,
+        void *tau,
+        void *hwork,
+        void *dwork,
+        void* stream);
+int CUDA_cgemerge(
+        void* side, void* diag,
+        void* M, void* N,
+        void *A, void* LDA,
+        void *B, void* LDB,
+        void* stream);
+int CUDA_cgemm(
+        void* transa, void* transb,
+        int m, int n, int k,
+        void *alpha,
+        const void *A, int lda,
+        const void *B, int ldb,
+        void *beta,
+        void *C, int ldc,
+        void* stream);
+int CUDA_cgeqrt(
+        void* m, void* n, void* nb,
+        void *da, void* ldda,
+        void *v,  void* ldv,
+        void *dt, void* lddt,
+        void *t,  void* ldt,
+        void *dd,
+        void *d,  void* ldd,
+        void *tau,
+        void *hwork,
+        void *dwork,
+        void* stream);
+int CUDA_cgessm(
+        char storev, void* m, void* n, void* k, void* ib,
+        void* *ipiv,
+        void *dL1, void* lddl1,
+        void *dL,  void* lddl,
+        void *dA,  void* ldda,
+        void* info);
+int CUDA_cgetrf_incpiv(
+        char storev, void* m, void* n, void* ib,
+        void *hA, void* ldha, void *dA, void* ldda,
+        void *hL, void* ldhl, void *dL, void* lddl,
+        void* *ipiv,
+        void *dwork, void* lddwork,
+        void* info);
+int CUDA_cgetrf_nopiv(
+        void* m, void* n,
+        void *dA, void* ldda,
+        void* info);
+int CUDA_chemm(
+        void* side, void* uplo,
+        int m, int n,
+        void *alpha,
+        const void *A, int lda,
+        const void *B, int ldb,
+        void *beta,
+        void *C, int ldc,
+        void* stream);
+int CUDA_cher2k(
+        void* uplo, void* trans,
+        int n, int k,
+        void *alpha,
+        const void *A, int lda,
+        const void *B, int ldb,
+        float *beta,
+        void *C, int ldc,
+        void* stream);
+int CUDA_cherk(
+        void* uplo, void* trans,
+        int n, int k,
+        float *alpha,
+        const void *A, int lda,
+        float *beta,
+        void *B, int ldb,
+        void* stream);
+int CUDA_clauum(
+        char uplo,  void* n,
+        void *dA, void* ldda, void* info);
+int CUDA_cparfb(
+        void* side, void* trans,
+        void* direct, void* storev,
+        void* M1, void* N1,
+        void* M2, void* N2,
+        void* K, void* L,
+        void *A1, void* LDA1,
+        void *A2, void* LDA2,
+        void *V, void* LDV,
+        void *T, void* LDT,
+        void *WORK, void* LDWORK,
+        void *WORKC, void* LDWORKC,
+        void* stream);
+int CUDA_cpotrf(
+        void* uplo,  void* n,
+        void *dA, void* ldda, void* info);
+int CUDA_cssssm(
+        void* storev, void* m1, void* n1,
+        void* m2, void* n2, void* k, void* ib,
+        void *dA1, void* ldda1,
+        void *dA2, void* ldda2,
+        void *dL1, void* lddl1,
+        void *dL2, void* lddl2,
+        void* *IPIV, void* info);
+int CUDA_csymm(
+        void* side, void* uplo,
+        int m, int n,
+        void *alpha,
+        const void *A, int lda,
+        const void *B, int ldb,
+        void *beta,
+        void *C, int ldc,
+        void* stream);
+int CUDA_csyr2k(
+        void* uplo, void* trans,
+        int n, int k,
+        void *alpha,
+        const void *A, int lda,
+        const void *B, int ldb,
+        void *beta,
+        void *C, int ldc,
+        void* stream);
+int CUDA_csyrk(
+        void* uplo, void* trans,
+        int n, int k,
+        void *alpha,
+        const void *A, int lda,
+        void *beta,
+        void *C, int ldc,
+        void* stream);
+int CUDA_ctrmm(
+        void* side, void* uplo,
+        void* transa, void* diag,
+        int m, int n,
+        void *alpha,
+        const void *A, int lda,
+        void *B, int ldb,
+        void* stream);
+int CUDA_ctrsm(
+        void* side, void* uplo,
+        void* transa, void* diag,
+        int m, int n,
+        void *alpha,
+        const void *A, int lda,
+        void *B, int ldb,
+        void* stream);
+int CUDA_ctrtri(
+        void* uplo,  void* diag, void* n,
+        void *dA, void* ldda, void* info);
+int CUDA_ctslqt(
+        void* m, void* n, void* nb,
+        void *da1, void* ldda1,
+        void *da2, void* ldda2,
+        void *a2,  void* lda2,
+        void *dt,  void* lddt,
+        void *t,  void* ldt,
+        void *dd,
+        void *d,  void* ldd,
+        void *tau,
+        void *hwork,
+        void *dwork,
+        void* stream);
+int CUDA_ctsmlq(
+        void* side, void* trans,
+        void* M1, void* N1,
+        void* M2, void* N2,
+        void* K, void* IB,
+        void *A1, void* LDA1,
+        void *A2, void* LDA2,
+        void *V, void* LDV,
+        void *T, void* LDT,
+              void *WORK,  void* LDWORK,
+              void *WORKC, void* LDWORKC,
+        void* stream);
+int CUDA_ctsmqr(
+        void* side, void* trans,
+        void* M1, void* N1,
+        void* M2, void* N2,
+        void* K, void* IB,
+        void *A1, void* LDA1,
+        void *A2, void* LDA2,
+        void *V, void* LDV,
+        void *T, void* LDT,
+            void *WORK,  void* LDWORK,
+            void *WORKC, void* LDWORKC,
+        void* stream);
+int CUDA_cttmlq(
+        void* side, void* trans,
+        void* M1, void* N1,
+        void* M2, void* N2,
+        void* K, void* IB,
+        void *A1, void* LDA1,
+        void *A2, void* LDA2,
+        void *V, void* LDV,
+        void *T, void* LDT,
+              void *WORK,  void* LDWORK,
+              void *WORKC, void* LDWORKC,
+        void* stream);
+int CUDA_cttmqr(
+        void* side, void* trans,
+        void* M1, void* N1,
+        void* M2, void* N2,
+        void* K, void* IB,
+        void *A1, void* LDA1,
+        void *A2, void* LDA2,
+        void *V, void* LDV,
+        void *T, void* LDT,
+            void *WORK,  void* LDWORK,
+            void *WORKC, void* LDWORKC,
+        void* stream);
+int CUDA_ctsqrt(
+        void* m, void* n, void* nb,
+        void *da1, void* ldda1,
+        void *da2, void* ldda2,
+        void *a2,  void* lda2,
+        void *dt,  void* lddt,
+        void *t,  void* ldt,
+        void *dd,
+        void *d,  void* ldd,
+        void *tau,
+        void *hwork,
+        void *dwork,
+        void* stream);
+int CUDA_ctstrf(
+        char storev, void* m, void* n, void* ib, void* nb,
+        void *hU, void* ldhu, void *dU, void* lddu,
+        void *hA, void* ldha, void *dA, void* ldda,
+        void *hL, void* ldhl, void *dL, void* lddl,
+        void* *ipiv,
+        void *hwork, void* ldhwork,
+        void *dwork, void* lddwork,
+        void* info);
+int CUDA_cunmlqt(
+        void* side, void* trans,
+        void* M, void* N, void* K, void* IB,
+        void *A,    void* LDA,
+        void *T,    void* LDT,
+        void *C,    void* LDC,
+        void *WORK, void* LDWORK );
+int CUDA_cunmqrt(
+        void* side, void* trans,
+        void* M, void* N, void* K, void* IB,
+        void *A,    void* LDA,
+        void *T,    void* LDT,
+        void *C,    void* LDC,
+        void *WORK, void* LDWORK );
+
+int CUDA_dgelqt(
+        void* m, void* n, void* nb,
+        double *da, void* ldda,
+        double *v,  void* ldv,
+        double *dt, void* lddt,
+        double *t,  void* ldt,
+        double *dd,
+        double *d,  void* ldd,
+        double *tau,
+        double *hwork,
+        double *dwork,
+        void* stream);
+int CUDA_dgemerge(
+        void* side, void* diag,
+        void* M, void* N,
+        double *A, void* LDA,
+        double *B, void* LDB,
+        void* stream);
+int CUDA_dgemm(
+        void* transa, void* transb,
+        int m, int n, int k,
+        double *alpha,
+        const double *A, int lda,
+        const double *B, int ldb,
+        double *beta,
+        double *C, int ldc,
+        void* stream);
+int CUDA_dgeqrt(
+        void* m, void* n, void* nb,
+        double *da, void* ldda,
+        double *v,  void* ldv,
+        double *dt, void* lddt,
+        double *t,  void* ldt,
+        double *dd,
+        double *d,  void* ldd,
+        double *tau,
+        double *hwork,
+        double *dwork,
+        void* stream);
+int CUDA_dgessm(
+        char storev, void* m, void* n, void* k, void* ib,
+        void* *ipiv,
+        double *dL1, void* lddl1,
+        double *dL,  void* lddl,
+        double *dA,  void* ldda,
+        void* info);
+int CUDA_dgetrf_incpiv(
+        char storev, void* m, void* n, void* ib,
+        double *hA, void* ldha, double *dA, void* ldda,
+        double *hL, void* ldhl, double *dL, void* lddl,
+        void* *ipiv,
+        double *dwork, void* lddwork,
+        void* info);
+int CUDA_dgetrf_nopiv(
+        void* m, void* n,
+        double *dA, void* ldda,
+        void* info);
+int CUDA_dsymm(
+        void* side, void* uplo,
+        int m, int n,
+        double *alpha,
+        const double *A, int lda,
+        const double *B, int ldb,
+        double *beta,
+        double *C, int ldc,
+        void* stream);
+int CUDA_dsyr2k(
+        void* uplo, void* trans,
+        int n, int k,
+        double *alpha,
+        const double *A, int lda,
+        const double *B, int ldb,
+        double *beta,
+        double *C, int ldc,
+        void* stream);
+int CUDA_dsyrk(
+        void* uplo, void* trans,
+        int n, int k,
+        double *alpha,
+        const double *A, int lda,
+        double *beta,
+        double *B, int ldb,
+        void* stream);
+int CUDA_dlauum(
+        char uplo,  void* n,
+        double *dA, void* ldda, void* info);
+int CUDA_dparfb(
+        void* side, void* trans,
+        void* direct, void* storev,
+        void* M1, void* N1,
+        void* M2, void* N2,
+        void* K, void* L,
+        double *A1, void* LDA1,
+        double *A2, void* LDA2,
+        const double *V, void* LDV,
+        const double *T, void* LDT,
+        double *WORK, void* LDWORK,
+        double *WORKC, void* LDWORKC,
+        void* stream);
+int CUDA_dpotrf(
+        void* uplo,  void* n,
+        double *dA, void* ldda, void* info);
+int CUDA_dssssm(
+        void* storev, void* m1, void* n1,
+        void* m2, void* n2, void* k, void* ib,
+        double *dA1, void* ldda1,
+        double *dA2, void* ldda2,
+        double *dL1, void* lddl1,
+        double *dL2, void* lddl2,
+        void* *IPIV, void* info);
+int CUDA_dtrmm(
+        void* side, void* uplo,
+        void* transa, void* diag,
+        int m, int n,
+        double *alpha,
+        const double *A, int lda,
+        double *B, int ldb,
+        void* stream);
+int CUDA_dtrsm(
+        void* side, void* uplo,
+        void* transa, void* diag,
+        int m, int n,
+        double *alpha,
+        const double *A, int lda,
+        double *B, int ldb,
+        void* stream);
+int CUDA_dtrtri(
+        void* uplo,  void* diag, void* n,
+        double *dA, void* ldda, void* info);
+int CUDA_dtslqt(
+        void* m, void* n, void* nb,
+        double *da1, void* ldda1,
+        double *da2, void* ldda2,
+        double *a2,  void* lda2,
+        double *dt,  void* lddt,
+        double *t,  void* ldt,
+        double *dd,
+        double *d,  void* ldd,
+        double *tau,
+        double *hwork,
+        double *dwork,
+        void* stream);
+int CUDA_dtsmlq(
+        void* side, void* trans,
+        void* M1, void* N1,
+        void* M2, void* N2,
+        void* K, void* IB,
+        double *A1, void* LDA1,
+        double *A2, void* LDA2,
+        const double *V, void* LDV,
+        const double *T, void* LDT,
+              double *WORK,  void* LDWORK,
+              double *WORKC, void* LDWORKC,
+        void* stream);
+int CUDA_dtsmqr(
+        void* side, void* trans,
+        void* M1, void* N1,
+        void* M2, void* N2,
+        void* K, void* IB,
+        double *A1, void* LDA1,
+        double *A2, void* LDA2,
+        const double *V, void* LDV,
+        const double *T, void* LDT,
+            double *WORK,  void* LDWORK,
+            double *WORKC, void* LDWORKC,
+        void* stream);
+int CUDA_dttmlq(
+        void* side, void* trans,
+        void* M1, void* N1,
+        void* M2, void* N2,
+        void* K, void* IB,
+        double *A1, void* LDA1,
+        double *A2, void* LDA2,
+        const double *V, void* LDV,
+        const double *T, void* LDT,
+              double *WORK,  void* LDWORK,
+              double *WORKC, void* LDWORKC,
+        void* stream);
+int CUDA_dttmqr(
+        void* side, void* trans,
+        void* M1, void* N1,
+        void* M2, void* N2,
+        void* K, void* IB,
+        double *A1, void* LDA1,
+        double *A2, void* LDA2,
+        const double *V, void* LDV,
+        const double *T, void* LDT,
+            double *WORK,  void* LDWORK,
+            double *WORKC, void* LDWORKC,
+        void* stream);
+int CUDA_dtsqrt(
+        void* m, void* n, void* nb,
+        double *da1, void* ldda1,
+        double *da2, void* ldda2,
+        double *a2,  void* lda2,
+        double *dt,  void* lddt,
+        double *t,  void* ldt,
+        double *dd,
+        double *d,  void* ldd,
+        double *tau,
+        double *hwork,
+        double *dwork,
+        void* stream);
+int CUDA_dtstrf(
+        char storev, void* m, void* n, void* ib, void* nb,
+        double *hU, void* ldhu, double *dU, void* lddu,
+        double *hA, void* ldha, double *dA, void* ldda,
+        double *hL, void* ldhl, double *dL, void* lddl,
+        void* *ipiv,
+        double *hwork, void* ldhwork,
+        double *dwork, void* lddwork,
+        void* info);
+int CUDA_dormlqt(
+        void* side, void* trans,
+        void* M, void* N, void* K, void* IB,
+        const double *A,    void* LDA,
+        const double *T,    void* LDT,
+        double *C,    void* LDC,
+        double *WORK, void* LDWORK );
+int CUDA_dormqrt(
+        void* side, void* trans,
+        void* M, void* N, void* K, void* IB,
+        const double *A,    void* LDA,
+        const double *T,    void* LDT,
+        double *C,    void* LDC,
+        double *WORK, void* LDWORK );
+
+int CUDA_sgelqt(
+        void* m, void* n, void* nb,
+        float *da, void* ldda,
+        float *v,  void* ldv,
+        float *dt, void* lddt,
+        float *t,  void* ldt,
+        float *dd,
+        float *d,  void* ldd,
+        float *tau,
+        float *hwork,
+        float *dwork,
+        void* stream);
+int CUDA_sgemerge(
+        void* side, void* diag,
+        void* M, void* N,
+        float *A, void* LDA,
+        float *B, void* LDB,
+        void* stream);
+int CUDA_sgemm(
+        void* transa, void* transb,
+        int m, int n, int k,
+        float *alpha,
+        const float *A, int lda,
+        const float *B, int ldb,
+        float *beta,
+        float *C, int ldc,
+        void* stream);
+int CUDA_sgeqrt(
+        void* m, void* n, void* nb,
+        float *da, void* ldda,
+        float *v,  void* ldv,
+        float *dt, void* lddt,
+        float *t,  void* ldt,
+        float *dd,
+        float *d,  void* ldd,
+        float *tau,
+        float *hwork,
+        float *dwork,
+        void* stream);
+int CUDA_sgessm(
+        char storev, void* m, void* n, void* k, void* ib,
+        void* *ipiv,
+        float *dL1, void* lddl1,
+        float *dL,  void* lddl,
+        float *dA,  void* ldda,
+        void* info);
+int CUDA_sgetrf_incpiv(
+        char storev, void* m, void* n, void* ib,
+        float *hA, void* ldha, float *dA, void* ldda,
+        float *hL, void* ldhl, float *dL, void* lddl,
+        void* *ipiv,
+        float *dwork, void* lddwork,
+        void* info);
+int CUDA_sgetrf_nopiv(
+        void* m, void* n,
+        float *dA, void* ldda,
+        void* info);
+int CUDA_ssymm(
+        void* side, void* uplo,
+        int m, int n,
+        float *alpha,
+        const float *A, int lda,
+        const float *B, int ldb,
+        float *beta,
+        float *C, int ldc,
+        void* stream);
+int CUDA_ssyr2k(
+        void* uplo, void* trans,
+        int n, int k,
+        float *alpha,
+        const float *A, int lda,
+        const float *B, int ldb,
+        float *beta,
+        float *C, int ldc,
+        void* stream);
+int CUDA_ssyrk(
+        void* uplo, void* trans,
+        int n, int k,
+        float *alpha,
+        const float *A, int lda,
+        float *beta,
+        float *B, int ldb,
+        void* stream);
+int CUDA_slauum(
+        char uplo,  void* n,
+        float *dA, void* ldda, void* info);
+int CUDA_sparfb(
+        void* side, void* trans,
+        void* direct, void* storev,
+        void* M1, void* N1,
+        void* M2, void* N2,
+        void* K, void* L,
+        float *A1, void* LDA1,
+        float *A2, void* LDA2,
+        const float *V, void* LDV,
+        const float *T, void* LDT,
+        float *WORK, void* LDWORK,
+        float *WORKC, void* LDWORKC,
+        void* stream);
+int CUDA_spotrf(
+        void* uplo,  void* n,
+        float *dA, void* ldda, void* info);
+int CUDA_sssssm(
+        void* storev, void* m1, void* n1,
+        void* m2, void* n2, void* k, void* ib,
+        float *dA1, void* ldda1,
+        float *dA2, void* ldda2,
+        float *dL1, void* lddl1,
+        float *dL2, void* lddl2,
+        void* *IPIV, void* info);
+int CUDA_strmm(
+        void* side, void* uplo,
+        void* transa, void* diag,
+        int m, int n,
+        float *alpha,
+        const float *A, int lda,
+        float *B, int ldb,
+        void* stream);
+int CUDA_strsm(
+        void* side, void* uplo,
+        void* transa, void* diag,
+        int m, int n,
+        float *alpha,
+        const float *A, int lda,
+        float *B, int ldb,
+        void* stream);
+int CUDA_strtri(
+        void* uplo,  void* diag, void* n,
+        float *dA, void* ldda, void* info);
+int CUDA_stslqt(
+        void* m, void* n, void* nb,
+        float *da1, void* ldda1,
+        float *da2, void* ldda2,
+        float *a2,  void* lda2,
+        float *dt,  void* lddt,
+        float *t,  void* ldt,
+        float *dd,
+        float *d,  void* ldd,
+        float *tau,
+        float *hwork,
+        float *dwork,
+        void* stream);
+int CUDA_stsmlq(
+        void* side, void* trans,
+        void* M1, void* N1,
+        void* M2, void* N2,
+        void* K, void* IB,
+        float *A1, void* LDA1,
+        float *A2, void* LDA2,
+        const float *V, void* LDV,
+        const float *T, void* LDT,
+              float *WORK,  void* LDWORK,
+              float *WORKC, void* LDWORKC,
+        void* stream);
+int CUDA_stsmqr(
+        void* side, void* trans,
+        void* M1, void* N1,
+        void* M2, void* N2,
+        void* K, void* IB,
+        float *A1, void* LDA1,
+        float *A2, void* LDA2,
+        const float *V, void* LDV,
+        const float *T, void* LDT,
+            float *WORK,  void* LDWORK,
+            float *WORKC, void* LDWORKC,
+        void* stream);
+int CUDA_sttmlq(
+        void* side, void* trans,
+        void* M1, void* N1,
+        void* M2, void* N2,
+        void* K, void* IB,
+        float *A1, void* LDA1,
+        float *A2, void* LDA2,
+        const float *V, void* LDV,
+        const float *T, void* LDT,
+              float *WORK,  void* LDWORK,
+              float *WORKC, void* LDWORKC,
+        void* stream);
+int CUDA_sttmqr(
+        void* side, void* trans,
+        void* M1, void* N1,
+        void* M2, void* N2,
+        void* K, void* IB,
+        float *A1, void* LDA1,
+        float *A2, void* LDA2,
+        const float *V, void* LDV,
+        const float *T, void* LDT,
+            float *WORK,  void* LDWORK,
+            float *WORKC, void* LDWORKC,
+        void* stream);
+int CUDA_stsqrt(
+        void* m, void* n, void* nb,
+        float *da1, void* ldda1,
+        float *da2, void* ldda2,
+        float *a2,  void* lda2,
+        float *dt,  void* lddt,
+        float *t,  void* ldt,
+        float *dd,
+        float *d,  void* ldd,
+        float *tau,
+        float *hwork,
+        float *dwork,
+        void* stream);
+int CUDA_ststrf(
+        char storev, void* m, void* n, void* ib, void* nb,
+        float *hU, void* ldhu, float *dU, void* lddu,
+        float *hA, void* ldha, float *dA, void* ldda,
+        float *hL, void* ldhl, float *dL, void* lddl,
+        void* *ipiv,
+        float *hwork, void* ldhwork,
+        float *dwork, void* lddwork,
+        void* info);
+int CUDA_sormlqt(
+        void* side, void* trans,
+        void* M, void* N, void* K, void* IB,
+        const float *A,    void* LDA,
+        const float *T,    void* LDT,
+        float *C,    void* LDC,
+        float *WORK, void* LDWORK );
+int CUDA_sormqrt(
+        void* side, void* trans,
+        void* M, void* N, void* K, void* IB,
+        const float *A,    void* LDA,
+        const float *T,    void* LDT,
+        float *C,    void* LDC,
+        float *WORK, void* LDWORK );
+
+int CUDA_zgelqt(
+        void* m, void* n, void* nb,
+        void *da, void* ldda,
+        void *v,  void* ldv,
+        void *dt, void* lddt,
+        void *t,  void* ldt,
+        void *dd,
+        void *d,  void* ldd,
+        void *tau,
+        void *hwork,
+        void *dwork,
+        void* stream);
+int CUDA_zgemerge(
+        void* side, void* diag,
+        void* M, void* N,
+        void *A, void* LDA,
+        void *B, void* LDB,
+        void* stream);
+int CUDA_zgemm(
+        void* transa, void* transb,
+        int m, int n, int k,
+        void *alpha,
+        const void *A, int lda,
+        const void *B, int ldb,
+        void *beta,
+        void *C, int ldc,
+        void* stream);
+int CUDA_zgeqrt(
+        void* m, void* n, void* nb,
+        void *da, void* ldda,
+        void *v,  void* ldv,
+        void *dt, void* lddt,
+        void *t,  void* ldt,
+        void *dd,
+        void *d,  void* ldd,
+        void *tau,
+        void *hwork,
+        void *dwork,
+        void* stream);
+int CUDA_zgessm(
+        char storev, void* m, void* n, void* k, void* ib,
+        void* *ipiv,
+        void *dL1, void* lddl1,
+        void *dL,  void* lddl,
+        void *dA,  void* ldda,
+        void* info);
+int CUDA_zgetrf_incpiv(
+        char storev, void* m, void* n, void* ib,
+        void *hA, void* ldha, void *dA, void* ldda,
+        void *hL, void* ldhl, void *dL, void* lddl,
+        void* *ipiv,
+        void *dwork, void* lddwork,
+        void* info);
+int CUDA_zgetrf_nopiv(
+        void* m, void* n,
+        void *dA, void* ldda,
+        void* info);
+int CUDA_zhemm(
+        void* side, void* uplo,
+        int m, int n,
+        void *alpha,
+        const void *A, int lda,
+        const void *B, int ldb,
+        void *beta,
+        void *C, int ldc,
+        void* stream);
+int CUDA_zher2k(
+        void* uplo, void* trans,
+        int n, int k,
+        void *alpha,
+        const void *A, int lda,
+        const void *B, int ldb,
+        double *beta,
+        void *C, int ldc,
+        void* stream);
+int CUDA_zherk(
+        void* uplo, void* trans,
+        int n, int k,
+        double *alpha,
+        const void *A, int lda,
+        double *beta,
+        void *B, int ldb,
+        void* stream);
+int CUDA_zlauum(
+        char uplo,  void* n,
+        void *dA, void* ldda, void* info);
+int CUDA_zparfb(
+        void* side, void* trans,
+        void* direct, void* storev,
+        void* M1, void* N1,
+        void* M2, void* N2,
+        void* K, void* L,
+        void *A1, void* LDA1,
+        void *A2, void* LDA2,
+        void *V, void* LDV,
+        void *T, void* LDT,
+        void *WORK, void* LDWORK,
+        void *WORKC, void* LDWORKC,
+        void* stream);
+int CUDA_zpotrf(
+        void* uplo,  void* n,
+        void *dA, void* ldda, void* info);
+int CUDA_zssssm(
+        void* storev, void* m1, void* n1,
+        void* m2, void* n2, void* k, void* ib,
+        void *dA1, void* ldda1,
+        void *dA2, void* ldda2,
+        void *dL1, void* lddl1,
+        void *dL2, void* lddl2,
+        void* *IPIV, void* info);
+int CUDA_zsymm(
+        void* side, void* uplo,
+        int m, int n,
+        void *alpha,
+        const void *A, int lda,
+        const void *B, int ldb,
+        void *beta,
+        void *C, int ldc,
+        void* stream);
+int CUDA_zsyr2k(
+        void* uplo, void* trans,
+        int n, int k,
+        void *alpha,
+        const void *A, int lda,
+        const void *B, int ldb,
+        void *beta,
+        void *C, int ldc,
+        void* stream);
+int CUDA_zsyrk(
+        void* uplo, void* trans,
+        int n, int k,
+        void *alpha,
+        const void *A, int lda,
+        void *beta,
+        void *C, int ldc,
+        void* stream);
+int CUDA_ztrmm(
+        void* side, void* uplo,
+        void* transa, void* diag,
+        int m, int n,
+        void *alpha,
+        const void *A, int lda,
+        void *B, int ldb,
+        void* stream);
+int CUDA_ztrsm(
+        void* side, void* uplo,
+        void* transa, void* diag,
+        int m, int n,
+        void *alpha,
+        const void *A, int lda,
+        void *B, int ldb,
+        void* stream);
+int CUDA_ztrtri(
+        void* uplo,  void* diag, void* n,
+        void *dA, void* ldda, void* info);
+int CUDA_ztslqt(
+        void* m, void* n, void* nb,
+        void *da1, void* ldda1,
+        void *da2, void* ldda2,
+        void *a2,  void* lda2,
+        void *dt,  void* lddt,
+        void *t,  void* ldt,
+        void *dd,
+        void *d,  void* ldd,
+        void *tau,
+        void *hwork,
+        void *dwork,
+        void* stream);
+int CUDA_ztsmlq(
+        void* side, void* trans,
+        void* M1, void* N1,
+        void* M2, void* N2,
+        void* K, void* IB,
+        void *A1, void* LDA1,
+        void *A2, void* LDA2,
+        void *V, void* LDV,
+        void *T, void* LDT,
+              void *WORK,  void* LDWORK,
+              void *WORKC, void* LDWORKC,
+        void* stream);
+int CUDA_ztsmqr(
+        void* side, void* trans,
+        void* M1, void* N1,
+        void* M2, void* N2,
+        void* K, void* IB,
+        void *A1, void* LDA1,
+        void *A2, void* LDA2,
+        void *V, void* LDV,
+        void *T, void* LDT,
+            void *WORK,  void* LDWORK,
+            void *WORKC, void* LDWORKC,
+        void* stream);
+int CUDA_zttmlq(
+        void* side, void* trans,
+        void* M1, void* N1,
+        void* M2, void* N2,
+        void* K, void* IB,
+        void *A1, void* LDA1,
+        void *A2, void* LDA2,
+        void *V, void* LDV,
+        void *T, void* LDT,
+              void *WORK,  void* LDWORK,
+              void *WORKC, void* LDWORKC,
+        void* stream);
+int CUDA_zttmqr(
+        void* side, void* trans,
+        void* M1, void* N1,
+        void* M2, void* N2,
+        void* K, void* IB,
+        void *A1, void* LDA1,
+        void *A2, void* LDA2,
+        void *V, void* LDV,
+        void *T, void* LDT,
+            void *WORK,  void* LDWORK,
+            void *WORKC, void* LDWORKC,
+        void* stream);
+int CUDA_ztsqrt(
+        void* m, void* n, void* nb,
+        void *da1, void* ldda1,
+        void *da2, void* ldda2,
+        void *a2,  void* lda2,
+        void *dt,  void* lddt,
+        void *t,  void* ldt,
+        void *dd,
+        void *d,  void* ldd,
+        void *tau,
+        void *hwork,
+        void *dwork,
+        void* stream);
+int CUDA_ztstrf(
+        char storev, void* m, void* n, void* ib, void* nb,
+        void *hU, void* ldhu, void *dU, void* lddu,
+        void *hA, void* ldha, void *dA, void* ldda,
+        void *hL, void* ldhl, void *dL, void* lddl,
+        void* *ipiv,
+        void *hwork, void* ldhwork,
+        void *dwork, void* lddwork,
+        void* info);
+int CUDA_zunmlqt(
+        void* side, void* trans,
+        void* M, void* N, void* K, void* IB,
+        void *A,    void* LDA,
+        void *T,    void* LDT,
+        void *C,    void* LDC,
+        void *WORK, void* LDWORK );
+int CUDA_zunmqrt(
+        void* side, void* trans,
+        void* M, void* N, void* K, void* IB,
+        void *A,    void* LDA,
+        void *T,    void* LDT,
+        void *C,    void* LDC,
+        void *WORK, void* LDWORK );
+
+END_MODULE
