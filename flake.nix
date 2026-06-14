@@ -137,6 +137,14 @@
                 done
               done
               export LD_LIBRARY_PATH="$DRIVER_DIR:''${LD_LIBRARY_PATH:-}"
+              # On WSL2 the genuine GPU driver lives in /usr/lib/wsl/lib (an
+              # isolated dir holding only libcuda/libnvidia*). Point at it
+              # directly: copying libcuda.so out of it breaks its dlopen of the
+              # sibling WSL driver shims, so cudaGetDeviceCount would still fail
+              # with "driver version is insufficient" and fall back to the stub.
+              if [ -e /usr/lib/wsl/lib/libcuda.so.1 ]; then
+                export LD_LIBRARY_PATH="/usr/lib/wsl/lib:''${LD_LIBRARY_PATH}"
+              fi
               unset CUDA_VISIBLE_DEVICES
             '';
           };
@@ -158,6 +166,14 @@
                 done
               done
               export LD_LIBRARY_PATH="$DRIVER_DIR:''${LD_LIBRARY_PATH:-}"
+              # On WSL2 the genuine GPU driver lives in /usr/lib/wsl/lib (an
+              # isolated dir holding only libcuda/libnvidia*). Point at it
+              # directly: copying libcuda.so out of it breaks its dlopen of the
+              # sibling WSL driver shims, so cudaGetDeviceCount would still fail
+              # with "driver version is insufficient" and fall back to the stub.
+              if [ -e /usr/lib/wsl/lib/libcuda.so.1 ]; then
+                export LD_LIBRARY_PATH="/usr/lib/wsl/lib:''${LD_LIBRARY_PATH}"
+              fi
               unset CUDA_VISIBLE_DEVICES
             '';
           };

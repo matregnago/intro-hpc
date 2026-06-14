@@ -1171,6 +1171,23 @@ gpu_kernel_submit_dtd_task_cuda( gpu_device_t             *gpu_device,
         return PARSEC_HOOK_RETURN_NEXT;
     }
 
+    /* Emit the kernel's profiling BEGIN on the compute stream, keyed by this
+     * task class so it shows up as a named state (gemm/potrf/...) on the GPU
+     * stream lane — the same way CPU bodies do via hook_of_dtd_task(). The
+     * matching END is emitted generically by the GPU scheduler once the CUDA
+     * event completes (parsec/devices/cuda/dev_cuda.c:1463, which falls back to
+     * PARSEC_PROF_FUNC_KEY_END for streams whose key_end is -1, i.e. the
+     * compute streams). Without this BEGIN the scheduler's END events are
+     * unpaired and dbp2paje drops them, leaving the GPU compute streams empty.
+     * Mirrors the JDF-generated GPU body (jdf2c.c:5026). */
+    PARSEC_TASK_PROF_TRACE_IF(gpu_stream->prof_event_track_enable,
+                              gpu_stream->profiling,
+                              (-1 == gpu_stream->prof_event_key_start ?
+                               PARSEC_PROF_FUNC_KEY_START(this_task->taskpool,
+                                                          this_task->task_class->task_class_id) :
+                               gpu_stream->prof_event_key_start),
+                              (parsec_task_t *)this_task);
+
     /* The execution stream pointer passed to the user is the calling thread's
      * stream; for cuBLAS/cuSOLVER calls the relevant handle binds to the CUDA
      * stream (third arg), not to a PaRSEC execution stream. */
@@ -1212,7 +1229,18 @@ hook_of_dtd_task_cuda( parsec_execution_stream_t *es,
     gpu_task->pushout              = 0;
 
     /* Bind each DTD flow to its parsec_flow_t (populated lazily by
-     * parsec_dtd_set_flow_in_function) and mark write-side flows for pushout. */
+     * parsec_dtd_set_flow_in_function) and mark write-side flows for pushout.
+     *
+     * NOTE (perf, identified but not yet fixed): pushout on every write flow
+     * eagerly copies each GPU task's output back to host. It is always correct
+     * but defeats GPU data residency — in a factorization a produced tile feeds
+     * the next GPU task, so this round-trips every tile H<->D (measured: 1 D2H
+     * per GPU kernel), which dominates the spotrf GPU cost vs StarPU. The
+     * JDF/PTG backend keeps tiles resident and only pushes out when the flow's
+     * consumer is a different task class (jdf2c.c:5127). A correct DTD version
+     * needs demand D2H wired into PaRSEC's version/coherence protocol (a naive
+     * "keep resident + pull on host read" attempt either deadlocks on the
+     * unbalanced reader count or returns wrong results — see docs/cuda_parsec.md). */
     for( i = 0; i < this_task->task_class->nb_flows; i++ ) {
         const parsec_flow_t *fl = this_task->task_class->in[i];
         gpu_task->flow[i] = fl;

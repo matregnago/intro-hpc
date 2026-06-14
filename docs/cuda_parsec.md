@@ -270,17 +270,52 @@ Override geometry/precision with `SWEEP_PAIRS`, `PRECISIONS`, `OPS`, `REPS`.
 
 ## Open items
 
+- **Eager D2H pushout defeats GPU data residency (biggest perf gap, not yet
+  fixed).** `hook_of_dtd_task_cuda` in
+  `parsec/parsec/interfaces/superscalar/insert_function.c` sets
+  `gpu_task->pushout` on *every* write flow, so each GPU task copies its output
+  back to host immediately. Always correct, but in a factorization a produced
+  tile feeds the next GPU task, so this round-trips every tile H↔D. Measured on
+  a local RTX 4060 Ti with the GPU-stream trace (spotrf, FP32, n=19200, b=960):
+  919 GPU kernels → **919 D2H + 1129 H2D**, i.e. exactly one writeback per
+  kernel. This is the main reason the PaRSEC spotrf GPU path trails StarPU
+  (StarPU ~4150 GFlops vs PaRSEC ~1570 at n=19200; the FP32 gemm-heavy QR path,
+  where tiles are reused less, is competitive). The JDF/PTG backend keeps tiles
+  resident and only pushes out when a flow's *consumer* is a different task
+  class (`jdf2c.c:5127`), co-designed with a scheduler that keeps same-class
+  chains on the device.
+  *Attempted fix (reverted):* a `PARSEC_DTD_PUSHOUT=0` "keep resident + stage
+  back on demand" path — GPU hook leaves `pushout=0`, the DTD CPU hook
+  (`hook_of_dtd_task`) and the data flush pull tiles to host before a host read.
+  Two iterations both failed validation: (1) routing the pull through
+  `parsec_data_transfer_ownership_to_copy()` **deadlocks** (it bumps the source
+  copy's reader count, never balanced on the DTD CPU path, and the next GPU
+  writer waits forever for readers to drain); (2) a hand-rolled version-compare
+  + `cudaMemcpy` D2H + manual invalidate/version-bump stopped the deadlock but
+  **returns wrong results** (`spotrf -c` FAILS) — the home-grown versioning does
+  not interoperate with the GPU stage-in's version protocol
+  (`dev_cuda.c:1096/1122/1150`). Conclusion: a correct fix must drive the demand
+  D2H through PaRSEC's existing data-copy version/coherence machinery (mirroring
+  the PTG CPU body at `jdf2c.c:5306` which calls
+  `parsec_data_transfer_ownership_to_copy(...,0,...)` *plus* the real staging),
+  not bypass it. The upside is real: the (incorrect) resident run hit ~4300
+  GFlops on sgeqrf vs ~1150 with eager pushout.
 - **dgemm/zgemm are FP64-hardware-bound on the RTX 4070.** Not actionable in
   software. The card's listed FP64 peak (458 GFlops, see
   `docs/parsec_cuda_results.md`) is below the 16-thread CPU's FP64 peak
   (~870 GFlops), so the speedup ceiling for these precisions on this
   hardware is ~1×. Moving the number requires a different GPU.
-- **sgemm submission-thread saturation.** PaRSEC reduces the requested CPU
-  workers to 1 when CUDA is enabled (one thread per GPU stream), serializing
-  task submission across the four streams. Run with `T=8` so PaRSEC keeps
-  real workers after reserving threads for GPU streams; lowering
-  `PARSEC_MCA_device_cuda_max_streams` trades stream parallelism for more
-  submitters. Best observed sgemm is ~4.7 TFlops out of 29 TFlops peak.
+- **The `threads=1` in result lines is a reporting stub, not a real worker
+  reduction.** `chameleon_dtesting`/`stesting` print `threads = CHAMELEON_GetThreadNbr()`,
+  which on the PaRSEC backend calls `RUNTIME_thread_size()` —
+  hardcoded to `return 1` with a `//TODO fixme` in
+  `chameleon/runtime/parsec/control/runtime_control.c`. `RUNTIME_init` actually
+  passes the requested core count to `parsec_init(ncpus, ...)`, and a trace
+  confirms PaRSEC runs with all `-t` worker threads (e.g. 16 `M0V0T*` threads
+  for `-t 16`). So the "overridden the number of required threads from N to 1"
+  warning and the `threads=1` column are cosmetic; earlier notes that read this
+  as PaRSEC throttling to one submitter were mistaken. (Worth fixing the stub so
+  the column is honest.)
 - **cuBLAS handle lifecycle.** Per-thread handles are still leaked at thread
   exit. Move to a registered fini hook if this becomes load-bearing. We
   considered an init hook to pre-create handles and decided against it: the

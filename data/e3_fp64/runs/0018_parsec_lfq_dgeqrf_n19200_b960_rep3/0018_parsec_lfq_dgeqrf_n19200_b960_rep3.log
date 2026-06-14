@@ -1,0 +1,9 @@
+[1;37;43mW@-0001[0m Oversubscription on core 0 detected
+[1;37;43mW@-0001[0m Oversubscription on core 1 detected
+[1;37;43mW@-0001[0m Oversubscription on core 2 detected
+[1;37;43mW@-0001[0m Oversubscription on core 3 detected
+[1;37;43mW@-0001[0m Oversubscription on core 4 detected
+[1;37;43mW@-0001[0m Oversubscription on core 5 detected
+WARNING: A runtime environment variable or a configuration file has overridden the number of required threads from 16 to 1
+Id;Function;threads;gpus;P;Q;mtxfmt;nb;ib;m;n;lda;qra;seedA;tsub;time;gflops
+0;dgeqrf;1;1;1;1;1;960;48;19200;19200;19200;4;1804289383;0.000000e+00;3.342294e+01;2.823786e+02
