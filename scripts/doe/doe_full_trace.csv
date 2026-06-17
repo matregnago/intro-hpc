@@ -1,0 +1,3 @@
+precision,algorithm,n,b,runtime,scheduler,rep
+FP64,potrf,19200,960,starpu,dmdas,1
+FP64,potrf,19200,960,parsec,lfq,1

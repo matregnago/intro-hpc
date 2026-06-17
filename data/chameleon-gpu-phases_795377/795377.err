@@ -1,0 +1,85 @@
+building '/nix/store/rnb8l97r6hfs84a885sva5dm4z84difn-chameleon-starpu-1.4.0.drv'...
+building '/nix/store/hg776x49ixrz8bw9wbbgjx2rx0rcih8w-nix-shell-env.drv'...
+building '/nix/store/rwbvl2rg2bj8g5773ba3p444r7kjl9pl-parsec-mymaster.drv'...
+building '/nix/store/bak8lv5xfhp8lgb8fjar87rlavlv2rc9-chameleon-parsec-1.4.0.drv'...
+building '/nix/store/bdlszpldi6gs5k67y0v2i64v8gsxkjsc-nix-shell-env.drv'...
+scripts/gpu_doe_sweep.sh: line 150: 1778614 Segmentation fault      "$bin" -o "$kernel" -n "$n" -b "$b" -t "$THREADS" -g "$GPUS" --nowarmup "${EXTRA_FLAGS[@]}" > "$LOG_FILE" 2>&1
+  !! no result line (exit 139); see results/chameleon-gpu-phases_795377/e1_tile/runs/0004_parsec_lfq_dpotrf_n19200_b1440_rep1/0004_parsec_lfq_dpotrf_n19200_b1440_rep1.log
+scripts/gpu_doe_sweep.sh: line 150: 1778774 Segmentation fault      "$bin" -o "$kernel" -n "$n" -b "$b" -t "$THREADS" -g "$GPUS" --nowarmup "${EXTRA_FLAGS[@]}" > "$LOG_FILE" 2>&1
+  !! no result line (exit 139); see results/chameleon-gpu-phases_795377/e1_tile/runs/0008_parsec_lfq_spotrf_n19200_b1440_rep1/0008_parsec_lfq_spotrf_n19200_b1440_rep1.log
+scripts/gpu_doe_sweep.sh: line 150: 1779038 Segmentation fault      "$bin" -o "$kernel" -n "$n" -b "$b" -t "$THREADS" -g "$GPUS" --nowarmup "${EXTRA_FLAGS[@]}" > "$LOG_FILE" 2>&1
+  !! no result line (exit 139); see results/chameleon-gpu-phases_795377/e1_tile/runs/0013_parsec_lfq_sgeqrf_n19200_b1440_rep1/0013_parsec_lfq_sgeqrf_n19200_b1440_rep1.log
+scripts/gpu_doe_sweep.sh: line 150: 1779161 Segmentation fault      "$bin" -o "$kernel" -n "$n" -b "$b" -t "$THREADS" -g "$GPUS" --nowarmup "${EXTRA_FLAGS[@]}" > "$LOG_FILE" 2>&1
+  !! no result line (exit 139); see results/chameleon-gpu-phases_795377/e1_tile/runs/0020_parsec_lfq_spotrf_n19200_b720_rep1/0020_parsec_lfq_spotrf_n19200_b720_rep1.log
+scripts/gpu_doe_sweep.sh: line 150: 1779198 Segmentation fault      "$bin" -o "$kernel" -n "$n" -b "$b" -t "$THREADS" -g "$GPUS" --nowarmup "${EXTRA_FLAGS[@]}" > "$LOG_FILE" 2>&1
+  !! no result line (exit 139); see results/chameleon-gpu-phases_795377/e1_tile/runs/0021_parsec_lfq_dgeqrf_n19200_b720_rep1/0021_parsec_lfq_dgeqrf_n19200_b720_rep1.log
+scripts/gpu_doe_sweep.sh: line 150: 1779279 Segmentation fault      "$bin" -o "$kernel" -n "$n" -b "$b" -t "$THREADS" -g "$GPUS" --nowarmup "${EXTRA_FLAGS[@]}" > "$LOG_FILE" 2>&1
+  !! no result line (exit 139); see results/chameleon-gpu-phases_795377/e1_tile/runs/0025_parsec_lfq_sgeqrf_n19200_b720_rep1/0025_parsec_lfq_sgeqrf_n19200_b720_rep1.log
+scripts/gpu_doe_sweep.sh: line 150: 1779316 Segmentation fault      "$bin" -o "$kernel" -n "$n" -b "$b" -t "$THREADS" -g "$GPUS" --nowarmup "${EXTRA_FLAGS[@]}" > "$LOG_FILE" 2>&1
+  !! no result line (exit 139); see results/chameleon-gpu-phases_795377/e1_tile/runs/0027_parsec_lfq_dgeqrf_n19200_b1440_rep1/0027_parsec_lfq_dgeqrf_n19200_b1440_rep1.log
+scripts/gpu_doe_sweep.sh: line 150: 1779731 Segmentation fault      "$bin" -o "$kernel" -n "$n" -b "$b" -t "$THREADS" -g "$GPUS" --nowarmup "${EXTRA_FLAGS[@]}" > "$LOG_FILE" 2>&1
+  !! no result line (exit 139); see results/chameleon-gpu-phases_795377/e1_tile/runs/0038_parsec_lfq_dpotrf_n19200_b720_rep1/0038_parsec_lfq_dpotrf_n19200_b720_rep1.log
+scripts/gpu_doe_sweep.sh: line 150: 1779889 Segmentation fault      "$bin" -o "$kernel" -n "$n" -b "$b" -t "$THREADS" -g "$GPUS" --nowarmup "${EXTRA_FLAGS[@]}" > "$LOG_FILE" 2>&1
+  !! no result line (exit 139); see results/chameleon-gpu-phases_795377/e1_tile/runs/0043_parsec_lfq_spotrf_n19200_b720_rep2/0043_parsec_lfq_spotrf_n19200_b720_rep2.log
+scripts/gpu_doe_sweep.sh: line 150: 1780300 Segmentation fault      "$bin" -o "$kernel" -n "$n" -b "$b" -t "$THREADS" -g "$GPUS" --nowarmup "${EXTRA_FLAGS[@]}" > "$LOG_FILE" 2>&1
+  !! no result line (exit 139); see results/chameleon-gpu-phases_795377/e1_tile/runs/0053_parsec_lfq_spotrf_n19200_b1440_rep2/0053_parsec_lfq_spotrf_n19200_b1440_rep2.log
+scripts/gpu_doe_sweep.sh: line 150: 1780338 Segmentation fault      "$bin" -o "$kernel" -n "$n" -b "$b" -t "$THREADS" -g "$GPUS" --nowarmup "${EXTRA_FLAGS[@]}" > "$LOG_FILE" 2>&1
+  !! no result line (exit 139); see results/chameleon-gpu-phases_795377/e1_tile/runs/0054_parsec_lfq_dgeqrf_n19200_b1440_rep2/0054_parsec_lfq_dgeqrf_n19200_b1440_rep2.log
+scripts/gpu_doe_sweep.sh: line 150: 1780418 Segmentation fault      "$bin" -o "$kernel" -n "$n" -b "$b" -t "$THREADS" -g "$GPUS" --nowarmup "${EXTRA_FLAGS[@]}" > "$LOG_FILE" 2>&1
+  !! no result line (exit 139); see results/chameleon-gpu-phases_795377/e1_tile/runs/0059_parsec_lfq_sgeqrf_n19200_b720_rep2/0059_parsec_lfq_sgeqrf_n19200_b720_rep2.log
+scripts/gpu_doe_sweep.sh: line 150: 1780619 Segmentation fault      "$bin" -o "$kernel" -n "$n" -b "$b" -t "$THREADS" -g "$GPUS" --nowarmup "${EXTRA_FLAGS[@]}" > "$LOG_FILE" 2>&1
+  !! no result line (exit 139); see results/chameleon-gpu-phases_795377/e1_tile/runs/0065_parsec_lfq_dpotrf_n19200_b720_rep2/0065_parsec_lfq_dpotrf_n19200_b720_rep2.log
+scripts/gpu_doe_sweep.sh: line 150: 1780699 Segmentation fault      "$bin" -o "$kernel" -n "$n" -b "$b" -t "$THREADS" -g "$GPUS" --nowarmup "${EXTRA_FLAGS[@]}" > "$LOG_FILE" 2>&1
+  !! no result line (exit 139); see results/chameleon-gpu-phases_795377/e1_tile/runs/0068_parsec_lfq_sgeqrf_n19200_b1440_rep2/0068_parsec_lfq_sgeqrf_n19200_b1440_rep2.log
+scripts/gpu_doe_sweep.sh: line 150: 1780900 Segmentation fault      "$bin" -o "$kernel" -n "$n" -b "$b" -t "$THREADS" -g "$GPUS" --nowarmup "${EXTRA_FLAGS[@]}" > "$LOG_FILE" 2>&1
+  !! no result line (exit 139); see results/chameleon-gpu-phases_795377/e1_tile/runs/0075_parsec_lfq_dgeqrf_n19200_b720_rep2/0075_parsec_lfq_dgeqrf_n19200_b720_rep2.log
+scripts/gpu_doe_sweep.sh: line 150: 1780937 Aborted                 "$bin" -o "$kernel" -n "$n" -b "$b" -t "$THREADS" -g "$GPUS" --nowarmup "${EXTRA_FLAGS[@]}" > "$LOG_FILE" 2>&1
+  !! no result line (exit 134); see results/chameleon-gpu-phases_795377/e1_tile/runs/0077_parsec_lfq_dpotrf_n19200_b1440_rep2/0077_parsec_lfq_dpotrf_n19200_b1440_rep2.log
+scripts/gpu_doe_sweep.sh: line 150: 1780974 Segmentation fault      "$bin" -o "$kernel" -n "$n" -b "$b" -t "$THREADS" -g "$GPUS" --nowarmup "${EXTRA_FLAGS[@]}" > "$LOG_FILE" 2>&1
+  !! no result line (exit 139); see results/chameleon-gpu-phases_795377/e1_tile/runs/0081_parsec_lfq_spotrf_n19200_b1440_rep3/0081_parsec_lfq_spotrf_n19200_b1440_rep3.log
+scripts/gpu_doe_sweep.sh: line 150: 1781223 Segmentation fault      "$bin" -o "$kernel" -n "$n" -b "$b" -t "$THREADS" -g "$GPUS" --nowarmup "${EXTRA_FLAGS[@]}" > "$LOG_FILE" 2>&1
+  !! no result line (exit 139); see results/chameleon-gpu-phases_795377/e1_tile/runs/0088_parsec_lfq_dpotrf_n19200_b720_rep3/0088_parsec_lfq_dpotrf_n19200_b720_rep3.log
+scripts/gpu_doe_sweep.sh: line 150: 1781303 Segmentation fault      "$bin" -o "$kernel" -n "$n" -b "$b" -t "$THREADS" -g "$GPUS" --nowarmup "${EXTRA_FLAGS[@]}" > "$LOG_FILE" 2>&1
+  !! no result line (exit 139); see results/chameleon-gpu-phases_795377/e1_tile/runs/0094_parsec_lfq_dpotrf_n19200_b1440_rep3/0094_parsec_lfq_dpotrf_n19200_b1440_rep3.log
+scripts/gpu_doe_sweep.sh: line 150: 1781426 Segmentation fault      "$bin" -o "$kernel" -n "$n" -b "$b" -t "$THREADS" -g "$GPUS" --nowarmup "${EXTRA_FLAGS[@]}" > "$LOG_FILE" 2>&1
+  !! no result line (exit 139); see results/chameleon-gpu-phases_795377/e1_tile/runs/0100_parsec_lfq_spotrf_n19200_b720_rep3/0100_parsec_lfq_spotrf_n19200_b720_rep3.log
+scripts/gpu_doe_sweep.sh: line 150: 1781588 Segmentation fault      "$bin" -o "$kernel" -n "$n" -b "$b" -t "$THREADS" -g "$GPUS" --nowarmup "${EXTRA_FLAGS[@]}" > "$LOG_FILE" 2>&1
+  !! no result line (exit 139); see results/chameleon-gpu-phases_795377/e1_tile/runs/0103_parsec_lfq_dgeqrf_n19200_b720_rep3/0103_parsec_lfq_dgeqrf_n19200_b720_rep3.log
+scripts/gpu_doe_sweep.sh: line 150: 1781836 Segmentation fault      "$bin" -o "$kernel" -n "$n" -b "$b" -t "$THREADS" -g "$GPUS" --nowarmup "${EXTRA_FLAGS[@]}" > "$LOG_FILE" 2>&1
+  !! no result line (exit 139); see results/chameleon-gpu-phases_795377/e1_tile/runs/0109_parsec_lfq_sgeqrf_n19200_b1440_rep3/0109_parsec_lfq_sgeqrf_n19200_b1440_rep3.log
+scripts/gpu_doe_sweep.sh: line 150: 1781916 Segmentation fault      "$bin" -o "$kernel" -n "$n" -b "$b" -t "$THREADS" -g "$GPUS" --nowarmup "${EXTRA_FLAGS[@]}" > "$LOG_FILE" 2>&1
+  !! no result line (exit 139); see results/chameleon-gpu-phases_795377/e1_tile/runs/0115_parsec_lfq_sgeqrf_n19200_b720_rep3/0115_parsec_lfq_sgeqrf_n19200_b720_rep3.log
+scripts/gpu_doe_sweep.sh: line 150: 1781953 Segmentation fault      "$bin" -o "$kernel" -n "$n" -b "$b" -t "$THREADS" -g "$GPUS" --nowarmup "${EXTRA_FLAGS[@]}" > "$LOG_FILE" 2>&1
+  !! no result line (exit 139); see results/chameleon-gpu-phases_795377/e1_tile/runs/0117_parsec_lfq_dgeqrf_n19200_b1440_rep3/0117_parsec_lfq_dgeqrf_n19200_b1440_rep3.log
+scripts/gpu_doe_sweep.sh: line 150: 1782156 Segmentation fault      "$bin" -o "$kernel" -n "$n" -b "$b" -t "$THREADS" -g "$GPUS" --nowarmup "${EXTRA_FLAGS[@]}" > "$LOG_FILE" 2>&1
+  !! no result line (exit 139); see results/chameleon-gpu-phases_795377/e1_tile/runs/0122_parsec_lfq_sgeqrf_n19200_b1440_rep4/0122_parsec_lfq_sgeqrf_n19200_b1440_rep4.log
+scripts/gpu_doe_sweep.sh: line 150: 1782315 Segmentation fault      "$bin" -o "$kernel" -n "$n" -b "$b" -t "$THREADS" -g "$GPUS" --nowarmup "${EXTRA_FLAGS[@]}" > "$LOG_FILE" 2>&1
+  !! no result line (exit 139); see results/chameleon-gpu-phases_795377/e1_tile/runs/0125_parsec_lfq_sgeqrf_n19200_b720_rep4/0125_parsec_lfq_sgeqrf_n19200_b720_rep4.log
+scripts/gpu_doe_sweep.sh: line 150: 1782771 Segmentation fault      "$bin" -o "$kernel" -n "$n" -b "$b" -t "$THREADS" -g "$GPUS" --nowarmup "${EXTRA_FLAGS[@]}" > "$LOG_FILE" 2>&1
+  !! no result line (exit 139); see results/chameleon-gpu-phases_795377/e1_tile/runs/0141_parsec_lfq_dgeqrf_n19200_b1440_rep4/0141_parsec_lfq_dgeqrf_n19200_b1440_rep4.log
+scripts/gpu_doe_sweep.sh: line 150: 1782808 Segmentation fault      "$bin" -o "$kernel" -n "$n" -b "$b" -t "$THREADS" -g "$GPUS" --nowarmup "${EXTRA_FLAGS[@]}" > "$LOG_FILE" 2>&1
+  !! no result line (exit 139); see results/chameleon-gpu-phases_795377/e1_tile/runs/0142_parsec_lfq_dpotrf_n19200_b1440_rep4/0142_parsec_lfq_dpotrf_n19200_b1440_rep4.log
+scripts/gpu_doe_sweep.sh: line 150: 1782931 Aborted                 "$bin" -o "$kernel" -n "$n" -b "$b" -t "$THREADS" -g "$GPUS" --nowarmup "${EXTRA_FLAGS[@]}" > "$LOG_FILE" 2>&1
+  !! no result line (exit 134); see results/chameleon-gpu-phases_795377/e1_tile/runs/0150_parsec_lfq_dpotrf_n19200_b720_rep4/0150_parsec_lfq_dpotrf_n19200_b720_rep4.log
+scripts/gpu_doe_sweep.sh: line 150: 1783090 Segmentation fault      "$bin" -o "$kernel" -n "$n" -b "$b" -t "$THREADS" -g "$GPUS" --nowarmup "${EXTRA_FLAGS[@]}" > "$LOG_FILE" 2>&1
+  !! no result line (exit 139); see results/chameleon-gpu-phases_795377/e1_tile/runs/0154_parsec_lfq_dgeqrf_n19200_b720_rep4/0154_parsec_lfq_dgeqrf_n19200_b720_rep4.log
+scripts/gpu_doe_sweep.sh: line 150: 1783127 Aborted                 "$bin" -o "$kernel" -n "$n" -b "$b" -t "$THREADS" -g "$GPUS" --nowarmup "${EXTRA_FLAGS[@]}" > "$LOG_FILE" 2>&1
+  !! no result line (exit 134); see results/chameleon-gpu-phases_795377/e1_tile/runs/0157_parsec_lfq_spotrf_n19200_b1440_rep4/0157_parsec_lfq_spotrf_n19200_b1440_rep4.log
+scripts/gpu_doe_sweep.sh: line 150: 1783164 Segmentation fault      "$bin" -o "$kernel" -n "$n" -b "$b" -t "$THREADS" -g "$GPUS" --nowarmup "${EXTRA_FLAGS[@]}" > "$LOG_FILE" 2>&1
+  !! no result line (exit 139); see results/chameleon-gpu-phases_795377/e1_tile/runs/0158_parsec_lfq_spotrf_n19200_b720_rep4/0158_parsec_lfq_spotrf_n19200_b720_rep4.log
+scripts/gpu_doe_sweep.sh: line 150: 1783743 Segmentation fault      "$bin" -o "$kernel" -n "$n" -b "$b" -t "$THREADS" -g "$GPUS" --nowarmup "${EXTRA_FLAGS[@]}" > "$LOG_FILE" 2>&1
+  !! no result line (exit 139); see results/chameleon-gpu-phases_795377/e1_tile/runs/0179_parsec_lfq_sgeqrf_n19200_b720_rep5/0179_parsec_lfq_sgeqrf_n19200_b720_rep5.log
+scripts/gpu_doe_sweep.sh: line 150: 1783780 Segmentation fault      "$bin" -o "$kernel" -n "$n" -b "$b" -t "$THREADS" -g "$GPUS" --nowarmup "${EXTRA_FLAGS[@]}" > "$LOG_FILE" 2>&1
+  !! no result line (exit 139); see results/chameleon-gpu-phases_795377/e1_tile/runs/0180_parsec_lfq_sgeqrf_n19200_b1440_rep5/0180_parsec_lfq_sgeqrf_n19200_b1440_rep5.log
+scripts/gpu_doe_sweep.sh: line 150: 1783817 Aborted                 "$bin" -o "$kernel" -n "$n" -b "$b" -t "$THREADS" -g "$GPUS" --nowarmup "${EXTRA_FLAGS[@]}" > "$LOG_FILE" 2>&1
+  !! no result line (exit 134); see results/chameleon-gpu-phases_795377/e1_tile/runs/0183_parsec_lfq_spotrf_n19200_b720_rep5/0183_parsec_lfq_spotrf_n19200_b720_rep5.log
+scripts/gpu_doe_sweep.sh: line 150: 1784108 Segmentation fault      "$bin" -o "$kernel" -n "$n" -b "$b" -t "$THREADS" -g "$GPUS" --nowarmup "${EXTRA_FLAGS[@]}" > "$LOG_FILE" 2>&1
+  !! no result line (exit 139); see results/chameleon-gpu-phases_795377/e1_tile/runs/0193_parsec_lfq_dgeqrf_n19200_b720_rep5/0193_parsec_lfq_dgeqrf_n19200_b720_rep5.log
+scripts/gpu_doe_sweep.sh: line 150: 1784224 Segmentation fault      "$bin" -o "$kernel" -n "$n" -b "$b" -t "$THREADS" -g "$GPUS" --nowarmup "${EXTRA_FLAGS[@]}" > "$LOG_FILE" 2>&1
+  !! no result line (exit 139); see results/chameleon-gpu-phases_795377/e1_tile/runs/0194_parsec_lfq_spotrf_n19200_b1440_rep5/0194_parsec_lfq_spotrf_n19200_b1440_rep5.log
+scripts/gpu_doe_sweep.sh: line 150: 1784348 Segmentation fault      "$bin" -o "$kernel" -n "$n" -b "$b" -t "$THREADS" -g "$GPUS" --nowarmup "${EXTRA_FLAGS[@]}" > "$LOG_FILE" 2>&1
+  !! no result line (exit 139); see results/chameleon-gpu-phases_795377/e1_tile/runs/0198_parsec_lfq_dpotrf_n19200_b720_rep5/0198_parsec_lfq_dpotrf_n19200_b720_rep5.log
+scripts/gpu_doe_sweep.sh: line 150: 1784385 Segmentation fault      "$bin" -o "$kernel" -n "$n" -b "$b" -t "$THREADS" -g "$GPUS" --nowarmup "${EXTRA_FLAGS[@]}" > "$LOG_FILE" 2>&1
+  !! no result line (exit 139); see results/chameleon-gpu-phases_795377/e1_tile/runs/0199_parsec_lfq_dgeqrf_n19200_b1440_rep5/0199_parsec_lfq_dgeqrf_n19200_b1440_rep5.log
+scripts/gpu_doe_sweep.sh: line 150: 1784422 Segmentation fault      "$bin" -o "$kernel" -n "$n" -b "$b" -t "$THREADS" -g "$GPUS" --nowarmup "${EXTRA_FLAGS[@]}" > "$LOG_FILE" 2>&1
+  !! no result line (exit 139); see results/chameleon-gpu-phases_795377/e1_tile/runs/0200_parsec_lfq_dpotrf_n19200_b1440_rep5/0200_parsec_lfq_dpotrf_n19200_b1440_rep5.log

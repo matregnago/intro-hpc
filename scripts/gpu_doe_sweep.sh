@@ -27,6 +27,20 @@ DESIGN_FILE="${DESIGN_FILE:?DESIGN_FILE not set}"
 
 THREADS="${THREADS:-16}"
 GPUS="${GPUS:-1}"
+# Tracing for E4. TRACE=1 captures StarPU FxT / PaRSEC profile files next to
+# each run's log -- exactly the mechanism scripts/run.sh uses -- so that
+# scripts/analysis/plot_traces.r (StarVZ) can read them. Default off.
+TRACE="${TRACE:-0}"
+# TRACE_FULL=1 (only meaningful with TRACE=1) collects the *richest* trace we can
+# without recompiling, for the StarVZ "Fase A" adapter (docs/starvz_e_captura_parsec.md).
+# For PaRSEC it adds the task_profiler PINS module, so the .prof also carries
+# runtime/scheduler states (EXEC/RELEASE_DEPS/ACTIVATE_CB) -> a non-empty
+# `starpu`-equivalent tibble. CUDA H2D/D2H/exec/own are already all-on by default
+# (parsec/devices/cuda/dev_cuda.c: parsec_cuda_trackable_events). StarPU's FxT is
+# already complete under TRACE=1, so no extra knob is needed on that side.
+# The DAG (.dot) is NOT collected here: it needs a PARSEC_PROF_GRAPHER rebuild
+# (that is "Fase B"). Default off.
+TRACE_FULL="${TRACE_FULL:-0}"
 # How many calibration passes to run per StarPU perf-model kernel before timing.
 # One pass already yields hundreds of gemm/trsm/syrk samples (>> StarPU's
 # CALIBRATE_MINIMUM=10), but potrf has only ~(n/b) tasks, so a couple of passes
@@ -97,25 +111,44 @@ while IFS=',' read -r precision algorithm n b runtime scheduler rep; do
     LOG_FILE="${RUN_DIR}/${RUN_ID}.log"
     mkdir -p "$RUN_DIR"
 
+    EXTRA_FLAGS=()
     case "$runtime" in
         starpu)
             export STARPU_SCHED="$scheduler"
             export STARPU_NCUDA="$GPUS"
             export STARPU_CALIBRATE=0   # freeze the model: measure, don't fit
             unset PARSEC_MCA_mca_sched PARSEC_MCA_device_cuda_enabled || true
+            if [[ "$TRACE" == "1" ]]; then
+                export STARPU_FXT_TRACE=1
+                export STARPU_FXT_PREFIX="${RUN_DIR}/"
+                EXTRA_FLAGS+=(--trace)
+            else
+                export STARPU_FXT_TRACE=0
+                unset STARPU_FXT_PREFIX || true
+            fi
             ;;
         parsec)
             export PARSEC_MCA_mca_sched="$scheduler"
             export PARSEC_MCA_device_cuda_enabled=1
             unset STARPU_SCHED STARPU_NCUDA STARPU_CALIBRATE || true
+            if [[ "$TRACE" == "1" ]]; then
+                export PARSEC_MCA_profile_filename="${RUN_DIR}/cham_${kernel}"
+                if [[ "$TRACE_FULL" == "1" ]]; then
+                    export PARSEC_MCA_mca_pins=task_profiler
+                else
+                    unset PARSEC_MCA_mca_pins || true
+                fi
+            else
+                unset PARSEC_MCA_profile_filename PARSEC_MCA_mca_pins || true
+            fi
             ;;
         *) echo "unknown runtime: $runtime" >&2; exit 1 ;;
     esac
 
-    echo "[$(date +%T)] ${RUN_ID} (t=${THREADS} g=${GPUS})"
+    echo "[$(date +%T)] ${RUN_ID} (t=${THREADS} g=${GPUS} trace=${TRACE})"
     set +e
     "$bin" -o "$kernel" -n "$n" -b "$b" -t "$THREADS" -g "$GPUS" --nowarmup \
-        > "$LOG_FILE" 2>&1
+        "${EXTRA_FLAGS[@]}" > "$LOG_FILE" 2>&1
     status=$?
     set -e
 

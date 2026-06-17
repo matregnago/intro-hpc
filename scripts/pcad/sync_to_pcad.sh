@@ -18,7 +18,7 @@ rsync --verbose --progress --recursive --links --times \
     --exclude='plots/' \
     --exclude='tex/' \
     --exclude='slides/' \
-    --exclude='analysis.ipynb' \
+    --exclude='starvz' \
     --exclude='*.out' \
     --exclude='*.err' \
     ./ "${SSH_HOST}:~/${REMOTE_DIR}/"
