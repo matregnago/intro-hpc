@@ -1,2 +1,0 @@
-WARNING: A runtime environment variable or a configuration file has overridden the number of required threads from 16 to 1
-Fatal glibc error: malloc.c:2599 (sysmalloc): assertion failed: (old_top == initial_top (av) && old_size == 0) || ((unsigned long) (old_size) >= MINSIZE && prev_inuse (old_top) && ((unsigned long) old_end & (pagesize - 1)) == 0)

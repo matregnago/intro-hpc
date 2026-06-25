@@ -38,9 +38,20 @@ TRACE="${TRACE:-0}"
 # `starpu`-equivalent tibble. CUDA H2D/D2H/exec/own are already all-on by default
 # (parsec/devices/cuda/dev_cuda.c: parsec_cuda_trackable_events). StarPU's FxT is
 # already complete under TRACE=1, so no extra knob is needed on that side.
-# The DAG (.dot) is NOT collected here: it needs a PARSEC_PROF_GRAPHER rebuild
-# (that is "Fase B"). Default off.
+# It also collects the PaRSEC task-graph DAG (.dot) -- the old "Fase B": the
+# build already enables PARSEC_PROF_GRAPHER (parsec.nix) and Chameleon forwards
+# the "-." option to parsec_init when CHAMELEON_PARSEC_DOT is set
+# (runtime/parsec/control/runtime_control.c), so the grapher writes
+# <run_dir>/cham_<kernel>.dot next to the .prof -- the piece StarVZ needs for
+# the Dag/Task_handles tibbles. Default off.
 TRACE_FULL="${TRACE_FULL:-0}"
+# TRACE_DAG=1 (only meaningful with TRACE=1, PaRSEC only) emits the task-graph
+# DAG (.dot) via CHAMELEON_PARSEC_DOT. Decoupled from TRACE_FULL because at
+# experiment scale (n=19200) the DAG is a huge unrenderable hairball and the
+# grapher pollutes the timed trace -- the DAG is meant for a small dedicated run
+# (scripts/capture_parsec_dag.sh / slurm/parsec_dag.slurm). Defaults to
+# TRACE_FULL so existing callers keep their behavior.
+TRACE_DAG="${TRACE_DAG:-$TRACE_FULL}"
 # How many calibration passes to run per StarPU perf-model kernel before timing.
 # One pass already yields hundreds of gemm/trsm/syrk samples (>> StarPU's
 # CALIBRATE_MINIMUM=10), but potrf has only ~(n/b) tasks, so a couple of passes
@@ -138,8 +149,15 @@ while IFS=',' read -r precision algorithm n b runtime scheduler rep; do
                 else
                     unset PARSEC_MCA_mca_pins || true
                 fi
+                if [[ "$TRACE_DAG" == "1" ]]; then
+                    # DAG (.dot): Chameleon forwards "-." to parsec_init when this
+                    # is set, so the grapher writes ${RUN_DIR}/cham_${kernel}.dot.
+                    export CHAMELEON_PARSEC_DOT="${RUN_DIR}/cham_${kernel}"
+                else
+                    unset CHAMELEON_PARSEC_DOT || true
+                fi
             else
-                unset PARSEC_MCA_profile_filename PARSEC_MCA_mca_pins || true
+                unset PARSEC_MCA_profile_filename PARSEC_MCA_mca_pins CHAMELEON_PARSEC_DOT || true
             fi
             ;;
         *) echo "unknown runtime: $runtime" >&2; exit 1 ;;

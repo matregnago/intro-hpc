@@ -1,2 +1,0 @@
-Id;Function;threads;gpus;P;Q;mtxfmt;nb;uplo;n;lda;seedA;tsub;time;gflops
-0;spotrf;16;1;1;1;1;720;121;19200;19200;1804289383;0.000000e+00;3.028101e-01;7.791948e+03

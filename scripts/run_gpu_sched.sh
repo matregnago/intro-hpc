@@ -35,7 +35,7 @@ mkdir -p "$RESULTS_DIR" "$RUNS_DIR"
 cp "$DESIGN_FILE" "$RESULTS_DIR/design.csv"
 echo "runtime,scheduler,algorithm,precision,n,b,threads,gpus,rep,time,gflops" > "$RESULTS_FILE"
 
-PASS_ENV=(RESULTS_DIR RESULTS_FILE RUNS_DIR DESIGN_FILE THREADS GPUS)
+PASS_ENV=(RESULTS_DIR RESULTS_FILE RUNS_DIR DESIGN_FILE THREADS GPUS TRACE TRACE_FULL)
 env_args=()
 for v in "${PASS_ENV[@]}"; do
     [[ -n "${!v:-}" ]] && env_args+=("$v=${!v}")

@@ -1,0 +1,3 @@
+algorithm,n,b,scheduler
+spotrf,3840,960,lfq
+sgeqrf,3840,960,lfq

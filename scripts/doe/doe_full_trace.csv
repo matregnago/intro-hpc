@@ -1,3 +1,5 @@
 precision,algorithm,n,b,runtime,scheduler,rep
-FP64,potrf,19200,960,starpu,dmdas,1
-FP64,potrf,19200,960,parsec,lfq,1
+FP32,potrf,19200,960,starpu,dmdas,1
+FP32,geqrf,19200,960,starpu,dmdas,1
+FP32,potrf,19200,960,parsec,lfq,1
+FP32,geqrf,19200,960,parsec,lfq,1

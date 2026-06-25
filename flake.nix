@@ -145,6 +145,7 @@
             buildInputs = [
               pkgs.marp-cli
               pkgs.chromium
+              pkgs.graphviz
               starvz_tools
               rEnv
             ];

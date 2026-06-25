@@ -38,9 +38,13 @@ mkdir -p "${RESULTS_DIR}"
 cp "scripts/doe/doe_full_trace.csv" "${RESULTS_DIR}/design.csv"
 export DESIGN_FILE="${RESULTS_DIR}/design.csv"
 
-# Captura completa do trace.
+# Captura completa do trace. TRACE_DAG=0: a DAG sai do job pequeno dedicado
+# (slurm/parsec_dag.slurm); em n=19200 ela seria irrenderavel e o grapher
+# poluiria o tempo do trace. Mantemos TRACE_FULL=1 pelo PINS task_profiler,
+# que enriquece o .prof do PaRSEC para o StarVZ.
 export TRACE=1
 export TRACE_FULL=1
+export TRACE_DAG=0
 export THREADS=16
 export GPUS=1
 
@@ -50,6 +54,7 @@ run_phase() {
     if ! nixw nix develop ".#${shell}" --impure --command env \
         RESULTS_DIR="$RESULTS_DIR" DESIGN_FILE="$DESIGN_FILE" \
         THREADS="$THREADS" GPUS="$GPUS" TRACE="$TRACE" TRACE_FULL="$TRACE_FULL" \
+        TRACE_DAG="$TRACE_DAG" \
         bash scripts/gpu_doe_sweep.sh "$runtime"; then
         echo "!!! phase ${runtime} (.#${shell}) failed; continuing" >&2
     fi

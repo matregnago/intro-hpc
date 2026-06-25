@@ -37,23 +37,43 @@ int RUNTIME_init( CHAM_context_t *chamctxt,
 {
     int hres = CHAMELEON_ERR_NOT_INITIALIZED;
     int default_ncores = -1;
-    int *argc = (int *)malloc(sizeof(int));
-    *argc = 0;
+    int    argc = 0;
+    /* NULL-terminated: parsec_argv_copy() walks argv until it hits NULL
+     * (it ignores argc), so the array needs a trailing NULL slot. */
+    char  *argv_buf[4] = { NULL, NULL, NULL, NULL };
+    char **argv  = NULL;
+    char ***pargv = NULL;
+    char  *dotfile = getenv("CHAMELEON_PARSEC_DOT");
+
+    /* PaRSEC only emits its task-graph .dot when the "-." / "--dot <file>"
+     * option is parsed from argv (there is no MCA/env equivalent), and
+     * Chameleon normally hands parsec_init an empty argv. When
+     * CHAMELEON_PARSEC_DOT is set, synthesize a minimal argv so PaRSEC's
+     * grapher (built with PARSEC_PROF_GRAPHER=ON) writes
+     * "<CHAMELEON_PARSEC_DOT>.dot". Left unset, the argv stays empty and the
+     * grapher is a no-op. */
+    if ( (NULL != dotfile) && ('\0' != dotfile[0]) ) {
+        argv_buf[0] = "chameleon";
+        argv_buf[1] = "-.";
+        argv_buf[2] = dotfile;
+        argv_buf[3] = NULL;
+        argc  = 3;
+        argv  = argv_buf;
+        pargv = &argv;
+    }
 
     /* Initializing parsec context */
     if( 0 < ncpus ) {
         default_ncores = ncpus;
     }
     chamctxt->parallel_enabled = CHAMELEON_TRUE;
-    chamctxt->schedopt = (void *)parsec_init(default_ncores, argc, NULL);
+    chamctxt->schedopt = (void *)parsec_init(default_ncores, &argc, pargv);
 
     if ( NULL != chamctxt->schedopt ) {
         chamctxt->nworkers = ncpus;
         chamctxt->nthreads_per_worker = nthreads_per_worker;
         hres = CHAMELEON_SUCCESS;
     }
-
-    free(argc);
 
     (void)ncudas;
     return hres;
