@@ -78,7 +78,7 @@ make_design <- function(n_fixed) {
 for (node in names(nodes)) {
   cfg <- nodes[[node]]
   design <- make_design(cfg$n)
-  out <- sprintf("scripts/doe/doe_gpu_tile_%s.csv", node)
+  out <- sprintf("final/doe_gpu_tile_%s.csv", node)
   write_csv(design, out, progress = FALSE)
   cat(sprintf(
     "%-4s -> %s : %d execucoes (N=%d, b={%s}, reps=%d, THREADS=%d)\n",

@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Per-runtime GPU sweep, run *inside* the matching dev shell
-# (.#starpu-cuda or .#parsec). Sweeps {dpotrf,dgeqrf} x N x reps for one
+# (.#starpu or .#parsec). Sweeps {dpotrf,dgeqrf} x N x reps for one
 # runtime with the GPU enabled (-g 1) and appends rows to $RESULTS_FILE.
 #
 #   usage: gpu_sweep.sh <starpu|parsec>

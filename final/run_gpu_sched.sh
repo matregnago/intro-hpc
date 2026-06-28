@@ -3,9 +3,9 @@
 # Orchestrator for the StarPU-vs-PaRSEC GPU *scheduler-impact* study (E2), the
 # single-node GPU analogue of Schnorr's WAMCA-2025 nmad/openmpi experiment.
 #
-#   usage: bash scripts/run_gpu_sched.sh
+#   usage: bash final/run_gpu_sched.sh
 #
-# Reads a DoE CSV ($DESIGN_FILE, default scripts/doe/doe_gpu_sched.csv), runs
+# Reads a DoE CSV ($DESIGN_FILE, default final/doe_gpu_sched.csv), runs
 # every row of it once per runtime inside that runtime's CUDA dev shell, then
 # renders the comparison plots. Tunable via env: DESIGN_FILE, THREADS, GPUS.
 #
@@ -23,11 +23,11 @@ RESULTS_DIR="${RESULTS_DIR:-data/gpu_sched_${STAMP}}"
 export RESULTS_DIR
 export RESULTS_FILE="${RESULTS_DIR}/results.csv"
 export RUNS_DIR="${RESULTS_DIR}/runs"
-export DESIGN_FILE="${DESIGN_FILE:-scripts/doe/doe_gpu_sched.csv}"
+export DESIGN_FILE="${DESIGN_FILE:-final/doe_gpu_sched.csv}"
 
 if [[ ! -f "$DESIGN_FILE" ]]; then
     echo "missing $DESIGN_FILE -- generate it first:" >&2
-    echo "  nix develop --impure --command Rscript scripts/doe/doe_gpu_sched.r" >&2
+    echo "  nix develop --impure --command Rscript final/doe_gpu_sched.r" >&2
     exit 1
 fi
 
@@ -46,11 +46,11 @@ echo "==> Results: $RESULTS_DIR"
 
 echo
 echo "===== StarPU (.#starpu) ====="
-nix develop .#starpu --impure --command env "${env_args[@]}" bash scripts/gpu_doe_sweep.sh starpu
+nix develop .#starpu --impure --command env "${env_args[@]}" bash final/gpu_doe_sweep.sh starpu
 
 echo
 echo "===== PaRSEC (.#parsec) ====="
-nix develop .#parsec --impure --command env "${env_args[@]}" bash scripts/gpu_doe_sweep.sh parsec
+nix develop .#parsec --impure --command env "${env_args[@]}" bash final/gpu_doe_sweep.sh parsec
 
 echo
 echo "===== Plots (default shell) ====="

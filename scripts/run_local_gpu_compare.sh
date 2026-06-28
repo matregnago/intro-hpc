@@ -43,8 +43,8 @@ echo "==> Results dir: $RESULTS_DIR"
 echo "==> Sweep: BIN='${TESTING_BIN:-chameleon_stesting}' OPS='${OPS:-spotrf sgeqrf}' NS='${NS:-9600 19200 28800 38400}' B='${B:-960}' THREADS='${THREADS:-16}' REPS='${REPS:-3}'"
 
 echo
-echo "===== StarPU (.#starpu-cuda) ====="
-nix develop .#starpu-cuda --impure --command env "${env_args[@]}" bash scripts/gpu_sweep.sh starpu
+echo "===== StarPU (.#starpu) ====="
+nix develop .#starpu --impure --command env "${env_args[@]}" bash scripts/gpu_sweep.sh starpu
 
 echo
 echo "===== PaRSEC (.#parsec) ====="
