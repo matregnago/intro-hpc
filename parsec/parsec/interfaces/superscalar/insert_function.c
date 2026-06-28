@@ -1141,6 +1141,64 @@ hook_of_dtd_task( parsec_execution_stream_t *es,
 #endif /* !defined(PARSEC_DRY_RUN) */
 #endif
 
+#if defined(PARSEC_HAVE_CUDA)
+    /* This chore is the CPU incarnation of a DTD task: reaching here means the
+     * body just executed on the host (a GPU-capable task goes through
+     * hook_of_dtd_task_cuda instead, and a CPU-only task class like
+     * getrf_nopiv has no CUDA chore at all). When such a CPU body writes a
+     * tile in place, the host copy becomes the authoritative version, but the
+     * DTD CPU path never advanced PaRSEC's coherency protocol. If a device
+     * copy of that tile already existed (e.g. a prior GPU trailing-update
+     * produced it and pushed it out to host), it stayed marked current with an
+     * equal version, so the next GPU stage-in (dev_cuda.c:1101 /
+     * parsec_data_transfer_ownership_to_copy) saw nothing to transfer and fed
+     * the kernel the pre-write device data. That is the root cause of LU
+     * (getrf_nopiv) returning garbage on PaRSEC+GPU while it is correct on CPU
+     * and on StarPU+GPU (whose panel is likewise CPU-only). Claim host
+     * ownership, bump the host version, and invalidate any device copies so the
+     * next GPU read re-stages from host. We set the fields directly rather than
+     * calling parsec_data_transfer_ownership_to_copy() on purpose: that helper
+     * bumps the source copy's reader count, which the DTD CPU path never
+     * balances and which deadlocks the next GPU writer. Cholesky is unaffected
+     * (its potrf panel runs on the GPU, so no CPU write feeds a GPU read). */
+    {
+        int fi;
+        for( fi = 0; fi < this_task->task_class->nb_flows; fi++ ) {
+            parsec_dtd_flow_info_t *flow = FLOW_OF(dtd_task, fi);
+            int ot;
+            parsec_data_copy_t *hc;
+            parsec_data_t *orig;
+            uint32_t d;
+            int invalidated = 0;
+            if( NULL == flow ) continue;
+            ot = flow->op_type & GET_OP_TYPE;
+            if( (ot != INOUT) && (ot != OUTPUT) && (ot != ATOMIC_WRITE) ) continue;
+
+            /* For a CPU-executed DTD task the working copy is data_in (the host
+             * copy, == tile->data_copy); data_out is only populated on the GPU
+             * path. */
+            hc = this_task->data[fi].data_in;
+            if( NULL == hc ) hc = this_task->data[fi].data_out;
+            if( NULL == hc ) continue;
+            orig = hc->original;
+            if( NULL == orig ) continue;
+
+            for( d = 1; d < parsec_nb_devices; d++ ) {
+                parsec_data_copy_t *dc = orig->device_copies[d];
+                if( NULL != dc && DATA_COHERENCY_INVALID != dc->coherency_state ) {
+                    dc->coherency_state = DATA_COHERENCY_INVALID;
+                    invalidated = 1;
+                }
+            }
+            if( invalidated ) {
+                hc->version++;
+                hc->coherency_state = DATA_COHERENCY_OWNED;
+                orig->owner_device = 0;
+            }
+        }
+    }
+#endif /* PARSEC_HAVE_CUDA */
+
     return rc;
 }
 

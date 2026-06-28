@@ -52,6 +52,12 @@ TRACE_FULL="${TRACE_FULL:-0}"
 # (scripts/capture_parsec_dag.sh / slurm/parsec_dag.slurm). Defaults to
 # TRACE_FULL so existing callers keep their behavior.
 TRACE_DAG="${TRACE_DAG:-$TRACE_FULL}"
+# TRACE_STATS=1 prints the runtimes' NATIVE data-movement counters into each run's
+# log (the cleanest H2D/D2H evidence for the GPU thrashing analysis, independent
+# of the trace): StarPU STARPU_BUS_STATS (+ WORKER_STATS), PaRSEC
+# device_show_statistics. They dump at deinit to stderr/stdout (captured in the
+# log) and add no measurable overhead, so default them ON whenever tracing.
+TRACE_STATS="${TRACE_STATS:-$TRACE}"
 # How many calibration passes to run per StarPU perf-model kernel before timing.
 # One pass already yields hundreds of gemm/trsm/syrk samples (>> StarPU's
 # CALIBRATE_MINIMUM=10), but potrf has only ~(n/b) tasks, so a couple of passes
@@ -129,6 +135,11 @@ while IFS=',' read -r precision algorithm n b runtime scheduler rep; do
             export STARPU_NCUDA="$GPUS"
             export STARPU_CALIBRATE=0   # freeze the model: measure, don't fit
             unset PARSEC_MCA_mca_sched PARSEC_MCA_device_cuda_enabled || true
+            if [[ "$TRACE_STATS" == "1" ]]; then
+                export STARPU_BUS_STATS=1 STARPU_WORKER_STATS=1
+            else
+                unset STARPU_BUS_STATS STARPU_WORKER_STATS || true
+            fi
             if [[ "$TRACE" == "1" ]]; then
                 export STARPU_FXT_TRACE=1
                 export STARPU_FXT_PREFIX="${RUN_DIR}/"
@@ -142,6 +153,11 @@ while IFS=',' read -r precision algorithm n b runtime scheduler rep; do
             export PARSEC_MCA_mca_sched="$scheduler"
             export PARSEC_MCA_device_cuda_enabled=1
             unset STARPU_SCHED STARPU_NCUDA STARPU_CALIBRATE || true
+            if [[ "$TRACE_STATS" == "1" ]]; then
+                export PARSEC_MCA_device_show_statistics=1
+            else
+                unset PARSEC_MCA_device_show_statistics || true
+            fi
             if [[ "$TRACE" == "1" ]]; then
                 export PARSEC_MCA_profile_filename="${RUN_DIR}/cham_${kernel}"
                 if [[ "$TRACE_FULL" == "1" ]]; then

@@ -14,7 +14,14 @@
 #                                        structure to timing (see dag converter)
 #   - SubmitOrder                     <- rank over (tpid, tid); DTD assigns task
 #                                        ids at insertion, so this is submit order
-#   - Model/File/Line/Footprint/GFlop/Parameters/SubmitTime/Tag/Iteration/
+#   - Iteration                       <- DERIVED, not in the trace. Chameleon submits
+#                                        a right-looking factorization, so each outer
+#                                        iteration k opens with exactly one diagonal
+#                                        kernel (potrf/geqrt/getrf). Counting those
+#                                        over SubmitOrder gives the exact k; tasks
+#                                        before the first opener (matrix gen) -> NA.
+#                                        This feeds StarVZ's panel_kiteration().
+#   - Model/File/Line/Footprint/GFlop/Parameters/SubmitTime/Tag/
 #     NumaNodes/Control               <- not in the PaRSEC trace -> NA
 #       (GFlop is derivable analytically per kernel+tile; left NA for now.)
 #
@@ -56,6 +63,11 @@ event_category <- function(name) {
     TRUE                                                             ~ "Computation"
   )
 }
+
+# Diagonal kernels that open one outer iteration k of a right-looking
+# factorization (Cholesky/QR/LU). Exactly one fires per k, so counting them over
+# the DTD submission order recovers the iteration index (see Iteration below).
+ITER_OPENERS <- c("potrf", "geqrt", "getrf")
 
 # Final schema (column order + types) of StarVZ's StarPU tasks.parquet.
 TASKS_COLS <- c(
@@ -245,6 +257,12 @@ convert_one <- function(run_dir, dbp2xml) {
               tid  = as.integer(str_extract(key, "\\d+$"))) |>
     arrange(tpid, tid) |>
     mutate(SubmitOrder = row_number()) |>
+    # k = (#openers seen so far) - 1, over submission order. Tasks before the
+    # first opener (matrix generation) get -1 -> NA, so they drop out cleanly.
+    mutate(Iteration = {
+      it <- cumsum(tolower(Name) %in% ITER_OPENERS) - 1L
+      ifelse(it < 0L, NA_integer_, it)
+    }) |>
     left_join(deps, by = "key") |>
     left_join(timing, by = "key") |>
     transmute(
@@ -267,7 +285,7 @@ convert_one <- function(run_dir, dbp2xml) {
       EndTime     = EndTime,
       Footprint   = NA_character_,
       GFlop       = NA_real_,
-      Iteration   = NA_integer_,
+      Iteration   = as.integer(Iteration),
       Parameters  = NA_character_,
       NumaNodes   = NA_character_
     ) |>
@@ -277,9 +295,11 @@ convert_one <- function(run_dir, dbp2xml) {
   write_parquet(tasks, out)
 
   n_timed <- sum(!is.na(tasks$StartTime))
+  niter <- suppressWarnings(max(tasks$Iteration, na.rm = TRUE)) + 1L
   message(sprintf(
-    "    tasks=%d (timed=%d, %.0f%%) workers=%s prio=[%d..%d] -> %s",
+    "    tasks=%d (timed=%d, %.0f%%) iters=%s workers=%s prio=[%d..%d] -> %s",
     nrow(tasks), n_timed, 100 * n_timed / nrow(tasks),
+    if (is.finite(niter)) niter else "NA",
     paste(sort(unique(na.omit(tasks$WorkerId))), collapse = ","),
     min(tasks$Priority, na.rm = TRUE), max(tasks$Priority, na.rm = TRUE), out
   ))

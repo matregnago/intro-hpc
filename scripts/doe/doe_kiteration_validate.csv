@@ -1,0 +1,2 @@
+precision,algorithm,n,b,runtime,scheduler,rep
+FP32,potrf,5760,960,parsec,lfq,1

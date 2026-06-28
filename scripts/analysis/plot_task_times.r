@@ -1,0 +1,101 @@
+#!/usr/bin/env Rscript
+#
+# Idea #1 (graficos.md) + extra: per-task-type timing, compared across runtimes
+# and schedulers. Reads each run's application.parquet, keeps the compute kernels
+# (normalised so StarPU's dgemm/dpotrf line up with PaRSEC's gemm/potrf), and
+# renders two views:
+#
+#   plots/task_times_mean.{png,pdf}    -- mean kernel duration, bars grouped by
+#                                         runtime:scheduler, facet per kernel.
+#   plots/task_times_violin.{png,pdf}  -- full duration distribution per kernel
+#                                         (exposes jitter/variance, e.g. a kernel
+#                                         that serialises in one runtime).
+# Also prints a summary table (mean/median/sd/n per runtime:scheduler x kernel).
+#
+# Source per run is runtime-agnostic via read_exec(): application.parquet where
+# available (StarPU; the CPU PaRSEC job), else the GPU-complete tasks.parquet
+# (PaRSEC GPU). Faceted by algorithm, so a job mixing dpotrf/dgeqrf (or the GPU
+# spotrf/sgeqrf job) plots cleanly.
+#
+# Usage:
+#   plot_task_times.r [base_dir]
+# base_dir defaults to the GPU job (spotrf/sgeqrf n19200 b960, 8 runs).
+
+suppressMessages({
+  library(arrow); library(dplyr); library(ggplot2); library(forcats)
+})
+
+# locate this script's dir to source the shared helpers
+this_file <- sub("^--file=", "",
+                 grep("^--file=", commandArgs(FALSE), value = TRUE))
+script_dir <- if (length(this_file)) dirname(normalizePath(this_file)) else "."
+source(file.path(script_dir, "trace_common.r"))
+
+args     <- commandArgs(trailingOnly = TRUE)
+base_dir <- if (length(args) >= 1) args[[1]] else
+  "data/manual_traces_20260621_172820/runs"
+
+runs <- list_runs(base_dir) %>% filter(.data$application | .data$tasks)
+if (nrow(runs) == 0) stop("no runs with application/tasks parquet under ", base_dir)
+message("runs: ", paste(runs$dir, collapse = ", "))
+
+# Per run: unified compute-kernel intervals, tagged with experiment metadata.
+read_kernels <- function(row) {
+  ex <- read_exec(row$path)
+  if (is.null(ex)) return(NULL)
+  ex %>%
+    transmute(.data$kernel, .data$Duration, .data$src,
+              runtime = row$runtime, scheduler = row$scheduler,
+              algo = row$algo, cfg = paste0(row$runtime, ":", row$scheduler))
+}
+
+dat <- bind_rows(lapply(seq_len(nrow(runs)), function(i) read_kernels(runs[i, ])))
+if (nrow(dat) == 0) stop("no compute-kernel states found")
+message("fontes: ", paste(unique(paste0(dat$runtime, "=", dat$src)), collapse = ", "))
+
+# drop init/util kernels from the headline view -- the factorization kernels are
+# what Schnorr's "mean time per task type" is about; keep them in the summary.
+core <- dat %>% filter(!.data$kernel %in% INIT_KERNELS)
+
+summary_tbl <- dat %>%
+  group_by(.data$algo, .data$cfg, .data$kernel) %>%
+  summarise(n = n(), mean_ms = mean(.data$Duration),
+            median_ms = median(.data$Duration), sd_ms = sd(.data$Duration),
+            .groups = "drop") %>%
+  arrange(.data$algo, .data$kernel, .data$cfg)
+print(summary_tbl, n = Inf)
+dir.create("plots", showWarnings = FALSE)
+write.csv(summary_tbl, "plots/task_times_summary.csv", row.names = FALSE)
+
+# facet label combines algorithm + kernel (kernels differ per algorithm).
+core <- core %>% mutate(panel = paste0(.data$algo, ": ", .data$kernel))
+
+# ---- (1) mean duration bars, facet per algo+kernel ----
+mean_tbl <- core %>%
+  group_by(.data$panel, .data$cfg) %>%
+  summarise(mean_us = mean(.data$Duration),
+            se = sd(.data$Duration) / sqrt(n()), .groups = "drop")
+
+p_mean <- ggplot(mean_tbl, aes(.data$cfg, .data$mean_us, fill = .data$cfg)) +
+  geom_col() +
+  geom_errorbar(aes(ymin = .data$mean_us - .data$se,
+                    ymax = .data$mean_us + .data$se), width = 0.3) +
+  facet_wrap(~panel, scales = "free_y") +
+  labs(title = "Tempo medio por tipo de tarefa (kernel) x runtime:scheduler",
+       subtitle = base_dir, x = NULL, y = "duracao media (ms)", fill = NULL) +
+  theme_bw(base_size = 12) +
+  theme(axis.text.x = element_text(angle = 30, hjust = 1),
+        legend.position = "none")
+save_plot(p_mean, "task_times_mean", width = 12, height = 8)
+
+# ---- (2) duration distribution (violin + boxplot) per algo+kernel ----
+p_violin <- ggplot(core, aes(.data$cfg, .data$Duration, fill = .data$cfg)) +
+  geom_violin(scale = "width", alpha = 0.5, colour = NA) +
+  geom_boxplot(width = 0.15, outlier.size = 0.3, alpha = 0.8) +
+  facet_wrap(~panel, scales = "free_y") +
+  labs(title = "Distribuicao da duracao por tarefa (kernel) x runtime:scheduler",
+       subtitle = base_dir, x = NULL, y = "duracao (ms)", fill = NULL) +
+  theme_bw(base_size = 12) +
+  theme(axis.text.x = element_text(angle = 30, hjust = 1),
+        legend.position = "none")
+save_plot(p_violin, "task_times_violin", width = 12, height = 8)

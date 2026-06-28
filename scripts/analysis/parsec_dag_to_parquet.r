@@ -104,7 +104,12 @@ parse_prof_timing <- function(prof_path, dbp2xml) {
   old <- setwd(work)
   on.exit(setwd(old), add = TRUE)
 
-  system2(dbp2xml, shQuote(prof_abs), stdout = FALSE, stderr = FALSE)
+  # dbp2xml is a self-contained Nix binary (own RPATH); the analysis shell's R
+  # wrapper exports an LD_LIBRARY_PATH with a different glibc that makes it fail
+  # to load, so run the child with LD_LIBRARY_PATH cleared (same as the tasks
+  # converter's parse_prof_events).
+  system2(dbp2xml, shQuote(prof_abs), stdout = FALSE, stderr = FALSE,
+          env = "LD_LIBRARY_PATH=")
   xml_path <- file.path(work, "out.xml")
   if (!file.exists(xml_path) || file.info(xml_path)$size == 0) {
     stop("dbp2xml produced no out.xml for ", prof_path)

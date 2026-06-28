@@ -45,6 +45,7 @@ export RUNS_DIR="${RESULTS_DIR}/runs"
 export TRACE=1        # FxT (StarPU) / .prof (PaRSEC)
 export TRACE_FULL=1   # PINS task_profiler -> .prof do PaRSEC com estados de runtime
 export TRACE_DAG=1    # CHAMELEON_PARSEC_DOT -> DAG .dot (so PaRSEC)
+export TRACE_STATS="${TRACE_STATS:-1}"  # contadores nativos H2D/D2H no log (BUS_STATS / device_show_statistics)
 
 if [[ ! -f "$DESIGN_FILE" ]]; then
     echo "DoE nao encontrado: $DESIGN_FILE" >&2
@@ -67,6 +68,7 @@ run_phase() {
         RESULTS_DIR="$RESULTS_DIR" RESULTS_FILE="$RESULTS_FILE" RUNS_DIR="$RUNS_DIR" \
         DESIGN_FILE="$DESIGN_FILE" THREADS="$THREADS" GPUS="$GPUS" \
         TRACE="$TRACE" TRACE_FULL="$TRACE_FULL" TRACE_DAG="$TRACE_DAG" \
+        TRACE_STATS="$TRACE_STATS" \
         bash scripts/gpu_doe_sweep.sh "$runtime"; then
         echo "!!! fase ${runtime} (.#${shell}) falhou; continuando" >&2
     fi

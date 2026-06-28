@@ -1,8 +1,18 @@
+# StarVZ space-time (panel_st) per run, now with the ABE area-bound and makespan
+# overlaid (idea #2 in graficos.md): ABE needs only the Application durations, so
+# it draws for both runtimes; the critical-path bound (cpb) needs the Dag, so it
+# is enabled only when the run carries one (StarPU here; PaRSEC only where the
+# grapher .dot was collected + reconstructed). For the comparative makespan-vs-
+# bounds bar across all runs, see plot_bounds.r.
+#
+# Note: the k-iteration panel (idea #3) is intentionally NOT here -- it needs the
+# Application$Iteration column, which PaRSEC's trace does not provide (StarPU-only).
+
 suppressMessages(library(tidyverse))
 suppressMessages(library(starvz))
 suppressMessages(library(patchwork))
 
-base_dir <- "data/chameleon-runtimes_782088/runs"
+base_dir <- "data/parcial/chameleon-runtimes_782088/runs"
 
 runs <- c(
   "starpu/lws"  = "0001_starpu_lws_dpotrf_n19200_b480_rep1",
@@ -16,6 +26,17 @@ configure <- function(svz) {
   svz$config$st$aggregation$active <- TRUE
   svz$config$st$aggregation$step <- 100
   svz$config$st$idleness <- TRUE
+  svz$config$st$makespan <- TRUE
+  # idea #2: ABE area-bound on the gantt. StarVZ's geom_abe needs a clean
+  # CPU/CUDA ResourceType; PaRSEC's lossy dbp2paje trace mangles it to "MVT-",
+  # which makes abe_cpu_cuda error -- so enable it only for well-classified runs
+  # (StarPU here). For a robust ABE that works on BOTH runtimes (computed from
+  # durations directly), use plot_bounds.r instead.
+  clean_rt <- all(svz$Application$ResourceType %in% c("CPU", "CUDA"))
+  svz$config$st$abe$active <- clean_rt
+  svz$config$st$abe$label <- clean_rt
+  # critical-path bound only when the run has a DAG (else starvz would error).
+  svz$config$st$cpb <- !is.null(svz$Dag) && nrow(svz$Dag) > 0
   svz
 }
 
