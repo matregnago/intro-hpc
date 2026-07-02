@@ -1,0 +1,9 @@
+precision,algorithm,n,b,runtime,scheduler,rep
+FP64,potrf,40000,500,starpu,dmda,1
+FP64,potrf,40000,500,starpu,dmdas,1
+FP64,potrf,40000,500,parsec,gd,1
+FP64,potrf,40000,500,parsec,lfq,1
+FP64,getrf_nopiv,40000,500,starpu,dmda,1
+FP64,getrf_nopiv,40000,500,starpu,dmdas,1
+FP64,getrf_nopiv,40000,500,parsec,gd,1
+FP64,getrf_nopiv,40000,500,parsec,lfq,1

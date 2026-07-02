@@ -1,0 +1,17 @@
+node,gpu,algorithm,n,runtime,scheduler,b_ideal,gflops_peak
+poti,poti (RTX 4070),dgetrf_nopiv,40000,parsec,gd,500,1076.1970000000001
+poti,poti (RTX 4070),dgetrf_nopiv,40000,parsec,lfq,400,966.5414
+poti,poti (RTX 4070),dgetrf_nopiv,40000,starpu,dmda,500,991.50038
+poti,poti (RTX 4070),dgetrf_nopiv,40000,starpu,dmdas,500,1003.65162
+poti,poti (RTX 4070),dpotrf,40000,parsec,gd,500,1052.5808
+poti,poti (RTX 4070),dpotrf,40000,parsec,lfq,400,929.67246
+poti,poti (RTX 4070),dpotrf,40000,starpu,dmda,500,1000.51302
+poti,poti (RTX 4070),dpotrf,40000,starpu,dmdas,500,994.6488
+tupi,tupi (RTX 4090),dgetrf_nopiv,40000,parsec,gd,2000,1611.4454
+tupi,tupi (RTX 4090),dgetrf_nopiv,40000,parsec,lfq,2000,1577.8392
+tupi,tupi (RTX 4090),dgetrf_nopiv,40000,starpu,dmda,1000,1817.1166
+tupi,tupi (RTX 4090),dgetrf_nopiv,40000,starpu,dmdas,1000,1865.1136
+tupi,tupi (RTX 4090),dpotrf,40000,parsec,gd,2000,1465.8298
+tupi,tupi (RTX 4090),dpotrf,40000,parsec,lfq,2000,1409.6802
+tupi,tupi (RTX 4090),dpotrf,40000,starpu,dmda,1000,1799.8412
+tupi,tupi (RTX 4090),dpotrf,40000,starpu,dmdas,1000,1836.8608

@@ -1,0 +1,9 @@
+algorithm,n,runtime,scheduler,b_ideal,gflops_peak
+dgetrf_nopiv,40000,parsec,gd,500,1076.1970000000001
+dgetrf_nopiv,40000,parsec,lfq,400,966.5414
+dgetrf_nopiv,40000,starpu,dmda,500,991.50038
+dgetrf_nopiv,40000,starpu,dmdas,500,1003.65162
+dpotrf,40000,parsec,gd,500,1052.5808
+dpotrf,40000,parsec,lfq,400,929.67246
+dpotrf,40000,starpu,dmda,500,1000.51302
+dpotrf,40000,starpu,dmdas,500,994.6488
