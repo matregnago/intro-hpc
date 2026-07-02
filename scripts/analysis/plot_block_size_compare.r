@@ -9,9 +9,9 @@
 #
 # As grades de b dos dois jobs nao coincidem (poti: varredura densa 250..4000 do
 # job 798331; tupi: so {1000,2000,4000} do doe_gpu_tile.r), entao eixos
-# compartilhados so achatam as curvas. NO PLOT a poti corta b=2000/4000 (cauda
-# plana bem depois do pico); o block_size_peak_compare.csv continua vindo da
-# grade completa.
+# compartilhados so achatam as curvas. NO PLOT a poti corta b=1000/2000/4000
+# (cauda plana bem depois do pico); o block_size_peak_compare.csv continua
+# vindo da grade completa.
 #
 #   Rscript scripts/analysis/plot_block_size_compare.r poti_dir tupi_dir
 #   (default: data/gpu_tile_poti_* e data/gpu_tile_tupi_* mais recentes)
@@ -80,10 +80,10 @@ write_csv(
   file.path(out_dir, "block_size_peak_compare.csv")
 )
 
-# Dados so do plot: poti sem a cauda b=2000/4000 (ver cabecalho) e largura das
-# barras de erro relativa a grade de b de cada no (as grades diferem ~4x).
+# Dados so do plot: poti sem a cauda b=1000/2000/4000 (ver cabecalho) e largura
+# das barras de erro relativa a grade de b de cada no (as grades diferem ~4x).
 plot_dat <- agg |>
-  filter(!(node == "poti" & b %in% c(2000, 4000))) |>
+  filter(!(node == "poti" & b %in% c(1000, 2000, 4000))) |>
   group_by(node) |>
   mutate(ebw = 0.02 * max(b)) |>
   ungroup()
