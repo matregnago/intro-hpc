@@ -176,27 +176,25 @@ Compatibilidade Chameleon e PaRSEC
 
 ---
 
-# Traces Cholesky - Poti 
+# Traces Cholesky - Poti
 
 ![center h:550](../../plots/final/gpu_traces_poti_20260701_131857/st_compare_dpotrf.png)
 
-
 ---
 
-# Traces Cholesky - Tupi 
+# Traces Cholesky - Tupi
 
 ![center h:550](../../plots/final/gpu_traces_tupi_20260701_131907/st_compare_dpotrf.png)
 
-
 ---
 
-# Tempos de cada tarefa Poti
+# Tempos de cada tarefa Cholesky - Poti
 
 ![center h:550 w:1100](../../plots/final/gpu_traces_poti_20260701_131857/task_times_mean.png)
 
 ---
 
-# Tempos de cada tarefa Tupi
+# Tempos de cada tarefa Cholesky - Tupi
 
 ![center h:550 w:1100](../../plots/final/gpu_traces_tupi_20260701_131907/task_times_mean.png)
 
@@ -215,7 +213,7 @@ Compatibilidade Chameleon e PaRSEC
 
 ---
 
-# Transferência de dados
+# Transferência de dados Cholesky
 
 ![w:560 h:520](../../plots/final/gpu_traces_poti_20260701_131857/transfers_d2h.png) ![w:560 h:520](../../plots/final/gpu_traces_tupi_20260701_131907/transfers_d2h.png)
 
@@ -224,10 +222,11 @@ Compatibilidade Chameleon e PaRSEC
 
 # Conclusões
 
-
-- **Nenhum runtime domina**: na poti  o gd é o melhor; na tupi o StarPU vence com folga
-- **CPU do StarPU é lenta por tarefa**: as threads dos workers CUDA disputam os cores
-- **K-iteration**: dmda segue a ordem de submissão; dmdas antecipa iterações futuras; o PaRSEC avança o k de forma irregular
+- **Poti**: PaRSEC se saiu melhor, porque ele usou menos a GPU, que rende menos que as 19 CPUs
+- **Tupi**: a GPU é majoritária então o StarPU se saiu melhor, pois faz mais uso dela 
+- **Custo estrutural do StarPU**: threads dos workers CUDA disputam os cores da CPU
+- **Transferências**: PaRSEC devolve todo tile escrito
+- PaRSEC escolhe o device sem modelo de desempenho
 
 
 ---
@@ -268,6 +267,12 @@ Compatibilidade Chameleon e PaRSEC
 <!-- ---
 
 ## Backup
+
+---
+
+# Backup: Divisão de tarefas CPU × GPU — Cholesky
+
+![center h:550](../../plots/final/task_split_compare_dpotrf.png)
 
 ---
 

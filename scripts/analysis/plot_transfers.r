@@ -16,7 +16,12 @@
 # facet por algoritmo, rotulado com MB-por-kernel-GPU (a "taxa de writeback").
 # Tambem grava plots/transfers_summary.csv.
 #
-# Uso:  plot_transfers.r [base_dir]   (default = job de GPU)
+# Uso:  plot_transfers.r [base_dir] [algo] [maquina]   (default = job de GPU)
+#   algo (opcional) mantem so os runs daquele algoritmo (ex.: dpotrf).
+#   maquina (opcional) rotula o painel; default = poti/tupi extraido do base_dir.
+#   Com um unico algoritmo no plot a faixa do facet vira o nome da maquina (os
+#   transfers_d2h de poti e tupi ficam lado a lado no slide e e a maquina que os
+#   distingue); com varios algoritmos mantem o algoritmo.
 
 suppressMessages({
   library(dplyr); library(ggplot2); library(stringr); library(tidyr)
@@ -30,6 +35,9 @@ source(file.path(script_dir, "trace_common.r"))
 args     <- commandArgs(trailingOnly = TRUE)
 base_dir <- if (length(args) >= 1) args[[1]] else
   "data/manual_traces_20260621_172820/runs"
+algo_sel <- if (length(args) >= 2) args[[2]] else NA
+machine  <- if (length(args) >= 3) args[[3]] else
+  str_to_title(str_extract(base_dir, "poti|tupi"))
 
 num <- function(x) as.numeric(str_replace_all(x, "[^0-9.eE+-]", ""))
 
@@ -82,6 +90,7 @@ parse_parsec <- function(lines) {
 }
 
 runs <- list_runs(base_dir)
+if (!is.na(algo_sel)) runs <- runs %>% filter(.data$algo == algo_sel)
 rows <- lapply(seq_len(nrow(runs)), function(i) {
   r <- runs[i, ]
   log <- list.files(r$path, pattern = "\\.log$", full.names = TRUE)
@@ -105,11 +114,15 @@ long <- res %>%
   mutate(dir = factor(ifelse(.data$dir == "h2d_mb", "H2D", "D2H"),
                       levels = c("H2D", "D2H")))
 
+one_algo <- n_distinct(long$algo) == 1
+long <- long %>%
+  mutate(panel = if (one_algo && !is.na(machine)) machine else .data$algo)
+
 p <- ggplot(long, aes(.data$cfg, .data$mb, fill = .data$dir)) +
   geom_col(position = position_dodge(width = 0.7), width = 0.65, alpha = 0.9) +
   geom_text(aes(label = sprintf("%.1f", .data$mb / 1000)),
             position = position_dodge(width = 0.7), vjust = -0.4, size = 3) +
-  facet_wrap(~algo) +
+  facet_wrap(~panel) +
   scale_y_continuous(labels = function(x) sprintf("%.0f", x / 1000)) +
   labs(title = "Trafego PCIe H2D/D2H por runtime:scheduler",
        x = NULL, y = "volume transferido (GB)", fill = "direcao") +

@@ -27,8 +27,10 @@
 # are inflated for PaRSEC; the CPU-vs-CPU comparison is the like-for-like one.
 #
 # Usage:
-#   plot_task_times.r [base_dir]
+#   plot_task_times.r [base_dir] [algo]
 # base_dir defaults to the GPU job (spotrf/sgeqrf n19200 b960, 8 runs).
+# algo (optional) keeps only that algorithm's runs (e.g. dpotrf); with a single
+# algorithm the facet labels drop the "algo: " prefix.
 
 suppressMessages({
   library(arrow); library(dplyr); library(ggplot2); library(forcats)
@@ -43,9 +45,12 @@ source(file.path(script_dir, "trace_common.r"))
 args     <- commandArgs(trailingOnly = TRUE)
 base_dir <- if (length(args) >= 1) args[[1]] else
   "data/manual_traces_20260621_172820/runs"
+algo_sel <- if (length(args) >= 2) args[[2]] else NA
 
 runs <- list_runs(base_dir) %>% filter(.data$application | .data$tasks)
-if (nrow(runs) == 0) stop("no runs with application/tasks parquet under ", base_dir)
+if (!is.na(algo_sel)) runs <- runs %>% filter(.data$algo == algo_sel)
+if (nrow(runs) == 0) stop("no runs with application/tasks parquet under ", base_dir,
+                          if (!is.na(algo_sel)) paste0(" (algo=", algo_sel, ")") else "")
 message("runs: ", paste(runs$dir, collapse = ", "))
 
 # Per run: unified compute-kernel intervals, tagged with experiment metadata.
@@ -76,8 +81,12 @@ summary_tbl <- dat %>%
 print(summary_tbl, n = Inf)
 write.csv(summary_tbl, file.path(plots_dir(), "task_times_summary.csv"), row.names = FALSE)
 
-# facet label combines algorithm + kernel (kernels differ per algorithm).
-core <- core %>% mutate(panel = paste0(.data$algo, ": ", .data$kernel))
+# facet label combines algorithm + kernel (kernels differ per algorithm); with a
+# single algorithm the prefix is redundant, so it's just the kernel.
+one_algo <- n_distinct(core$algo) == 1
+core <- core %>%
+  mutate(panel = if (one_algo) .data$kernel
+         else paste0(.data$algo, ": ", .data$kernel))
 
 caption_cls <- paste("classe = onde o span executou (ResourceId).",
                      "GPU do PaRSEC: spans host-observados com overlap entre streams",

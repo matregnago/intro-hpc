@@ -3,7 +3,3 @@
 "dpotrf","starpu","starpu:dmdas",32506.9,26654.5,14310,35267,0.755791533161312
 "dpotrf","parsec","parsec:gd",6030,61400,NA,32964,1.86263802936537
 "dpotrf","parsec","parsec:lfq",6030,68060,NA,36539,1.8626672870084
-"dgetrf_nopiv","starpu","starpu:dmda",76346.1,66341.8,35617,70692,0.938462626605557
-"dgetrf_nopiv","starpu","starpu:dmdas",65717.8,54001.8,28992,70639,0.764475714548621
-"dgetrf_nopiv","parsec","parsec:gd",11980,123780,NA,66452,1.86269788719677
-"dgetrf_nopiv","parsec","parsec:lfq",12000,126370,NA,67843,1.86268295918518

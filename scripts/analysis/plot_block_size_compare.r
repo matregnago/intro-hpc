@@ -2,9 +2,16 @@
 
 # Comparativo poti vs tupi da montanha de block size. Mesma metrica do
 # plot_block_size.r (GFLOPS medio vs b, barras min/max), mas
-# sobrepoe os dois nos no mesmo painel -- facet_grid(algorithm ~ node), color =
-# config. So FP64: o job de tile do poti tambem tem FP32, mas o do tupi nao, e o
-# deck final compara FP64 -- sem o filtro a grade ficaria com celulas vazias.
+# sobrepoe os dois nos -- facet_wrap(algorithm ~ node) com escalas LIVRES por
+# painel, color = config. So FP64: o job de tile do poti tambem tem FP32, mas o
+# do tupi nao, e o deck final compara FP64 -- sem o filtro a grade ficaria com
+# celulas vazias.
+#
+# As grades de b dos dois jobs nao coincidem (poti: varredura densa 250..4000 do
+# job 798331; tupi: so {1000,2000,4000} do doe_gpu_tile.r), entao eixos
+# compartilhados so achatam as curvas. NO PLOT a poti corta b=2000/4000 (cauda
+# plana bem depois do pico); o block_size_peak_compare.csv continua vindo da
+# grade completa.
 #
 #   Rscript scripts/analysis/plot_block_size_compare.r poti_dir tupi_dir
 #   (default: data/gpu_tile_poti_* e data/gpu_tile_tupi_* mais recentes)
@@ -73,17 +80,24 @@ write_csv(
   file.path(out_dir, "block_size_peak_compare.csv")
 )
 
-# facet_grid(algorithm ~ gpu): colunas = nos (poti | tupi), linhas = algoritmos.
-# scales="free_y" libera o eixo por LINHA; cada linha compartilha Y entre as
-# duas colunas, entao a comparacao poti-vs-tupi fica no mesmo eixo.
-p <- ggplot(agg, aes(x = b, y = gflops_mean, color = config)) +
+# Dados so do plot: poti sem a cauda b=2000/4000 (ver cabecalho) e largura das
+# barras de erro relativa a grade de b de cada no (as grades diferem ~4x).
+plot_dat <- agg |>
+  filter(!(node == "poti" & b %in% c(2000, 4000))) |>
+  group_by(node) |>
+  mutate(ebw = 0.02 * max(b)) |>
+  ungroup()
+
+# facet_wrap(algorithm ~ gpu): linhas = algoritmos, colunas = nos (poti | tupi).
+# scales="free" da a cada painel seus proprios eixos -- as grades de b e os
+# teto de GFLOPS (4070 capada em FP64 vs 4090) diferem demais para compartilhar.
+p <- ggplot(plot_dat, aes(x = b, y = gflops_mean, color = config)) +
   geom_line() +
   geom_point(size = 1) +
   geom_errorbar(
-    aes(ymin = gflops_min, ymax = gflops_max),
-    width = 0.02 * max(agg$b)
+    aes(ymin = gflops_min, ymax = gflops_max, width = ebw)
   ) +
-  facet_grid(algorithm ~ gpu, scales = "free_y") +
+  facet_wrap(vars(algorithm, gpu), scales = "free", ncol = 2) +
   labs(
     x = "b (tamanho do bloco)",
     y = "GFLOPS (media; barras = min/max)",

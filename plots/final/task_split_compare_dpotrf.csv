@@ -1,0 +1,17 @@
+"class","tasks","node","gpu","cfg","n","b","share"
+"CPU",53366,"poti","Poti (RTX 4070)","starpu:dmda",40000,500,0.602597109304426
+"GPU",35194,"poti","Poti (RTX 4070)","starpu:dmda",40000,500,0.397402890695574
+"CPU",53301,"poti","Poti (RTX 4070)","starpu:dmdas",40000,500,0.601863143631436
+"GPU",35259,"poti","Poti (RTX 4070)","starpu:dmdas",40000,500,0.398136856368564
+"CPU",55596,"poti","Poti (RTX 4070)","parsec:gd",40000,500,0.627777777777778
+"GPU",32964,"poti","Poti (RTX 4070)","parsec:gd",40000,500,0.372222222222222
+"CPU",52021,"poti","Poti (RTX 4070)","parsec:lfq",40000,500,0.587409665763324
+"GPU",36539,"poti","Poti (RTX 4070)","parsec:lfq",40000,500,0.412590334236676
+"CPU",4035,"tupi","Tupi (RTX 4090)","starpu:dmda",40000,1000,0.351480836236934
+"GPU",7445,"tupi","Tupi (RTX 4090)","starpu:dmda",40000,1000,0.648519163763066
+"CPU",3934,"tupi","Tupi (RTX 4090)","starpu:dmdas",40000,1000,0.342682926829268
+"GPU",7546,"tupi","Tupi (RTX 4090)","starpu:dmdas",40000,1000,0.657317073170732
+"CPU",5567,"tupi","Tupi (RTX 4090)","parsec:gd",40000,1000,0.48493031358885
+"GPU",5913,"tupi","Tupi (RTX 4090)","parsec:gd",40000,1000,0.51506968641115
+"CPU",4296,"tupi","Tupi (RTX 4090)","parsec:lfq",40000,1000,0.374216027874564
+"GPU",7184,"tupi","Tupi (RTX 4090)","parsec:lfq",40000,1000,0.625783972125436
