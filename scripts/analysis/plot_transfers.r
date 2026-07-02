@@ -59,14 +59,20 @@ parse_starpu <- function(lines) {
   )
 }
 
-# PaRSEC: parse the "|All Devs |" summary line (values already in MB).
+# PaRSEC: parse the "|All Devs |" summary line. PaRSEC scales the unit with the
+# volume ("0.00 B", "21.09MB(33.33)", "61.40GB(100.00)"), so the parse must be
+# unit-aware -- an MB-only regex left the big GPU runs as NA.
 parse_parsec <- function(lines) {
   ln <- grep("\\|All Devs", lines, value = TRUE)
   if (!length(ln)) return(NULL)
   f <- str_split(ln[1], "\\|")[[1]] |> str_trim()
   # f: "", "All Devs", kernels, %, H2D_req, H2D_xfer(%), D2H_req, D2H_xfer(%), ""
-  # the xfer fields look like "21.09MB(33.33)" -> take the number before "MB".
-  mb <- function(s) as.numeric(str_match(s, "([0-9.]+)\\s*MB")[, 2])
+  mb <- function(s) {
+    m <- str_match(s, "([0-9.]+)\\s*([KMGT]?)B")
+    mult <- c("1e-6", K = "1e-3", M = "1", G = "1e3", T = "1e6")
+    key  <- ifelse(m[, 3] == "", 1L, match(m[, 3], names(mult)))
+    as.numeric(m[, 2]) * as.numeric(mult[key])
+  }
   tibble(
     h2d_mb      = mb(f[6]),
     d2h_mb      = mb(f[8]),
@@ -92,18 +98,22 @@ if (nrow(res) == 0) stop("nenhum log com contadores de transferencia em ", base_
 
 res <- res %>% mutate(d2h_mb_per_kernel = .data$d2h_mb / .data$gpu_kernels)
 print(res, n = Inf)
-dir.create("plots", showWarnings = FALSE)
-write.csv(res, "plots/transfers_summary.csv", row.names = FALSE)
+write.csv(res, file.path(plots_dir(), "transfers_summary.csv"), row.names = FALSE)
 
-p <- ggplot(res, aes(.data$cfg, .data$d2h_mb, fill = .data$runtime)) +
-  geom_col(width = 0.6, alpha = 0.85) +
-  geom_text(aes(label = sprintf("%.2f MB/kernel", .data$d2h_mb_per_kernel)),
-            vjust = -0.4, size = 3) +
-  facet_wrap(~algo, scales = "free_y") +
-  labs(title = "Volume D2H (device->host) por runtime:scheduler",
-       subtitle = paste0(base_dir,
-            "  |  rotulo = MB escritos de volta por kernel de GPU (writeback)"),
-       x = NULL, y = "D2H total (MB)", fill = "runtime") +
+long <- res %>%
+  pivot_longer(c("h2d_mb", "d2h_mb"), names_to = "dir", values_to = "mb") %>%
+  mutate(dir = factor(ifelse(.data$dir == "h2d_mb", "H2D", "D2H"),
+                      levels = c("H2D", "D2H")))
+
+p <- ggplot(long, aes(.data$cfg, .data$mb, fill = .data$dir)) +
+  geom_col(position = position_dodge(width = 0.7), width = 0.65, alpha = 0.9) +
+  geom_text(aes(label = sprintf("%.1f", .data$mb / 1000)),
+            position = position_dodge(width = 0.7), vjust = -0.4, size = 3) +
+  facet_wrap(~algo) +
+  scale_y_continuous(labels = function(x) sprintf("%.0f", x / 1000)) +
+  labs(title = "Trafego PCIe H2D/D2H por runtime:scheduler",
+       x = NULL, y = "volume transferido (GB)", fill = "direcao") +
   theme_bw(base_size = 12) +
-  theme(axis.text.x = element_text(angle = 20, hjust = 1))
+  theme(axis.text.x = element_text(angle = 20, hjust = 1),
+        legend.position = "bottom")
 save_plot(p, "transfers_d2h", width = 11, height = 6)

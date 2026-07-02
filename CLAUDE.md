@@ -57,6 +57,38 @@ Rscript scripts/analysis/plot_traces.r       # → plots/trace_panel_st_<runtime
 
 `plot_traces.r` reads StarPU/PaRSEC traces via `starvz_read()` and renders Space-Time panels. The base data directory and per-run identifiers are hardcoded near the top of the script — edit them when pointing at a new job ID.
 
+### Trace tables for PaRSEC (StarVZ "phase 1", official vs offline)
+
+StarVZ panels read parquet tables that a "phase 1" produces from the raw trace.
+For PaRSEC there are two phase-1 paths:
+
+- **Official** (`scripts/analysis/trace_phase1.sh`): `dbp2paje` + `starvz -1 -t`.
+  Works for CPU runs (degraded: `Application.JobId/Iteration/GFlop` NA, `variable`
+  empty), but **fails on GPU runs** — no `application.parquet` comes out.
+- **Offline** (`scripts/analysis/parsec_phase1.sh`): reconstructs the tables
+  straight from `cham_*.dot` + `cham_*.prof-*` via `dbp2xml`, **not** using StarVZ
+  phase 1. Per run it runs, in order, `parsec_tasks_to_parquet.r` (→ `tasks` +
+  `states`, GPU-aware: CPU workers `CPU<N>` + GPU streams `CUDA<dev>_<stream>`),
+  `parsec_dag_to_parquet.r` (→ `dag`), `parsec_application_to_parquet.r`
+  (→ `application` + `y` + `colors`, the slot the official path can't make on GPU),
+  and `parsec_ready_to_parquet.r` (→ `variable`, reconstructed Ready). dbp2xml is
+  resolved once and exported as `$DBP2XML`. All times are µs in these tables except
+  the synthetic `application.parquet`, which is ms (matching StarPU); `trace_common.r`'s
+  `time_scale_to_ms()` keys off `states.parquet` to rescale dag/tasks/states.
+
+With the offline tables present, the stock StarVZ panels run on a PaRSEC GPU trace:
+
+```bash
+bash scripts/analysis/parsec_phase1.sh data/<job>/runs/<...>_parsec_*   # build tables
+Rscript scripts/analysis/plot_gpu_st.r [--extra] [run_dir ...]          # panel_st + CPB
+```
+
+`plot_gpu_st.r` renders the native `panel_st` (CPB overlay on; ABE/idleness off —
+heterogeneous CPU+GPU set, async GPU spans) → `plots/gpu_st_<runtime>_<sched>_<algo>`;
+`--extra` also emits `panel_imbalance` and `panel_utilheatmap`. Other native panels
+already fed by hand from these tables: `panel_kiteration` (`plot_kiteration.r`),
+`panel_ready` (`plot_ready.r`).
+
 ## Sync to/from PCAD
 
 ```bash

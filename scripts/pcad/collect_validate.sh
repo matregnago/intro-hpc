@@ -41,17 +41,17 @@ DESIGN_FILE="${RESULTS_DIR}/validate_doe.csv"
 
 mkdir -p "$RESULTS_DIR"
 
-# DoE minimo: 2 algoritmos x 2 runtimes x seus 2 escalonadores, FP32, 1 rep.
+# DoE minimo: 2 algoritmos x 2 runtimes x seus 2 escalonadores, FP64, 1 rep.
 cat > "$DESIGN_FILE" <<EOF
 precision,algorithm,n,b,runtime,scheduler,rep
-FP32,potrf,${N},${B},starpu,dmda,1
-FP32,potrf,${N},${B},starpu,dmdas,1
-FP32,geqrf,${N},${B},starpu,dmda,1
-FP32,geqrf,${N},${B},starpu,dmdas,1
-FP32,potrf,${N},${B},parsec,lfq,1
-FP32,potrf,${N},${B},parsec,gd,1
-FP32,geqrf,${N},${B},parsec,lfq,1
-FP32,geqrf,${N},${B},parsec,gd,1
+FP64,potrf,${N},${B},starpu,dmda,1
+FP64,potrf,${N},${B},starpu,dmdas,1
+FP64,geqrf,${N},${B},starpu,dmda,1
+FP64,geqrf,${N},${B},starpu,dmdas,1
+FP64,potrf,${N},${B},parsec,lfq,1
+FP64,potrf,${N},${B},parsec,gd,1
+FP64,geqrf,${N},${B},parsec,lfq,1
+FP64,geqrf,${N},${B},parsec,gd,1
 EOF
 
 echo "==> Validacao: N=$N B=$B t=$THREADS g=$GPUS"

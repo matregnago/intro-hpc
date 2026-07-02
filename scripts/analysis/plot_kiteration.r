@@ -12,12 +12,21 @@
 # $Colors and a few $config fields, so no application.parquet / starvz_read is
 # needed. This is the GPU-complete path (tasks.parquet, not dbp2paje).
 #
-# Usage:  plot_kiteration.r <run_dir> [run_dir ...]
-#   needs <run_dir>/tasks.parquet with a non-NA Iteration column (re-run
+# Usage:  plot_kiteration.r <run_dir|base_dir> [run_dir ...]
+#   Each arg is either a run dir (holding tasks.parquet) or a base dir (a job's
+#   runs/ folder) that gets expanded to its run subdirs -- so this takes the SAME
+#   single base_dir compare_all.sh hands every other comparison script. Needs
+#   <run_dir>/tasks.parquet with a non-NA Iteration column (re-run
 #   parsec_tasks_to_parquet.r if it predates the Iteration derivation).
-#   Writes plots/kiteration_<runtime>_<sched>.{png,pdf} per run, and -- when given
-#   more than one run -- a stacked comparison plots/kiteration_compare.{png,pdf}
-#   with a SHARED time axis (so the per-scheduler "signatures" line up).
+#
+#   Groups the runs BY ALGORITHM and, per algorithm, arranges every
+#   scheduler/runtime in a 2-column grid on a SHARED time axis (within one algo
+#   all runs share N/b, so makespans are comparable and the per-scheduler
+#   "signatures" line up):
+#     plots/kiteration_compare_<algo>.{png,pdf}   (>1 run for that algo)
+#     plots/kiteration_<runtime>_<sched>_<algo>.{png,pdf}  (a lone run)
+#   Row order is fixed (starpu:dmda, starpu:dmdas, parsec:lfq, parsec:gd) to match
+#   plot_compare_st.r. Honours PLOTS_DIR (compare_all.sh routes here).
 
 suppressMessages({
   library(ggplot2); library(starvz); library(patchwork)
@@ -87,38 +96,61 @@ build_panel <- function(run_dir) {
 
   label <- meta$label
   p <- panel_kiteration(svz) + ggtitle(label) + ylab("Iteration (k)")
-  stem <- paste0("kiteration_",
-                 ifelse(is.na(meta$runtime), "run", meta$runtime), "_",
-                 ifelse(is.na(meta$scheduler), basename(run_dir), meta$scheduler))
-  message(sprintf("    %s: %d tasks over %d iterations",
-                  label, nrow(app), max(app$Iteration) + 1L))
-  list(panel = p, label = label, stem = stem,
-       x_max = max(app$End), niter = max(app$Iteration) + 1L,
-       runtime = ifelse(is.na(meta$runtime), "run", meta$runtime))
+  message(sprintf("    %s [%s]: %d tasks over %d iterations",
+                  label, meta$algo, nrow(app), max(app$Iteration) + 1L))
+  list(panel = p, label = label,
+       runtime   = ifelse(is.na(meta$runtime), "run", meta$runtime),
+       scheduler = ifelse(is.na(meta$scheduler), basename(run_dir), meta$scheduler),
+       algo      = ifelse(is.na(meta$algo), "run", meta$algo),
+       x_max = max(app$End), niter = max(app$Iteration) + 1L)
 }
 
 args <- commandArgs(trailingOnly = TRUE)
-if (length(args) == 0) stop("usage: plot_kiteration.r <run_dir> [run_dir ...]")
+if (length(args) == 0) stop("usage: plot_kiteration.r <run_dir|base_dir> [run_dir ...]")
 
-panels <- Filter(Negate(is.null), lapply(args, build_panel))
+# Each arg is a run dir (has tasks.parquet) or a base dir to expand to its runs.
+expand_arg <- function(a) {
+  if (file.exists(file.path(a, "tasks.parquet"))) return(a)
+  subs <- list.dirs(a, recursive = FALSE)
+  subs[file.exists(file.path(subs, "tasks.parquet"))]
+}
+run_dirs <- unique(unlist(lapply(args, expand_arg)))
+if (length(run_dirs) == 0)
+  stop("no run dirs with tasks.parquet under: ", paste(args, collapse = ", "))
+
+panels <- Filter(Negate(is.null), lapply(run_dirs, build_panel))
 if (length(panels) == 0) stop("no runs with usable k-iteration data")
 
-# Per-run figures (own time scale).
-for (pn in panels) save_plot(pn$panel + ggtitle(paste0("k-iteration  ", pn$label)),
-                             pn$stem, width = 14, height = 8)
+# Fixed scheduler/runtime row order, matching plot_compare_st.r's grid.
+CONFIG_ORDER <- c("starpu:dmda", "starpu:dmdas", "parsec:lfq", "parsec:gd")
+config_rank <- function(p) {
+  m <- match(paste0(p$runtime, ":", p$scheduler), CONFIG_ORDER)
+  if (is.na(m)) length(CONFIG_ORDER) + 1L else m
+}
+stem_of <- function(p) paste0("kiteration_", p$runtime, "_", p$scheduler, "_", p$algo)
 
-# Comparison figure: stack all panels on a SHARED time axis so the per-scheduler
-# signatures are directly comparable; collect the (identical) kernel legend once.
-if (length(panels) > 1) {
-  x_end <- max(vapply(panels, function(p) p$x_max, numeric(1)))
+# One figure per algorithm: stack all schedulers/runtimes on a SHARED time axis
+# (within an algo every run shares N/b, so makespans are comparable) and collect
+# the (identical) kernel legend once. A lone run for an algo -> single panel.
+by_algo <- split(panels, vapply(panels, function(p) p$algo, character(1)))
+for (algo in names(by_algo)) {
+  grp <- by_algo[[algo]]
+  grp <- grp[order(vapply(grp, config_rank, integer(1)))]
+  if (length(grp) == 1L) {
+    pn <- grp[[1]]
+    save_plot(pn$panel + ggtitle(paste0("k-iteration  ", pn$label, "  ", algo)),
+              stem_of(pn), width = 14, height = 8)
+    next
+  }
+  x_end <- max(vapply(grp, function(p) p$x_max, numeric(1)))
+  # 2-column landscape grid (fits a 16:9 slide), same config order as
+  # plot_compare_st.r; the shared xlim keeps makespans comparable.
   combined <- wrap_plots(
-    lapply(panels, function(p) p$panel + coord_cartesian(xlim = c(0, x_end))),
-    ncol = 1
+    lapply(grp, function(p) p$panel + coord_cartesian(xlim = c(0, x_end))),
+    ncol = 2
   ) +
     plot_layout(guides = "collect") +
-    plot_annotation(title = "k-iteration por escalonador (eixo de tempo compartilhado)",
-                    theme = theme(legend.position = "bottom"))
-  rt <- panels[[1]]$runtime
-  save_plot(combined, paste0("kiteration_compare_", rt),
-            width = 14, height = 5 * length(panels))
+    plot_annotation(theme = theme(legend.position = "bottom"))
+  save_plot(combined, paste0("kiteration_compare_", algo),
+            width = 16, height = 4.5 * ceiling(length(grp) / 2))
 }

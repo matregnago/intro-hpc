@@ -33,6 +33,7 @@ for (label in names(runs)) {
   path <- file.path(base_dir, runs[[label]])
   message("lendo: ", path)
   svz <- configure(starvz_read(path, selective = FALSE))
+  svz <- norm_st_kernels(svz)
   p <- panel_st(svz) + ggtitle(label)
   panels[[label]] <- p
   ggsave(paste0("plots/trace_st_", slug(label), ".png"), p,

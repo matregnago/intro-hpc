@@ -40,7 +40,7 @@ for v in "${PASS_ENV[@]}"; do
 done
 
 echo "==> Results dir: $RESULTS_DIR"
-echo "==> Sweep: BIN='${TESTING_BIN:-chameleon_stesting}' OPS='${OPS:-spotrf sgeqrf}' NS='${NS:-9600 19200 28800 38400}' B='${B:-960}' THREADS='${THREADS:-16}' REPS='${REPS:-3}'"
+echo "==> Sweep: BIN='${TESTING_BIN:-chameleon_dtesting}' OPS='${OPS:-dpotrf dgeqrf}' NS='${NS:-9600 19200 28800 38400}' B='${B:-960}' THREADS='${THREADS:-16}' REPS='${REPS:-3}'"
 
 echo
 echo "===== StarPU (.#starpu) ====="

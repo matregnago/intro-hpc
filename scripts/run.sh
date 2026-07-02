@@ -19,7 +19,11 @@ if [[ ! -f "$RESULTS_FILE" ]]; then
 fi
 
 export OPENBLAS_NUM_THREADS=1
-export STARPU_WORKERS_NOBIND=1
+# Binding ON for StarPU (matches PaRSEC, which binds by default via
+# parsec_runtime_bind_main_thread=1 in parsec/parsec/parsec.c:105). Removing
+# STARPU_WORKERS_NOBIND=1 lets StarPU pin workers to cores for deterministic
+# placement, same as PaRSEC. (Previously set to dodge WSL hwloc misdetection;
+# we no longer run on WSL.)
 export OMP_NUM_THREADS=1
 export MKL_NUM_THREADS=1
 export STARPU_SILENT=1
@@ -51,6 +55,15 @@ while IFS=',' read -r -a fields; do
         starpu)
             export STARPU_SCHED="$scheduler"
             export STARPU_NCPU="$threads"
+            # Explicit CUDA worker count (1 device on poti). StarPU otherwise
+            # defaults to the number of CUDA devices present, which is also 1,
+            # but pinning it documents the comparison vs PaRSEC.
+            export STARPU_NCUDA="${STARPU_NCUDA:-1}"
+            # Workers (CUDA streams) per GPU. StarPU defaults to 1 execution stream
+            # per device; PaRSEC defaults to 4 (device_cuda_max_streams=6 -> 2 for
+            # transfer + 4 for kernels), so match it at 4 for a paired CPU+GPU
+            # comparison. No-op on CPU-only runs (no CUDA device). Override via env.
+            export STARPU_NWORKER_PER_CUDA="${STARPU_NWORKER_PER_CUDA:-4}"
             unset PARSEC_MCA_mca_sched PARSEC_MCA_profile_filename
             if [[ "$TRACE" == "1" ]]; then
                 export STARPU_FXT_TRACE=1

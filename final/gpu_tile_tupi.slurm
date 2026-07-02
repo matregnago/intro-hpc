@@ -1,6 +1,6 @@
 #!/bin/bash -l
 #SBATCH --partition=tupi
-#SBATCH --time=04:00:00
+#SBATCH --time=10:00:00
 #SBATCH --output=%j.out
 #SBATCH --error=%j.err
 #SBATCH --nodes=1
@@ -11,7 +11,8 @@
 # E1 -- selecao de tile (block size) na GPU, partição TUPI (i9-14900KF 24c,
 # RTX 4090 24GB). THREADS=23 (reserva 1 core p/ dirigir a GPU).
 #
-# Roda final/doe_gpu_tile_tupi.csv (240 runs) nos dois runtimes, SEM trace.
+# Roda final/doe_gpu_tile_tupi.csv (600 runs: FP32 N=80000 + FP64 N=40000, b
+# denso no topo da montanha) nos dois runtimes, SEM trace.
 # Os modelos de desempenho do StarPU (dmda/dmdas) sao CALIBRADOS antes das
 # medidas (final/gpu_doe_sweep.sh::calibrate_starpu, modelo isolado em
 # $RESULTS_DIR/.starpu, congelado p/ as runs cronometradas).

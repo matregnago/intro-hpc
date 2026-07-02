@@ -8,7 +8,7 @@
 #
 # Driven by scripts/run_local_gpu_compare.sh, which enters each dev shell and
 # defines the sweep via the env vars below. Mirrors the env knobs of
-# scripts/run.sh / run_cuda_vscpu.sh but always double precision
+# scripts/run.sh / run_cuda_vscpu.sh, always double precision
 # (chameleon_dtesting) and GPU-only, since the goal is a StarPU-vs-PaRSEC
 # comparison with CUDA on, not a CPU baseline.
 
@@ -20,13 +20,10 @@ RESULTS_DIR="${RESULTS_DIR:-results}"
 RESULTS_FILE="${RESULTS_FILE:-${RESULTS_DIR}/results.csv}"
 RUNS_DIR="${RUNS_DIR:-${RESULTS_DIR}/runs}"
 
-# Sweep definition (overridable from the orchestrator / shell).
-# Single precision by default (spotrf/sgeqrf via chameleon_stesting): FP32 is
-# where this consumer GPU actually beats the CPU; FP64 (dpotrf/dgeqrf via
-# chameleon_dtesting) is hardware-bound below the 16-thread CPU on an RTX 4060
-# Ti. To run double instead: TESTING_BIN=chameleon_dtesting OPS="dpotrf dgeqrf".
-TESTING_BIN="${TESTING_BIN:-chameleon_stesting}"
-OPS="${OPS:-spotrf sgeqrf}"
+# Sweep definition (overridable from the orchestrator / shell). Study is
+# FP64-only: dpotrf/dgeqrf via chameleon_dtesting.
+TESTING_BIN="${TESTING_BIN:-chameleon_dtesting}"
+OPS="${OPS:-dpotrf dgeqrf}"
 NS="${NS:-9600 19200 28800 38400}"
 B="${B:-960}"
 THREADS="${THREADS:-16}"

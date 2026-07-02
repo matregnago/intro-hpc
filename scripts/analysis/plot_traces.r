@@ -49,6 +49,7 @@ for (label in names(runs)) {
 
   svz <- starvz_read(path, selective = FALSE)
   svz <- configure(svz)
+  svz <- norm_st_kernels(svz)
   plot <- panel_st(svz) + ggtitle(label)
 
   png_out <- paste0("plots/trace_panel_st_", slug(label), ".png")

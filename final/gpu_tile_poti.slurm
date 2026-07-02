@@ -1,6 +1,6 @@
 #!/bin/bash -l
 #SBATCH --partition=poti
-#SBATCH --time=04:00:00
+#SBATCH --time=12:00:00
 #SBATCH --output=%j.out
 #SBATCH --error=%j.err
 #SBATCH --job-name=gpu_tile_poti
@@ -8,7 +8,8 @@
 # E1 -- selecao de tile (block size) na GPU, partição POTI (i7-14700KF 20c,
 # RTX 4070 12GB). THREADS=19 (reserva 1 core p/ dirigir a GPU).
 #
-# Roda final/doe_gpu_tile_poti.csv (240 runs) nos dois runtimes, SEM trace.
+# Roda final/doe_gpu_tile_poti.csv (600 runs: FP32 N=80000 + FP64 N=40000, b
+# denso no topo da montanha) nos dois runtimes, SEM trace.
 # Os modelos de desempenho do StarPU (dmda/dmdas) sao CALIBRADOS antes das
 # medidas (final/gpu_doe_sweep.sh::calibrate_starpu, modelo isolado em
 # $RESULTS_DIR/.starpu, congelado p/ as runs cronometradas).

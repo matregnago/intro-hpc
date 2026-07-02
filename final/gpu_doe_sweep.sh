@@ -81,6 +81,15 @@ export OMP_NUM_THREADS=1
 export MKL_NUM_THREADS=1
 export STARPU_SILENT=1
 
+# Workers (CUDA streams) per GPU. StarPU defaults to 1 execution stream per
+# device; PaRSEC defaults to 4 (device_cuda_max_streams=6 -> 2 for transfer + 4
+# for kernels), so match it at 4 for a paired CPU+GPU comparison -- otherwise
+# StarPU shows a single GPU lane vs PaRSEC's 4 and the StarVZ space-time panels
+# aren't comparable. Exported here (not in the per-run branch) so the dmda/dmdas
+# CALIBRATION sees the same worker config as the timed runs. No-op on CPU-only
+# runs (no CUDA device); ignored by PaRSEC. Override via env.
+export STARPU_NWORKER_PER_CUDA="${STARPU_NWORKER_PER_CUDA:-4}"
+
 # CPU worker binding. On native Linux (PCAD poti/tupi) we WANT StarPU to bind
 # workers to cores for deterministic placement -- so binding stays ON by
 # default. Under WSL2 hwloc misdetects the topology, which makes binding crash/

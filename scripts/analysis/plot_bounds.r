@@ -119,8 +119,7 @@ res <- bind_rows(lapply(seq_len(nrow(runs)), function(i) {
          eff_gpu = .data$makespan / .data$gpu)
 
 print(res, n = Inf)
-dir.create("plots", showWarnings = FALSE)
-write.csv(res, "plots/bounds_summary.csv", row.names = FALSE)
+write.csv(res, file.path(plots_dir(), "bounds_summary.csv"), row.names = FALSE)
 
 # Bars = makespan; overlay the valid bounds as horizontal markers per bar. ABE is
 # NA on GPU and GPU is NA on CPU, so each run shows exactly its valid pair

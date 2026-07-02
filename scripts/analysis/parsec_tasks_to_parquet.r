@@ -17,9 +17,10 @@
 #   - Iteration                       <- DERIVED, not in the trace. Chameleon submits
 #                                        a right-looking factorization, so each outer
 #                                        iteration k opens with exactly one diagonal
-#                                        kernel (potrf/geqrt/getrf). Counting those
-#                                        over SubmitOrder gives the exact k; tasks
-#                                        before the first opener (matrix gen) -> NA.
+#                                        kernel (potrf/geqrt/getrf_nopiv -- the exact
+#                                        PaRSEC kernel names). Counting those over
+#                                        SubmitOrder gives the exact k; tasks before
+#                                        the first opener (matrix gen) -> NA.
 #                                        This feeds StarVZ's panel_kiteration().
 #   - Model/File/Line/Footprint/GFlop/Parameters/SubmitTime/Tag/
 #     NumaNodes/Control               <- not in the PaRSEC trace -> NA
@@ -67,7 +68,9 @@ event_category <- function(name) {
 # Diagonal kernels that open one outer iteration k of a right-looking
 # factorization (Cholesky/QR/LU). Exactly one fires per k, so counting them over
 # the DTD submission order recovers the iteration index (see Iteration below).
-ITER_OPENERS <- c("potrf", "geqrt", "getrf")
+# Diagonal opener kernel per outer iteration, by EXACT PaRSEC kernel name:
+# Cholesky -> potrf, QR -> geqrt, LU(nopiv) -> getrf_nopiv (NOT "getrf").
+ITER_OPENERS <- c("potrf", "geqrt", "getrf_nopiv")
 
 # Final schema (column order + types) of StarVZ's StarPU tasks.parquet.
 TASKS_COLS <- c(
@@ -155,41 +158,71 @@ parse_prof_events <- function(prof_path, dbp2xml) {
 
   rows <- lapply(xml_find_all(doc, "//THREAD"), function(th) {
     ident  <- xml_text(xml_find_first(th, "./IDENTIFIER"))
-    worker <- as.integer(str_match(ident, "Thread (\\d+)")[, 2])
+    # Two thread kinds in a hybrid CPU+GPU run: CPU workers identify as
+    # "PaRSEC Thread N of VP ...", GPU streams as "GPU <dev>-<stream>". Keep
+    # WorkerId as the CPU thread int (NA for GPU, for back-compat) but ALWAYS set a
+    # ResourceId: "CPU<N>" / "CUDA<dev>_<stream>". Without this the GPU-executed
+    # tasks (often the bulk of the gemms) get WorkerId=NA and are silently dropped.
+    cpu <- str_match(ident, "Thread (\\d+)")[, 2]
+    gpu <- str_match(ident, "GPU (\\d+)-(\\d+)")
+    worker   <- as.integer(cpu)
+    resource <- if (!is.na(cpu)) paste0("CPU", cpu) else
+                if (!is.na(gpu[1, 1])) paste0("CUDA", gpu[1, 2], "_", gpu[1, 3]) else
+                NA_character_
     blocks <- xml_find_all(th, "./KEY")
     if (length(blocks) == 0) return(NULL)
     bind_rows(lapply(blocks, function(b) {
       evs <- xml_find_all(b, "./EVENT")
       if (length(evs) == 0) return(NULL)
       tibble(
-        class    = unname(id2name[xml_attr(b, "ID")]),
-        key      = xml_text(xml_find_first(evs, "./ID")),
-        start_ns = as.numeric(xml_text(xml_find_first(evs, "./START"))),
-        end_ns   = as.numeric(xml_text(xml_find_first(evs, "./END"))),
-        WorkerId = worker
+        class      = unname(id2name[xml_attr(b, "ID")]),
+        key        = xml_text(xml_find_first(evs, "./ID")),
+        start_ns   = as.numeric(xml_text(xml_find_first(evs, "./START"))),
+        end_ns     = as.numeric(xml_text(xml_find_first(evs, "./END"))),
+        WorkerId   = worker,
+        ResourceId = resource
       )
     }))
   })
   rows <- bind_rows(rows)
   if (nrow(rows) == 0) {
     return(tibble(class = character(), key = character(), start_ns = numeric(),
-                  end_ns = numeric(), WorkerId = integer()))
+                  end_ns = numeric(), WorkerId = integer(), ResourceId = character()))
   }
   rows
 }
 
-# compute kernels only, collapsed to one [start,end] + worker per task key
-# (min start / max end on the earliest worker -- matches the original timing).
+# compute kernels only, collapsed to one [start,end] + worker per task key.
+#
+# A GPU-executed kernel is profiled TWICE (confirmed in parsec dev_cuda.c): the
+# CPU manager thread records a ~2us submit hook (prof_event_key_start at submit),
+# and the CUDA stream it runs on records the real execution span -- host-observed
+# [submit-on-stream, completion-detected-by-cudaEventQuery]. dbp2xml gives the CPU
+# hook the earlier start, so a naive min(start)/max(end) + which.min(start) BOTH
+# mis-attributes the task to a CPU lane AND inflates its span to the whole
+# [CPU submit -> GPU complete] window (the ~16ms artifact). Fix: when a key has a
+# CUDA-stream event, keep ONLY the CUDA rows, so the task lands on its real device
+# with its device-side span. (Those spans overlap across a stream's in-flight
+# tasks -- PaRSEC submits up to max_events ahead -- exactly like StarPU's async
+# GPU spans; build_states/occupancy handle that by unioning per resource.)
+# CPU-only keys keep their CPU rows unchanged.
 compute_timing <- function(ev) {
   ev <- ev[event_category(ev$class) == "Computation", , drop = FALSE]
   if (nrow(ev) == 0) {
-    return(tibble(key = character(), start_ns = numeric(),
-                  end_ns = numeric(), WorkerId = integer()))
+    return(tibble(key = character(), start_ns = numeric(), end_ns = numeric(),
+                  WorkerId = integer(), ResourceId = character()))
   }
+  ev <- ev |>
+    mutate(is_gpu = !is.na(.data$ResourceId) & startsWith(.data$ResourceId, "CUDA"))
+  has_gpu <- ev |> group_by(.data$key) |>
+    summarise(gpu = any(.data$is_gpu), .groups = "drop")
   ev |>
-    group_by(key) |>
+    left_join(has_gpu, by = "key") |>
+    filter(!.data$gpu | .data$is_gpu) |>          # GPU keys -> GPU rows; else CPU rows
+    group_by(.data$key) |>
     summarise(start_ns = min(start_ns), end_ns = max(end_ns),
-              WorkerId = WorkerId[which.min(start_ns)], .groups = "drop")
+              WorkerId   = WorkerId[which.min(start_ns)],
+              ResourceId = ResourceId[which.min(start_ns)], .groups = "drop")
 }
 
 # every timed interval as a long StarVZ-style state row, anchored to t0.
@@ -201,19 +234,19 @@ build_states <- function(ev, t0) {
   empty <- tibble(Worker = integer(), ResourceId = character(),
                   Type = character(), Value = character(), Start = numeric(),
                   End = numeric(), Duration = numeric(), JobId = character())
-  ev <- ev[!is.na(ev$WorkerId), , drop = FALSE]
+  ev <- ev[!is.na(ev$ResourceId), , drop = FALSE]
   if (nrow(ev) == 0) return(empty)
   out <- ev |>
-    arrange(WorkerId, class, start_ns, end_ns) |>
-    group_by(WorkerId, class) |>
+    arrange(ResourceId, class, start_ns, end_ns) |>
+    group_by(ResourceId, class) |>
     # new interval whenever this event starts after the running max end so far
     mutate(.grp = cumsum(start_ns > lag(cummax(end_ns), default = -Inf))) |>
-    group_by(WorkerId, class, .grp) |>
+    group_by(ResourceId, class, .grp) |>
     summarise(start_ns = min(start_ns), end_ns = max(end_ns),
-              JobId = first(key), .groups = "drop") |>
+              WorkerId = first(WorkerId), JobId = first(key), .groups = "drop") |>
     transmute(
       Worker     = as.integer(WorkerId),
-      ResourceId = paste0("CPU", WorkerId),
+      ResourceId = ResourceId,                     # CPU<N> or CUDA<dev>_<stream>
       Type       = event_category(class),
       Value      = class,
       Start      = (start_ns - t0) / 1000,
@@ -221,7 +254,7 @@ build_states <- function(ev, t0) {
       Duration   = (end_ns - start_ns) / 1000,
       JobId      = JobId
     ) |>
-    arrange(Worker, Start) |>
+    arrange(ResourceId, Start) |>
     select(all_of(STATES_COLS))
   if (nrow(out) == 0) empty else out
 }
@@ -240,7 +273,7 @@ convert_one <- function(run_dir, dbp2xml) {
 
   t0 <- if (nrow(t)) min(t$start_ns) else 0
   timing <- t |> transmute(
-    key, WorkerId,
+    key, WorkerId, ResourceId,
     StartTime = (start_ns - t0) / 1000, EndTime = (end_ns - t0) / 1000
   )
 
@@ -280,6 +313,7 @@ convert_one <- function(run_dir, dbp2xml) {
       DepLabels   = DepLabels,
       Tag         = NA_character_,
       WorkerId    = as.integer(WorkerId),
+      ResourceId  = ResourceId,                    # CPU<N>/CUDA<dev>_<stream>; GPU-aware
       MemoryNode  = 0L,
       StartTime   = StartTime,
       EndTime     = EndTime,
@@ -289,7 +323,7 @@ convert_one <- function(run_dir, dbp2xml) {
       Parameters  = NA_character_,
       NumaNodes   = NA_character_
     ) |>
-    select(all_of(TASKS_COLS))
+    select(all_of(TASKS_COLS), "ResourceId")
 
   out <- file.path(run_dir, "tasks.parquet")
   write_parquet(tasks, out)
@@ -297,10 +331,10 @@ convert_one <- function(run_dir, dbp2xml) {
   n_timed <- sum(!is.na(tasks$StartTime))
   niter <- suppressWarnings(max(tasks$Iteration, na.rm = TRUE)) + 1L
   message(sprintf(
-    "    tasks=%d (timed=%d, %.0f%%) iters=%s workers=%s prio=[%d..%d] -> %s",
+    "    tasks=%d (timed=%d, %.0f%%) iters=%s resources=%s prio=[%d..%d] -> %s",
     nrow(tasks), n_timed, 100 * n_timed / nrow(tasks),
     if (is.finite(niter)) niter else "NA",
-    paste(sort(unique(na.omit(tasks$WorkerId))), collapse = ","),
+    paste(sort(unique(na.omit(tasks$ResourceId))), collapse = ","),
     min(tasks$Priority, na.rm = TRUE), max(tasks$Priority, na.rm = TRUE), out
   ))
 

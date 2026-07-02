@@ -9,12 +9,14 @@
 #
 # Driven by scripts/run_gpu_sched.sh. DoE CSV columns (header skipped):
 #   precision,algorithm,n,b,runtime,scheduler,rep
-# `precision` in {FP32,FP64} picks the binary (chameleon_stesting/dtesting) and
-# the kernel prefix (s/d); `algorithm` in {potrf,geqrf} -> e.g. spotrf, dgeqrf.
+# The study is FP64-only, so `algorithm` (in {potrf,geqrf}) is always paired
+# with the `d` prefix and the chameleon_dtesting binary (e.g. dpotrf, dgeqrf).
+# The `precision` column is read for format compatibility and forwarded to the
+# results CSV, but no FP32 path exists.
 #
 # Shares the validated GPU env of scripts/gpu_sweep.sh (see the
 # local-gpu-compare memory): StarPU dmda/dmdas perf-model schedulers are
-# calibrated once per (precision,algorithm) before the timed runs.
+# calibrated once per (algorithm) before the timed runs.
 
 set -euo pipefail
 
@@ -91,15 +93,15 @@ if [[ -z "${STARPU_WORKERS_NOBIND:-}" ]] && grep -qiE 'microsoft|wsl' /proc/vers
     export STARPU_WORKERS_GETBIND=0
 fi
 
-bin_of()    { [[ "$1" == "FP32" ]] && echo chameleon_stesting || echo chameleon_dtesting; }
-prefix_of() { [[ "$1" == "FP32" ]] && echo s || echo d; }
+bin_of()    { echo chameleon_dtesting; }
+prefix_of() { echo d; }
 
 # StarPU perf-model schedulers (dmda/dmdas) need calibration. The models are
 # keyed per codelet+tile-size and shared by dmda/dmdas, so we calibrate each
-# unique (precision,algorithm,n,b) with CALIB_PASSES warm-up runs BEFORE the
-# timed runs. These calibration runs are discarded (not appended to results).
-# Afterwards the timed runs use STARPU_CALIBRATE=0 to FREEZE the model, so we
-# measure steady-state scheduling, not model-fitting overhead.
+# unique (algorithm,n,b) with CALIB_PASSES warm-up runs BEFORE the timed runs.
+# These calibration runs are discarded (not appended to results). Afterwards
+# the timed runs use STARPU_CALIBRATE=0 to FREEZE the model, so we measure
+# steady-state scheduling, not model-fitting overhead.
 calibrate_starpu() {
     export STARPU_CALIBRATE=1
     export STARPU_NCUDA="$GPUS"
@@ -107,12 +109,12 @@ calibrate_starpu() {
     declare -A seen
     while IFS=',' read -r precision algorithm n b runtime scheduler rep; do
         [[ "$runtime" == "starpu" ]] || continue
-        local key="${precision}_${algorithm}_${n}_${b}"
+        local key="${algorithm}_${n}_${b}"
         [[ -n "${seen[$key]:-}" ]] && continue
         seen[$key]=1
         local bin kernel
-        bin="$(bin_of "$precision")"
-        kernel="$(prefix_of "$precision")${algorithm}"
+        bin="$(bin_of)"
+        kernel="$(prefix_of)${algorithm}"
         for pass in $(seq 1 "$CALIB_PASSES"); do
             echo "[$(date +%T)] calibrate starpu/$kernel n=$n b=$b (pass ${pass}/${CALIB_PASSES}) ..."
             "$bin" -o "$kernel" -n "$n" -b "$b" -t "$THREADS" -g "$GPUS" --nowarmup \
@@ -128,8 +130,8 @@ while IFS=',' read -r precision algorithm n b runtime scheduler rep; do
     idx=$((idx + 1))
     [[ "$runtime" == "$RUNTIME_FILTER" ]] || continue
 
-    bin="$(bin_of "$precision")"
-    kernel="$(prefix_of "$precision")${algorithm}"
+    bin="$(bin_of)"
+    kernel="$(prefix_of)${algorithm}"
     RUN_ID="$(printf '%04d' "$idx")_${runtime}_${scheduler}_${kernel}_n${n}_b${b}_rep${rep}"
     RUN_DIR="${RUNS_DIR}/${RUN_ID}"
     LOG_FILE="${RUN_DIR}/${RUN_ID}.log"

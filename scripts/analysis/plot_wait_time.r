@@ -86,8 +86,7 @@ summary_tbl <- dat %>%
             p95_wait = quantile(.data$wait, 0.95), .groups = "drop") %>%
   arrange(.data$algo, .data$kernel, .data$cfg)
 print(summary_tbl, n = Inf)
-dir.create("plots", showWarnings = FALSE)
-write.csv(summary_tbl, "plots/wait_time_summary.csv", row.names = FALSE)
+write.csv(summary_tbl, file.path(plots_dir(), "wait_time_summary.csv"), row.names = FALSE)
 
 p <- ggplot(dat, aes(.data$cfg, .data$wait + 0.001, fill = .data$cfg)) +
   geom_violin(scale = "width", alpha = 0.5, colour = NA) +

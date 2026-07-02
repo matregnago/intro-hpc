@@ -24,7 +24,7 @@ while IFS=',' read -r algorithm n b scheduler; do
     export CHAMELEON_PARSEC_DOT="$run_dir/cham_${algorithm}"
 
     echo "[$(date +%T)] ${algorithm} sched=${scheduler} n=${n} b=${b}"
-    chameleon_stesting -o "$algorithm" -n "$n" -b "$b" -t "$THREADS" -g "$GPUS" \
+    chameleon_dtesting -o "$algorithm" -n "$n" -b "$b" -t "$THREADS" -g "$GPUS" \
         --nowarmup > "$run_dir/run.log" 2>&1 \
         || echo "  !! falhou; ver $run_dir/run.log" >&2
 done < <(tail -n +2 "$DESIGN_FILE")
