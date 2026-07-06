@@ -5,7 +5,6 @@
   cmake,
   pkg-config,
   hwloc,
-  openmpi,
   gfortran,
   flex,
   bison,
@@ -15,9 +14,8 @@
   automake,
   libtool,
   zlib,
-  cudaPackages ? null,
-  autoAddDriverRunpath ? null,
-  enableCuda ? true,
+  cudaPackages,
+  autoAddDriverRunpath,
 }:
 
 let
@@ -60,8 +58,6 @@ stdenv.mkDerivation {
     flex
     bison
     python3
-  ]
-  ++ lib.optionals enableCuda [
     cudaPackages.cuda_nvcc
     autoAddDriverRunpath
   ];
@@ -70,8 +66,8 @@ stdenv.mkDerivation {
     hwloc
     stdenv.cc.cc.lib
     gtg
-  ]
-  ++ lib.optional enableCuda cudaPackages.cuda_cudart;
+    cudaPackages.cuda_cudart
+  ];
   patches = [ ./patches/parsec.patch ];
 
   cmakeFlags = [
@@ -83,18 +79,9 @@ stdenv.mkDerivation {
     "-DPARSEC_PROF_GRAPHER=ON"
     "-DPARSEC_PROF_TRACE_SCHEDULING_EVENTS=ON"
     "-DPARSEC_PROF_TRACE_ACTIVE_ARENA_SET=ON"
-  ]
-  ++ (
-    if enableCuda then
-      [
-        "-DPARSEC_GPU_WITH_CUDA=ON"
-        "-DCMAKE_CUDA_COMPILER=${lib.getExe' cudaPackages.cuda_nvcc "nvcc"}"
-      ]
-    else
-      [
-        "-DPARSEC_GPU_WITH_CUDA=OFF"
-      ]
-  );
+    "-DPARSEC_GPU_WITH_CUDA=ON"
+    "-DCMAKE_CUDA_COMPILER=${lib.getExe' cudaPackages.cuda_nvcc "nvcc"}"
+  ];
   env.NIX_CFLAGS_COMPILE = toString [
     "-Wno-error=implicit-function-declaration"
     "-Wno-error=incompatible-pointer-types"

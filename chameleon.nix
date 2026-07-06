@@ -12,9 +12,8 @@
   starpu,
   parsec,
   python3,
-  cudaPackages ? null,
-  autoAddDriverRunpath ? null,
-  enableCuda ? true,
+  cudaPackages,
+  autoAddDriverRunpath,
   runtime ? "starpu",
 }:
 
@@ -43,8 +42,6 @@ stdenv.mkDerivation {
     pkg-config
     gfortran
     python3
-  ]
-  ++ lib.optionals enableCuda [
     cudaPackages.cuda_nvcc
     autoAddDriverRunpath
   ];
@@ -54,8 +51,6 @@ stdenv.mkDerivation {
     lapack
     hwloc
     openmpi
-  ]
-  ++ lib.optionals enableCuda [
     cudaPackages.cuda_cudart # CUDA::cudart
     cudaPackages.cuda_cccl # nv/target (included by cuda_fp16.h in CUDA 12+)
     cudaPackages.cuda_nvml_dev # nvml.h (starpu_cuda.h includes it when StarPU was built with NVML)
@@ -70,16 +65,7 @@ stdenv.mkDerivation {
     "-DBUILD_SHARED_LIBS=ON"
     "-DCHAMELEON_SCHED=${sched}"
     "-DCHAMELEON_USE_MPI=OFF"
-  ]
-  ++ (
-    if enableCuda then
-      [
-        "-DCHAMELEON_USE_CUDA=ON"
-        "-DCMAKE_CUDA_COMPILER=${lib.getExe' cudaPackages.cuda_nvcc "nvcc"}"
-      ]
-    else
-      [
-        "-DCHAMELEON_USE_CUDA=OFF"
-      ]
-  );
+    "-DCHAMELEON_USE_CUDA=ON"
+    "-DCMAKE_CUDA_COMPILER=${lib.getExe' cudaPackages.cuda_nvcc "nvcc"}"
+  ];
 }
