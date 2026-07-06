@@ -1,0 +1,748 @@
+diff --git a/runtime/parsec/codelets/codelet_zgemm.c b/runtime/parsec/codelets/codelet_zgemm.c
+index c0ca200..98f0684 100644
+--- a/runtime/parsec/codelets/codelet_zgemm.c
++++ b/runtime/parsec/codelets/codelet_zgemm.c
+@@ -23,6 +23,12 @@
+ #include "chameleon/tasks_z.h"
+ #include "coreblas/coreblas_z.h"
+ 
++#if defined(CHAMELEON_USE_CUDA) && !defined(CHAMELEON_SIMULATION)
++#include <cuda_runtime.h>
++#include <cublas_v2.h>
++#include "gpucublas.h"
++#endif
++
+ static inline int
+ CORE_zgemm_parsec( parsec_execution_stream_t *context,
+                    parsec_task_t             *this_task )
+@@ -53,6 +59,56 @@ CORE_zgemm_parsec( parsec_execution_stream_t *context,
+     return PARSEC_HOOK_RETURN_DONE;
+ }
+ 
++#if defined(CHAMELEON_USE_CUDA) && !defined(CHAMELEON_SIMULATION)
++/* One cuBLAS handle per worker thread; persists across tasks (handle creation
++ * is non-trivial), but the stream is rebound per task to the GPU exec stream
++ * supplied by PaRSEC. Handles leak on thread exit — acceptable for now. */
++static __thread cublasHandle_t cham_parsec_cublas_handle = NULL;
++
++static int
++CORE_zgemm_parsec_cuda( parsec_execution_stream_t *es,
++                        parsec_task_t             *this_task,
++                        void                      *cuda_stream )
++{
++    cham_trans_t transA;
++    cham_trans_t transB;
++    int m, n, k, lda, ldb, ldc;
++    CHAMELEON_Complex64_t alpha, beta;
++    CHAMELEON_Complex64_t *A, *B, *C;
++
++    parsec_dtd_unpack_args(
++        this_task, &transA, &transB, &m, &n, &k, &alpha, &A, &lda, &B, &ldb, &beta, &C, &ldc );
++
++    /* parsec_dtd_unpack_args returns this_task->data[i].data_in (the host
++     * copy). For GPU dispatch, the PaRSEC GPU scheduler has staged each tile
++     * to the device and stored the device-side parsec_data_copy_t in
++     * this_task->data[i].data_out. Overwrite A/B/C with the device pointers
++     * so cuBLAS receives valid GPU addresses. */
++    A = (CHAMELEON_Complex64_t *)parsec_data_copy_get_ptr(this_task->data[0].data_out);
++    B = (CHAMELEON_Complex64_t *)parsec_data_copy_get_ptr(this_task->data[1].data_out);
++    C = (CHAMELEON_Complex64_t *)parsec_data_copy_get_ptr(this_task->data[2].data_out);
++
++    if( NULL == cham_parsec_cublas_handle ) {
++        cublasStatus_t cs = cublasCreate( &cham_parsec_cublas_handle );
++        if( cs != CUBLAS_STATUS_SUCCESS ) {
++            return PARSEC_HOOK_RETURN_ERROR;
++        }
++    }
++    cublasSetStream( cham_parsec_cublas_handle, (cudaStream_t)cuda_stream );
++
++    CUDA_zgemm( transA, transB, m, n, k,
++                (const cuDoubleComplex *)&alpha,
++                (const cuDoubleComplex *)A, lda,
++                (const cuDoubleComplex *)B, ldb,
++                (const cuDoubleComplex *)&beta,
++                (cuDoubleComplex *)C, ldc,
++                cham_parsec_cublas_handle );
++
++    (void)es;
++    return PARSEC_HOOK_RETURN_DONE;
++}
++#endif /* CHAMELEON_USE_CUDA && !CHAMELEON_SIMULATION */
++
+ void
+ INSERT_TASK_zgemm( const RUNTIME_option_t *options,
+                    cham_trans_t transA, cham_trans_t transB,
+@@ -66,6 +122,26 @@ INSERT_TASK_zgemm( const RUNTIME_option_t *options,
+     CHAM_tile_t *tileB = B->get_blktile( B, Bm, Bn );
+     CHAM_tile_t *tileC = C->get_blktile( C, Cm, Cn );
+ 
++#if defined(CHAMELEON_USE_CUDA) && !defined(CHAMELEON_SIMULATION)
++    parsec_dtd_taskpool_insert_task_cuda(
++        PARSEC_dtd_taskpool,
++        CORE_zgemm_parsec, CORE_zgemm_parsec_cuda,
++        options->priority, "gemm",
++        sizeof(cham_trans_t),    &transA,                           VALUE,
++        sizeof(cham_trans_t),    &transB,                           VALUE,
++        sizeof(int),           &m,                                VALUE,
++        sizeof(int),           &n,                                VALUE,
++        sizeof(int),           &k,                                VALUE,
++        sizeof(CHAMELEON_Complex64_t),           &alpha,              VALUE,
++        PASSED_BY_REF,     RTBLKADDR( A, CHAMELEON_Complex64_t, Am, An ), chameleon_parsec_get_arena_index( A ) | INPUT,
++        sizeof(int), &(tileA->ld), VALUE,
++        PASSED_BY_REF,     RTBLKADDR( B, CHAMELEON_Complex64_t, Bm, Bn ), chameleon_parsec_get_arena_index( B ) | INPUT,
++        sizeof(int), &(tileB->ld), VALUE,
++        sizeof(CHAMELEON_Complex64_t),           &beta,               VALUE,
++        PASSED_BY_REF,     RTBLKADDR( C, CHAMELEON_Complex64_t, Cm, Cn ), chameleon_parsec_get_arena_index( C ) | INOUT | AFFINITY,
++        sizeof(int), &(tileC->ld), VALUE,
++        PARSEC_DTD_ARG_END );
++#else
+     parsec_dtd_taskpool_insert_task(
+         PARSEC_dtd_taskpool, CORE_zgemm_parsec, options->priority, "gemm",
+         sizeof(cham_trans_t),    &transA,                           VALUE,
+@@ -82,6 +158,7 @@ INSERT_TASK_zgemm( const RUNTIME_option_t *options,
+         PASSED_BY_REF,     RTBLKADDR( C, CHAMELEON_Complex64_t, Cm, Cn ), chameleon_parsec_get_arena_index( C ) | INOUT | AFFINITY,
+         sizeof(int), &(tileC->ld), VALUE,
+         PARSEC_DTD_ARG_END );
++#endif
+ 
+     (void)nb;
+ }
+diff --git a/runtime/parsec/codelets/codelet_zpotrf.c b/runtime/parsec/codelets/codelet_zpotrf.c
+index e06f518..5ee2ad9 100644
+--- a/runtime/parsec/codelets/codelet_zpotrf.c
++++ b/runtime/parsec/codelets/codelet_zpotrf.c
+@@ -23,6 +23,12 @@
+ #include "chameleon/tasks_z.h"
+ #include "coreblas/coreblas_z.h"
+ 
++#if defined(CHAMELEON_USE_CUDA) && !defined(CHAMELEON_SIMULATION)
++#include <cuda_runtime.h>
++#include <cusolverDn.h>
++#include "gpucublas.h"
++#endif
++
+ /**
+  *
+  * @ingroup INSERT_TASK_Complex64_t
+@@ -53,6 +59,92 @@ CORE_zpotrf_parsec( parsec_execution_stream_t *context,
+     return PARSEC_HOOK_RETURN_DONE;
+ }
+ 
++#if defined(CHAMELEON_USE_CUDA) && !defined(CHAMELEON_SIMULATION)
++/* Per-thread cuSOLVER state. Handle, workspace, and devInfo are created
++ * lazily on first dispatch and reused for the lifetime of the worker thread.
++ * Same lifecycle compromise as the cuBLAS handle in codelet_zgemm.c: handles
++ * and device allocations leak at thread exit. */
++static __thread cusolverDnHandle_t cham_parsec_potrf_cusolver_handle = NULL;
++static __thread cuDoubleComplex   *cham_parsec_potrf_workspace = NULL;
++static __thread int                cham_parsec_potrf_workspace_elts = 0;
++static __thread int               *cham_parsec_potrf_d_info = NULL;
++
++static int
++CORE_zpotrf_parsec_cuda( parsec_execution_stream_t *es,
++                         parsec_task_t             *this_task,
++                         void                      *cuda_stream )
++{
++    cham_uplo_t uplo;
++    int tempkm, ldak, iinfo;
++    RUNTIME_sequence_t *sequence;
++    RUNTIME_request_t *request;
++    CHAMELEON_Complex64_t *A;
++
++    parsec_dtd_unpack_args(
++        this_task, &uplo, &tempkm, &A, &ldak, &iinfo, &sequence, &request );
++
++    A = (CHAMELEON_Complex64_t *)parsec_data_copy_get_ptr(this_task->data[0].data_out);
++
++    cudaStream_t stream = (cudaStream_t)cuda_stream;
++
++    if( NULL == cham_parsec_potrf_cusolver_handle ) {
++        cusolverStatus_t cs = cusolverDnCreate( &cham_parsec_potrf_cusolver_handle );
++        if( cs != CUSOLVER_STATUS_SUCCESS ) {
++            return PARSEC_HOOK_RETURN_ERROR;
++        }
++        if( cudaMalloc( (void **)&cham_parsec_potrf_d_info, sizeof(int) ) != cudaSuccess ) {
++            return PARSEC_HOOK_RETURN_ERROR;
++        }
++    }
++    cusolverDnSetStream( cham_parsec_potrf_cusolver_handle, stream );
++
++    /* Size workspace from cuSOLVER; the tile size is fixed across the run so
++     * this reallocates exactly once. */
++    int lwork = 0;
++    if( cusolverDnZpotrf_bufferSize( cham_parsec_potrf_cusolver_handle,
++                                     chameleon_cublas_const(uplo),
++                                     tempkm,
++                                     (cuDoubleComplex *)A, ldak,
++                                     &lwork ) != CUSOLVER_STATUS_SUCCESS ) {
++        return PARSEC_HOOK_RETURN_ERROR;
++    }
++    if( lwork > cham_parsec_potrf_workspace_elts ) {
++        if( cham_parsec_potrf_workspace != NULL ) {
++            cudaFree( cham_parsec_potrf_workspace );
++        }
++        if( cudaMalloc( (void **)&cham_parsec_potrf_workspace,
++                        (size_t)lwork * sizeof(cuDoubleComplex) ) != cudaSuccess ) {
++            cham_parsec_potrf_workspace = NULL;
++            cham_parsec_potrf_workspace_elts = 0;
++            return PARSEC_HOOK_RETURN_ERROR;
++        }
++        cham_parsec_potrf_workspace_elts = lwork;
++    }
++
++    CUDA_zpotrf( uplo, tempkm,
++                 (cuDoubleComplex *)A, ldak,
++                 cham_parsec_potrf_workspace, lwork,
++                 cham_parsec_potrf_d_info,
++                 cham_parsec_potrf_cusolver_handle );
++
++    /* Mirror StarPU's codelet_zpotrf cuda body: pull devInfo back so that
++     * non-positive-definite tiles surface through RUNTIME_sequence_flush.
++     * Forces a stream sync — unavoidable for this kernel. */
++    int info = 0;
++    cudaMemcpyAsync( &info, cham_parsec_potrf_d_info, sizeof(int),
++                     cudaMemcpyDeviceToHost, stream );
++    cudaStreamSynchronize( stream );
++
++    if ( (sequence->status == CHAMELEON_SUCCESS) && (info != 0) ) {
++        RUNTIME_sequence_flush( NULL, sequence, request, iinfo+info );
++    }
++
++    (void)es;
++    (void)iinfo;
++    return PARSEC_HOOK_RETURN_DONE;
++}
++#endif /* CHAMELEON_USE_CUDA && !CHAMELEON_SIMULATION */
++
+ void INSERT_TASK_zpotrf(const RUNTIME_option_t *options,
+                        cham_uplo_t uplo, int n, int nb,
+                        const CHAM_desc_t *A, int Am, int An,
+@@ -61,6 +153,20 @@ void INSERT_TASK_zpotrf(const RUNTIME_option_t *options,
+     parsec_taskpool_t* PARSEC_dtd_taskpool = (parsec_taskpool_t *)(options->sequence->schedopt);
+     CHAM_tile_t *tileA = A->get_blktile( A, Am, An );
+ 
++#if defined(CHAMELEON_USE_CUDA) && !defined(CHAMELEON_SIMULATION)
++    parsec_dtd_taskpool_insert_task_cuda(
++        PARSEC_dtd_taskpool,
++        CORE_zpotrf_parsec, CORE_zpotrf_parsec_cuda,
++        options->priority, "potrf",
++        sizeof(cham_uplo_t),                 &uplo,                             VALUE,
++        sizeof(int),                 &n,                                VALUE,
++        PASSED_BY_REF,               RTBLKADDR( A, CHAMELEON_Complex64_t, Am, An ), chameleon_parsec_get_arena_index( A ) | INOUT | AFFINITY,
++        sizeof(int), &(tileA->ld), VALUE,
++        sizeof(int),                 &iinfo,                            VALUE,
++        sizeof(RUNTIME_sequence_t*), &(options->sequence),              VALUE,
++        sizeof(RUNTIME_request_t*),  &(options->request),               VALUE,
++        PARSEC_DTD_ARG_END );
++#else
+     parsec_dtd_taskpool_insert_task(
+         PARSEC_dtd_taskpool, CORE_zpotrf_parsec, options->priority, "potrf",
+         sizeof(cham_uplo_t),                 &uplo,                             VALUE,
+@@ -71,6 +177,7 @@ void INSERT_TASK_zpotrf(const RUNTIME_option_t *options,
+         sizeof(RUNTIME_sequence_t*), &(options->sequence),              VALUE,
+         sizeof(RUNTIME_request_t*),  &(options->request),               VALUE,
+         PARSEC_DTD_ARG_END );
++#endif
+ 
+     (void)nb;
+ }
+diff --git a/runtime/parsec/codelets/codelet_zsyrk.c b/runtime/parsec/codelets/codelet_zsyrk.c
+index c47fbb4..daa6087 100644
+--- a/runtime/parsec/codelets/codelet_zsyrk.c
++++ b/runtime/parsec/codelets/codelet_zsyrk.c
+@@ -22,6 +22,12 @@
+ #include "chameleon/tasks_z.h"
+ #include "coreblas/coreblas_z.h"
+ 
++#if defined(CHAMELEON_USE_CUDA) && !defined(CHAMELEON_SIMULATION)
++#include <cuda_runtime.h>
++#include <cublas_v2.h>
++#include "gpucublas.h"
++#endif
++
+ static inline int
+ CORE_zsyrk_parsec( parsec_execution_stream_t *context,
+                    parsec_task_t             *this_task )
+@@ -48,6 +54,46 @@ CORE_zsyrk_parsec( parsec_execution_stream_t *context,
+     return PARSEC_HOOK_RETURN_DONE;
+ }
+ 
++#if defined(CHAMELEON_USE_CUDA) && !defined(CHAMELEON_SIMULATION)
++static __thread cublasHandle_t cham_parsec_syrk_cublas_handle = NULL;
++
++static int
++CORE_zsyrk_parsec_cuda( parsec_execution_stream_t *es,
++                        parsec_task_t             *this_task,
++                        void                      *cuda_stream )
++{
++    cham_uplo_t uplo;
++    cham_trans_t trans;
++    int n, k, lda, ldc;
++    CHAMELEON_Complex64_t alpha, beta;
++    CHAMELEON_Complex64_t *A, *C;
++
++    parsec_dtd_unpack_args(
++        this_task, &uplo, &trans, &n, &k, &alpha, &A, &lda, &beta, &C, &ldc );
++
++    A = (CHAMELEON_Complex64_t *)parsec_data_copy_get_ptr(this_task->data[0].data_out);
++    C = (CHAMELEON_Complex64_t *)parsec_data_copy_get_ptr(this_task->data[1].data_out);
++
++    if( NULL == cham_parsec_syrk_cublas_handle ) {
++        cublasStatus_t cs = cublasCreate( &cham_parsec_syrk_cublas_handle );
++        if( cs != CUBLAS_STATUS_SUCCESS ) {
++            return PARSEC_HOOK_RETURN_ERROR;
++        }
++    }
++    cublasSetStream( cham_parsec_syrk_cublas_handle, (cudaStream_t)cuda_stream );
++
++    CUDA_zsyrk( uplo, trans, n, k,
++                (const cuDoubleComplex *)&alpha,
++                (const cuDoubleComplex *)A, lda,
++                (const cuDoubleComplex *)&beta,
++                (cuDoubleComplex *)C, ldc,
++                cham_parsec_syrk_cublas_handle );
++
++    (void)es;
++    return PARSEC_HOOK_RETURN_DONE;
++}
++#endif /* CHAMELEON_USE_CUDA && !CHAMELEON_SIMULATION */
++
+ void INSERT_TASK_zsyrk(const RUNTIME_option_t *options,
+                       cham_uplo_t uplo, cham_trans_t trans,
+                       int n, int k, int nb,
+@@ -58,6 +104,23 @@ void INSERT_TASK_zsyrk(const RUNTIME_option_t *options,
+     CHAM_tile_t *tileA = A->get_blktile( A, Am, An );
+     CHAM_tile_t *tileC = C->get_blktile( C, Cm, Cn );
+ 
++#if defined(CHAMELEON_USE_CUDA) && !defined(CHAMELEON_SIMULATION)
++    parsec_dtd_taskpool_insert_task_cuda(
++        PARSEC_dtd_taskpool,
++        CORE_zsyrk_parsec, CORE_zsyrk_parsec_cuda,
++        options->priority, "syrk",
++        sizeof(cham_uplo_t),    &uplo,                              VALUE,
++        sizeof(cham_trans_t),    &trans,                             VALUE,
++        sizeof(int),           &n,                                 VALUE,
++        sizeof(int),           &k,                                 VALUE,
++        sizeof(CHAMELEON_Complex64_t),           &alpha,               VALUE,
++        PASSED_BY_REF,         RTBLKADDR( A, CHAMELEON_Complex64_t, Am, An ), chameleon_parsec_get_arena_index( A ) | INPUT,
++        sizeof(int), &(tileA->ld), VALUE,
++        sizeof(CHAMELEON_Complex64_t),           &beta,                VALUE,
++        PASSED_BY_REF,         RTBLKADDR( C, CHAMELEON_Complex64_t, Cm, Cn ), chameleon_parsec_get_arena_index( C ) | INOUT | AFFINITY,
++        sizeof(int), &(tileC->ld), VALUE,
++        PARSEC_DTD_ARG_END );
++#else
+     parsec_dtd_taskpool_insert_task(
+         PARSEC_dtd_taskpool, CORE_zsyrk_parsec, options->priority, "syrk",
+         sizeof(cham_uplo_t),    &uplo,                              VALUE,
+@@ -71,6 +134,7 @@ void INSERT_TASK_zsyrk(const RUNTIME_option_t *options,
+         PASSED_BY_REF,         RTBLKADDR( C, CHAMELEON_Complex64_t, Cm, Cn ), chameleon_parsec_get_arena_index( C ) | INOUT | AFFINITY,
+         sizeof(int), &(tileC->ld), VALUE,
+         PARSEC_DTD_ARG_END );
++#endif
+ 
+     (void)nb;
+ }
+diff --git a/runtime/parsec/codelets/codelet_ztpmqrt.c b/runtime/parsec/codelets/codelet_ztpmqrt.c
+index 61246c0..2989dd4 100644
+--- a/runtime/parsec/codelets/codelet_ztpmqrt.c
++++ b/runtime/parsec/codelets/codelet_ztpmqrt.c
+@@ -21,6 +21,12 @@
+ #include "chameleon/tasks_z.h"
+ #include "coreblas/coreblas_z.h"
+ 
++#if defined(CHAMELEON_USE_CUDA) && !defined(CHAMELEON_SIMULATION)
++#include <cuda_runtime.h>
++#include <cublas_v2.h>
++#include "gpucublas.h"
++#endif
++
+ static inline int
+ CORE_ztpmqrt_parsec( parsec_execution_stream_t *context,
+                     parsec_task_t             *this_task )
+@@ -52,6 +58,76 @@ CORE_ztpmqrt_parsec( parsec_execution_stream_t *context,
+     return PARSEC_HOOK_RETURN_DONE;
+ }
+ 
++#if defined(CHAMELEON_USE_CUDA) && !defined(CHAMELEON_SIMULATION)
++/* Per-thread cuBLAS handle + GPU scratch. The scratch is 3*ib*nb elements
++ * (same sizing StarPU's cl_ztpmqrt_cuda_func documents). Tile size is fixed
++ * across a run, so the realloc fires once per worker. Same lifecycle
++ * compromise as codelet_zpotrf.c: handle and scratch leak at thread exit. */
++static __thread cublasHandle_t   cham_parsec_tpmqrt_cublas_handle = NULL;
++static __thread cuDoubleComplex *cham_parsec_tpmqrt_scratch = NULL;
++static __thread int              cham_parsec_tpmqrt_scratch_elts = 0;
++
++static int
++CORE_ztpmqrt_parsec_cuda( parsec_execution_stream_t *es,
++                          parsec_task_t             *this_task,
++                          void                      *cuda_stream )
++{
++    cham_side_t side;
++    cham_trans_t trans;
++    int M, N, K, L, ib;
++    const CHAMELEON_Complex64_t *V, *T;
++    int ldv, ldt, lda, ldb;
++    CHAMELEON_Complex64_t *A, *B, *WORK_unused;
++
++    parsec_dtd_unpack_args(
++        this_task, &side, &trans, &M, &N, &K, &L, &ib,
++        &V, &ldv, &T, &ldt, &A, &lda, &B, &ldb, &WORK_unused );
++
++    V = (const CHAMELEON_Complex64_t *)parsec_data_copy_get_ptr(this_task->data[0].data_out);
++    T = (const CHAMELEON_Complex64_t *)parsec_data_copy_get_ptr(this_task->data[1].data_out);
++    A = (CHAMELEON_Complex64_t *)parsec_data_copy_get_ptr(this_task->data[2].data_out);
++    B = (CHAMELEON_Complex64_t *)parsec_data_copy_get_ptr(this_task->data[3].data_out);
++
++    if( NULL == cham_parsec_tpmqrt_cublas_handle ) {
++        cublasStatus_t cs = cublasCreate( &cham_parsec_tpmqrt_cublas_handle );
++        if( cs != CUBLAS_STATUS_SUCCESS ) {
++            return PARSEC_HOOK_RETURN_ERROR;
++        }
++    }
++    cublasSetStream( cham_parsec_tpmqrt_cublas_handle, (cudaStream_t)cuda_stream );
++
++    /* CUDA_ztpmqrt needs 3*ib*nb workspace; nb is implicit in the tile
++     * dimension (N when side==Left, M when side==Right). Use max(M,N) as an
++     * upper bound that covers both cases without parsing side. */
++    int nb_upper = (M > N) ? M : N;
++    int need = 3 * ib * nb_upper;
++    if( need > cham_parsec_tpmqrt_scratch_elts ) {
++        if( cham_parsec_tpmqrt_scratch != NULL ) {
++            cudaFree( cham_parsec_tpmqrt_scratch );
++        }
++        if( cudaMalloc( (void **)&cham_parsec_tpmqrt_scratch,
++                        (size_t)need * sizeof(cuDoubleComplex) ) != cudaSuccess ) {
++            cham_parsec_tpmqrt_scratch = NULL;
++            cham_parsec_tpmqrt_scratch_elts = 0;
++            return PARSEC_HOOK_RETURN_ERROR;
++        }
++        cham_parsec_tpmqrt_scratch_elts = need;
++    }
++
++    CUDA_ztpmqrt( side, trans, M, N, K, L, ib,
++                  (const cuDoubleComplex *)V, ldv,
++                  (const cuDoubleComplex *)T, ldt,
++                  (cuDoubleComplex *)A, lda,
++                  (cuDoubleComplex *)B, ldb,
++                  cham_parsec_tpmqrt_scratch, need,
++                  cham_parsec_tpmqrt_cublas_handle );
++
++    (void)es;
++    (void)WORK_unused;
++    return PARSEC_HOOK_RETURN_DONE;
++}
++#endif /* CHAMELEON_USE_CUDA && !CHAMELEON_SIMULATION */
++
+ void INSERT_TASK_ztpmqrt( const RUNTIME_option_t *options,
+                          cham_side_t side, cham_trans_t trans,
+                          int M, int N, int K, int L, int ib, int nb,
+@@ -66,6 +142,29 @@ void INSERT_TASK_ztpmqrt( const RUNTIME_option_t *options,
+     CHAM_tile_t *tileA = A->get_blktile( A, Am, An );
+     CHAM_tile_t *tileB = B->get_blktile( B, Bm, Bn );
+ 
++#if defined(CHAMELEON_USE_CUDA) && !defined(CHAMELEON_SIMULATION)
++    parsec_dtd_taskpool_insert_task_cuda(
++        PARSEC_dtd_taskpool,
++        CORE_ztpmqrt_parsec, CORE_ztpmqrt_parsec_cuda,
++        options->priority, "tpmqrt",
++        sizeof(cham_side_t), &side,  VALUE,
++        sizeof(cham_trans_t), &trans, VALUE,
++        sizeof(int),        &M,     VALUE,
++        sizeof(int),        &N,     VALUE,
++        sizeof(int),        &K,     VALUE,
++        sizeof(int),        &L,     VALUE,
++        sizeof(int),        &ib,    VALUE,
++        PASSED_BY_REF,       RTBLKADDR( V, CHAMELEON_Complex64_t, Vm, Vn ), chameleon_parsec_get_arena_index( V ) | INPUT,
++        sizeof(int), &(tileV->ld), VALUE,
++        PASSED_BY_REF,       RTBLKADDR( T, CHAMELEON_Complex64_t, Tm, Tn ), chameleon_parsec_get_arena_index( T ) | INPUT,
++        sizeof(int), &(tileT->ld), VALUE,
++        PASSED_BY_REF,       RTBLKADDR( A, CHAMELEON_Complex64_t, Am, An ), chameleon_parsec_get_arena_index( A ) | INOUT,
++        sizeof(int), &(tileA->ld), VALUE,
++        PASSED_BY_REF,       RTBLKADDR( B, CHAMELEON_Complex64_t, Bm, Bn ), chameleon_parsec_get_arena_index( B ) | INOUT | AFFINITY,
++        sizeof(int), &(tileB->ld), VALUE,
++        sizeof(CHAMELEON_Complex64_t)*ib*nb, NULL, SCRATCH,
++        PARSEC_DTD_ARG_END );
++#else
+     parsec_dtd_taskpool_insert_task(
+         PARSEC_dtd_taskpool, CORE_ztpmqrt_parsec, options->priority, "tpmqrt",
+         sizeof(cham_side_t), &side,  VALUE,
+@@ -85,4 +184,5 @@ void INSERT_TASK_ztpmqrt( const RUNTIME_option_t *options,
+         sizeof(int), &(tileB->ld), VALUE,
+         sizeof(CHAMELEON_Complex64_t)*ib*nb, NULL, SCRATCH,
+         PARSEC_DTD_ARG_END );
++#endif
+ }
+diff --git a/runtime/parsec/codelets/codelet_ztrsm.c b/runtime/parsec/codelets/codelet_ztrsm.c
+index fa11f73..4ba8cc0 100644
+--- a/runtime/parsec/codelets/codelet_ztrsm.c
++++ b/runtime/parsec/codelets/codelet_ztrsm.c
+@@ -22,6 +22,12 @@
+ #include "chameleon/tasks_z.h"
+ #include "coreblas/coreblas_z.h"
+ 
++#if defined(CHAMELEON_USE_CUDA) && !defined(CHAMELEON_SIMULATION)
++#include <cuda_runtime.h>
++#include <cublas_v2.h>
++#include "gpucublas.h"
++#endif
++
+ static inline int
+ CORE_ztrsm_parsec( parsec_execution_stream_t *context,
+                     parsec_task_t             *this_task )
+@@ -46,6 +52,52 @@ CORE_ztrsm_parsec( parsec_execution_stream_t *context,
+     return PARSEC_HOOK_RETURN_DONE;
+ }
+ 
++#if defined(CHAMELEON_USE_CUDA) && !defined(CHAMELEON_SIMULATION)
++static __thread cublasHandle_t cham_parsec_trsm_cublas_handle = NULL;
++
++static int
++CORE_ztrsm_parsec_cuda( parsec_execution_stream_t *es,
++                        parsec_task_t             *this_task,
++                        void                      *cuda_stream )
++{
++    cham_side_t side;
++    cham_uplo_t uplo;
++    cham_trans_t trans;
++    cham_diag_t diag;
++    int tempmm, nb, ldak, ldam;
++    CHAMELEON_Complex64_t alpha;
++    CHAMELEON_Complex64_t *T;
++    CHAMELEON_Complex64_t *C;
++
++    parsec_dtd_unpack_args(
++        this_task, &side, &uplo, &trans, &diag, &tempmm, &nb, &alpha, &T, &ldak, &C, &ldam );
++
++    /* See codelet_zgemm.c: DTD's unpack returns the host data pointer; the
++     * staged device copy lives in data_out. Override T and C with the device
++     * addresses before handing them to cuBLAS. */
++    T = (CHAMELEON_Complex64_t *)parsec_data_copy_get_ptr(this_task->data[0].data_out);
++    C = (CHAMELEON_Complex64_t *)parsec_data_copy_get_ptr(this_task->data[1].data_out);
++
++    if( NULL == cham_parsec_trsm_cublas_handle ) {
++        cublasStatus_t cs = cublasCreate( &cham_parsec_trsm_cublas_handle );
++        if( cs != CUBLAS_STATUS_SUCCESS ) {
++            return PARSEC_HOOK_RETURN_ERROR;
++        }
++    }
++    cublasSetStream( cham_parsec_trsm_cublas_handle, (cudaStream_t)cuda_stream );
++
++    CUDA_ztrsm( side, uplo, trans, diag,
++                tempmm, nb,
++                (const cuDoubleComplex *)&alpha,
++                (const cuDoubleComplex *)T, ldak,
++                (cuDoubleComplex *)C, ldam,
++                cham_parsec_trsm_cublas_handle );
++
++    (void)es;
++    return PARSEC_HOOK_RETURN_DONE;
++}
++#endif /* CHAMELEON_USE_CUDA && !CHAMELEON_SIMULATION */
++
+ void INSERT_TASK_ztrsm(const RUNTIME_option_t *options,
+                       cham_side_t side, cham_uplo_t uplo, cham_trans_t transA, cham_diag_t diag,
+                       int m, int n, int nb,
+@@ -56,6 +108,24 @@ void INSERT_TASK_ztrsm(const RUNTIME_option_t *options,
+     CHAM_tile_t *tileA = A->get_blktile( A, Am, An );
+     CHAM_tile_t *tileB = B->get_blktile( B, Bm, Bn );
+ 
++#if defined(CHAMELEON_USE_CUDA) && !defined(CHAMELEON_SIMULATION)
++    parsec_dtd_taskpool_insert_task_cuda(
++        PARSEC_dtd_taskpool,
++        CORE_ztrsm_parsec, CORE_ztrsm_parsec_cuda,
++        options->priority, "Trsm",
++        sizeof(cham_side_t),  &side,                     VALUE,
++        sizeof(cham_uplo_t),  &uplo,                     VALUE,
++        sizeof(cham_trans_t), &transA,                   VALUE,
++        sizeof(cham_diag_t),  &diag,                     VALUE,
++        sizeof(int),          &m,                        VALUE,
++        sizeof(int),          &n,                        VALUE,
++        sizeof(CHAMELEON_Complex64_t),           &alpha,      VALUE,
++        PASSED_BY_REF,     RTBLKADDR( A, CHAMELEON_Complex64_t, Am, An ), chameleon_parsec_get_arena_index( A ) | INPUT,
++        sizeof(int), &(tileA->ld), VALUE,
++        PASSED_BY_REF,     RTBLKADDR( B, CHAMELEON_Complex64_t, Bm, Bn ), chameleon_parsec_get_arena_index( B ) | INOUT | AFFINITY,
++        sizeof(int), &(tileB->ld), VALUE,
++        PARSEC_DTD_ARG_END );
++#else
+     parsec_dtd_taskpool_insert_task(
+         PARSEC_dtd_taskpool, CORE_ztrsm_parsec, options->priority, "Trsm",
+         sizeof(cham_side_t),  &side,                     VALUE,
+@@ -70,6 +140,7 @@ void INSERT_TASK_ztrsm(const RUNTIME_option_t *options,
+         PASSED_BY_REF,     RTBLKADDR( B, CHAMELEON_Complex64_t, Bm, Bn ), chameleon_parsec_get_arena_index( B ) | INOUT | AFFINITY,
+         sizeof(int), &(tileB->ld), VALUE,
+         PARSEC_DTD_ARG_END );
++#endif
+ 
+     (void)nb;
+ }
+diff --git a/runtime/parsec/codelets/codelet_zunmqr.c b/runtime/parsec/codelets/codelet_zunmqr.c
+index 5b2967d..f8b889b 100644
+--- a/runtime/parsec/codelets/codelet_zunmqr.c
++++ b/runtime/parsec/codelets/codelet_zunmqr.c
+@@ -22,6 +22,12 @@
+ #include "chameleon/tasks_z.h"
+ #include "coreblas/coreblas_z.h"
+ 
++#if defined(CHAMELEON_USE_CUDA) && !defined(CHAMELEON_SIMULATION)
++#include <cuda_runtime.h>
++#include <cublas_v2.h>
++#include "gpucublas.h"
++#endif
++
+ static inline int
+ CORE_zunmqr_parsec( parsec_execution_stream_t *context,
+                     parsec_task_t             *this_task )
+@@ -51,6 +57,65 @@ CORE_zunmqr_parsec( parsec_execution_stream_t *context,
+     return PARSEC_HOOK_RETURN_DONE;
+ }
+ 
++#if defined(CHAMELEON_USE_CUDA) && !defined(CHAMELEON_SIMULATION)
++static __thread cublasHandle_t   cham_parsec_unmqr_cublas_handle = NULL;
++static __thread cuDoubleComplex *cham_parsec_unmqr_scratch = NULL;
++static __thread int              cham_parsec_unmqr_scratch_elts = 0;
++
++static int
++CORE_zunmqr_parsec_cuda( parsec_execution_stream_t *es,
++                         parsec_task_t             *this_task,
++                         void                      *cuda_stream )
++{
++    cham_side_t side;
++    cham_trans_t trans;
++    int m, n, k, ib, lda, ldt, ldc, ldwork;
++    CHAMELEON_Complex64_t *A, *T, *C, *WORK_unused;
++
++    parsec_dtd_unpack_args(
++        this_task, &side, &trans, &m, &n, &k, &ib,
++        &A, &lda, &T, &ldt, &C, &ldc, &WORK_unused, &ldwork );
++
++    A = (CHAMELEON_Complex64_t *)parsec_data_copy_get_ptr(this_task->data[0].data_out);
++    T = (CHAMELEON_Complex64_t *)parsec_data_copy_get_ptr(this_task->data[1].data_out);
++    C = (CHAMELEON_Complex64_t *)parsec_data_copy_get_ptr(this_task->data[2].data_out);
++
++    if( NULL == cham_parsec_unmqr_cublas_handle ) {
++        cublasStatus_t cs = cublasCreate( &cham_parsec_unmqr_cublas_handle );
++        if( cs != CUBLAS_STATUS_SUCCESS ) {
++            return PARSEC_HOOK_RETURN_ERROR;
++        }
++    }
++    cublasSetStream( cham_parsec_unmqr_cublas_handle, (cudaStream_t)cuda_stream );
++
++    /* CUDA_zunmqrt needs ib*ldwork workspace (StarPU sizes it ib*nb). */
++    int need = ib * ldwork;
++    if( need > cham_parsec_unmqr_scratch_elts ) {
++        if( cham_parsec_unmqr_scratch != NULL ) {
++            cudaFree( cham_parsec_unmqr_scratch );
++        }
++        if( cudaMalloc( (void **)&cham_parsec_unmqr_scratch,
++                        (size_t)need * sizeof(cuDoubleComplex) ) != cudaSuccess ) {
++            cham_parsec_unmqr_scratch = NULL;
++            cham_parsec_unmqr_scratch_elts = 0;
++            return PARSEC_HOOK_RETURN_ERROR;
++        }
++        cham_parsec_unmqr_scratch_elts = need;
++    }
++
++    CUDA_zunmqrt( side, trans, m, n, k, ib,
++                  (const cuDoubleComplex *)A, lda,
++                  (const cuDoubleComplex *)T, ldt,
++                  (cuDoubleComplex *)C, ldc,
++                  cham_parsec_unmqr_scratch, ldwork,
++                  cham_parsec_unmqr_cublas_handle );
++
++    (void)es;
++    (void)WORK_unused;
++    return PARSEC_HOOK_RETURN_DONE;
++}
++#endif /* CHAMELEON_USE_CUDA && !CHAMELEON_SIMULATION */
++
+ void INSERT_TASK_zunmqr(const RUNTIME_option_t *options,
+                        cham_side_t side, cham_trans_t trans,
+                        int m, int n, int k, int ib, int nb,
+@@ -63,6 +128,27 @@ void INSERT_TASK_zunmqr(const RUNTIME_option_t *options,
+     CHAM_tile_t *tileT = T->get_blktile( T, Tm, Tn );
+     CHAM_tile_t *tileC = C->get_blktile( C, Cm, Cn );
+ 
++#if defined(CHAMELEON_USE_CUDA) && !defined(CHAMELEON_SIMULATION)
++    parsec_dtd_taskpool_insert_task_cuda(
++        PARSEC_dtd_taskpool,
++        CORE_zunmqr_parsec, CORE_zunmqr_parsec_cuda,
++        options->priority, "unmqr",
++        sizeof(cham_side_t),    &side,                              VALUE,
++        sizeof(cham_trans_t),    &trans,                             VALUE,
++        sizeof(int),           &m,                                 VALUE,
++        sizeof(int),           &n,                                 VALUE,
++        sizeof(int),           &k,                                 VALUE,
++        sizeof(int),           &ib,                                VALUE,
++        PASSED_BY_REF,         RTBLKADDR( A, CHAMELEON_Complex64_t, Am, An ), chameleon_parsec_get_arena_index( A ) | INPUT,
++        sizeof(int), &(tileA->ld), VALUE,
++        PASSED_BY_REF,         RTBLKADDR( T, CHAMELEON_Complex64_t, Tm, Tn ), chameleon_parsec_get_arena_index( T ) | INPUT,
++        sizeof(int), &(tileT->ld), VALUE,
++        PASSED_BY_REF,         RTBLKADDR( C, CHAMELEON_Complex64_t, Cm, Cn ), chameleon_parsec_get_arena_index( C ) | INOUT | AFFINITY,
++        sizeof(int), &(tileC->ld), VALUE,
++        sizeof(CHAMELEON_Complex64_t)*ib*nb,   NULL,                          SCRATCH,
++        sizeof(int),           &nb,                                VALUE,
++        PARSEC_DTD_ARG_END );
++#else
+     parsec_dtd_taskpool_insert_task(
+         PARSEC_dtd_taskpool, CORE_zunmqr_parsec, options->priority, "unmqr",
+         sizeof(cham_side_t),    &side,                              VALUE,
+@@ -80,4 +166,5 @@ void INSERT_TASK_zunmqr(const RUNTIME_option_t *options,
+         sizeof(CHAMELEON_Complex64_t)*ib*nb,   NULL,                          SCRATCH,
+         sizeof(int),           &nb,                                VALUE,
+         PARSEC_DTD_ARG_END );
++#endif
+ }
+diff --git a/runtime/parsec/control/runtime_control.c b/runtime/parsec/control/runtime_control.c
+index 5f07418..30bc0af 100644
+--- a/runtime/parsec/control/runtime_control.c
++++ b/runtime/parsec/control/runtime_control.c
+@@ -37,15 +37,37 @@ int RUNTIME_init( CHAM_context_t *chamctxt,
+ {
+     int hres = CHAMELEON_ERR_NOT_INITIALIZED;
+     int default_ncores = -1;
+-    int *argc = (int *)malloc(sizeof(int));
+-    *argc = 0;
++    int    argc = 0;
++    /* NULL-terminated: parsec_argv_copy() walks argv until it hits NULL
++     * (it ignores argc), so the array needs a trailing NULL slot. */
++    char  *argv_buf[4] = { NULL, NULL, NULL, NULL };
++    char **argv  = NULL;
++    char ***pargv = NULL;
++    char  *dotfile = getenv("CHAMELEON_PARSEC_DOT");
++
++    /* PaRSEC only emits its task-graph .dot when the "-." / "--dot <file>"
++     * option is parsed from argv (there is no MCA/env equivalent), and
++     * Chameleon normally hands parsec_init an empty argv. When
++     * CHAMELEON_PARSEC_DOT is set, synthesize a minimal argv so PaRSEC's
++     * grapher (built with PARSEC_PROF_GRAPHER=ON) writes
++     * "<CHAMELEON_PARSEC_DOT>.dot". Left unset, the argv stays empty and the
++     * grapher is a no-op. */
++    if ( (NULL != dotfile) && ('\0' != dotfile[0]) ) {
++        argv_buf[0] = "chameleon";
++        argv_buf[1] = "-.";
++        argv_buf[2] = dotfile;
++        argv_buf[3] = NULL;
++        argc  = 3;
++        argv  = argv_buf;
++        pargv = &argv;
++    }
+ 
+     /* Initializing parsec context */
+     if( 0 < ncpus ) {
+         default_ncores = ncpus;
+     }
+     chamctxt->parallel_enabled = CHAMELEON_TRUE;
+-    chamctxt->schedopt = (void *)parsec_init(default_ncores, argc, NULL);
++    chamctxt->schedopt = (void *)parsec_init(default_ncores, &argc, pargv);
+ 
+     if ( NULL != chamctxt->schedopt ) {
+         chamctxt->nworkers = ncpus;
+@@ -53,8 +75,6 @@ int RUNTIME_init( CHAM_context_t *chamctxt,
+         hres = CHAMELEON_SUCCESS;
+     }
+ 
+-    free(argc);
+-
+     (void)ncudas;
+     return hres;
+ }

@@ -1,0 +1,487 @@
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index 345eb1e..b12682a 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -1092,7 +1092,12 @@ foreach( pattern_file ${pattern_files} )
+ endforeach( pattern_file )
+ add_custom_target(build_with_parsec ALL DEPENDS ${pattern_files_dest})
+ 
+-add_subdirectory(dplasma)
++option(PARSEC_WITH_DPLASMA
++  "Build the bundled DPLASMA dense linear algebra library and its tools."
++  OFF)
++if(PARSEC_WITH_DPLASMA)
++  add_subdirectory(dplasma)
++endif()
+ 
+ # build doxygen documentation. Keep this at the end to make sure all temporary
+ # variables (such as the DPLASMA documentation) are correctly initialized.
+diff --git a/parsec/devices/cuda/dev_cuda.c b/parsec/devices/cuda/dev_cuda.c
+index fa89308..e8b02c2 100644
+--- a/parsec/devices/cuda/dev_cuda.c
++++ b/parsec/devices/cuda/dev_cuda.c
+@@ -101,10 +101,41 @@ static int parsec_cuda_device_lookup_cudamp_floprate(int major, int minor, int *
+         *trate = *srate = 128;
+         *drate = 4;
+     } else if (major == 7 && minor == 0) {
++        /* Volta (V100) */
+         *hrate = 128;
+         *trate = 512;
+         *srate = 64;
+         *drate = 32;
++    } else if (major == 7 && minor == 5) {
++        /* Turing (RTX 2000 series, T4) */
++        *hrate = 128;
++        *trate = 512;
++        *srate = 64;
++        *drate = 2;
++    } else if (major == 8 && minor == 0) {
++        /* Ampere (A100) */
++        *hrate = 128;
++        *trate = 512;
++        *srate = 64;
++        *drate = 32;
++    } else if (major == 8 && (minor == 6 || minor == 7)) {
++        /* Ampere (RTX 3000 series, A10, A40) */
++        *hrate = 256;
++        *trate = 512;
++        *srate = 128;
++        *drate = 2;
++    } else if (major == 8 && minor == 9) {
++        /* Ada Lovelace (RTX 4000 series, L40S) */
++        *hrate = 256;
++        *trate = 512;
++        *srate = 128;
++        *drate = 2;
++    } else if (major == 9 && minor == 0) {
++        /* Hopper (H100) */
++        *hrate = 256;
++        *trate = 1024;
++        *srate = 128;
++        *drate = 64;
+     } else {
+         parsec_debug_verbose(3, parsec_cuda_output_stream, "Unsupported GPU %d, %d, skipping.", major, minor);
+         return PARSEC_ERROR;
+diff --git a/parsec/interfaces/superscalar/insert_function.c b/parsec/interfaces/superscalar/insert_function.c
+index e0b9726..98fd59c 100644
+--- a/parsec/interfaces/superscalar/insert_function.c
++++ b/parsec/interfaces/superscalar/insert_function.c
+@@ -50,6 +50,10 @@
+ #include "parsec/utils/debug.h"
+ #include "parsec/data_distribution.h"
+ 
++#if defined(PARSEC_HAVE_CUDA)
++#include "parsec/devices/cuda/dev_cuda.h"
++#endif
++
+ /* This allows DTD to have a separate stream for debug verbose output */
+ int parsec_dtd_debug_output;
+ static int parsec_dtd_debug_verbose = -1;
+@@ -1137,18 +1141,177 @@ hook_of_dtd_task( parsec_execution_stream_t *es,
+ #endif /* !defined(PARSEC_DRY_RUN) */
+ #endif
+ 
++#if defined(PARSEC_HAVE_CUDA)
++    /* This chore is the CPU incarnation of a DTD task: reaching here means the
++     * body just executed on the host (a GPU-capable task goes through
++     * hook_of_dtd_task_cuda instead, and a CPU-only task class like
++     * getrf_nopiv has no CUDA chore at all). When such a CPU body writes a
++     * tile in place, the host copy becomes the authoritative version, but the
++     * DTD CPU path never advanced PaRSEC's coherency protocol. If a device
++     * copy of that tile already existed (e.g. a prior GPU trailing-update
++     * produced it and pushed it out to host), it stayed marked current with an
++     * equal version, so the next GPU stage-in (dev_cuda.c:1101 /
++     * parsec_data_transfer_ownership_to_copy) saw nothing to transfer and fed
++     * the kernel the pre-write device data. That is the root cause of LU
++     * (getrf_nopiv) returning garbage on PaRSEC+GPU while it is correct on CPU
++     * and on StarPU+GPU (whose panel is likewise CPU-only). Claim host
++     * ownership, bump the host version, and invalidate any device copies so the
++     * next GPU read re-stages from host. We set the fields directly rather than
++     * calling parsec_data_transfer_ownership_to_copy() on purpose: that helper
++     * bumps the source copy's reader count, which the DTD CPU path never
++     * balances and which deadlocks the next GPU writer. Cholesky is unaffected
++     * (its potrf panel runs on the GPU, so no CPU write feeds a GPU read). */
++    {
++        int fi;
++        for( fi = 0; fi < this_task->task_class->nb_flows; fi++ ) {
++            parsec_dtd_flow_info_t *flow = FLOW_OF(dtd_task, fi);
++            int ot;
++            parsec_data_copy_t *hc;
++            parsec_data_t *orig;
++            uint32_t d;
++            int invalidated = 0;
++            if( NULL == flow ) continue;
++            ot = flow->op_type & GET_OP_TYPE;
++            if( (ot != INOUT) && (ot != OUTPUT) && (ot != ATOMIC_WRITE) ) continue;
++
++            /* For a CPU-executed DTD task the working copy is data_in (the host
++             * copy, == tile->data_copy); data_out is only populated on the GPU
++             * path. */
++            hc = this_task->data[fi].data_in;
++            if( NULL == hc ) hc = this_task->data[fi].data_out;
++            if( NULL == hc ) continue;
++            orig = hc->original;
++            if( NULL == orig ) continue;
++
++            for( d = 1; d < parsec_nb_devices; d++ ) {
++                parsec_data_copy_t *dc = orig->device_copies[d];
++                if( NULL != dc && DATA_COHERENCY_INVALID != dc->coherency_state ) {
++                    dc->coherency_state = DATA_COHERENCY_INVALID;
++                    invalidated = 1;
++                }
++            }
++            if( invalidated ) {
++                hc->version++;
++                hc->coherency_state = DATA_COHERENCY_OWNED;
++                orig->owner_device = 0;
++            }
++        }
++    }
++#endif /* PARSEC_HAVE_CUDA */
++
+     return rc;
+ }
+ 
+-/* chores and parsec_task_class_t structure initialization */
+-static const __parsec_chore_t dtd_chore[] = {
+-    {.type      = PARSEC_DEV_CPU,
+-     .evaluate  = NULL,
+-     .hook      = hook_of_dtd_task },
+-    {.type      = PARSEC_DEV_NONE,
+-     .evaluate  = NULL,
+-     .hook      = NULL},             /* End marker */
+-};
++/* Per-task-class chore tables are now allocated and populated in
++ * parsec_dtd_create_task_class() (CPU + optional CUDA + END marker), so the
++ * historical shared static dtd_chore[] is gone. */
++
++#if defined(PARSEC_HAVE_CUDA)
++/* GPU-side submit callback invoked by parsec_gpu_kernel_scheduler once data has
++ * been moved to the device. Forwards to the user's cuda_fpointer registered
++ * via parsec_dtd_taskpool_insert_task_cuda(), exposing the active CUDA stream
++ * as an opaque void *. */
++static int
++gpu_kernel_submit_dtd_task_cuda( gpu_device_t             *gpu_device,
++                                 parsec_gpu_task_t        *gpu_task,
++                                 parsec_gpu_exec_stream_t *gpu_stream )
++{
++    parsec_task_t           *this_task = gpu_task->ec;
++    parsec_dtd_task_class_t *dtd_tc    = (parsec_dtd_task_class_t *)this_task->task_class;
++    parsec_dtd_cuda_funcptr_t *cuda_fp =
++        (parsec_dtd_cuda_funcptr_t *)dtd_tc->cuda_fpointer;
++    int rc;
++
++    (void)gpu_device;
++
++    if( NULL == cuda_fp ) {
++        /* Should not happen: hook_of_dtd_task_cuda guards against this. */
++        return PARSEC_HOOK_RETURN_NEXT;
++    }
++
++    /* Emit the kernel's profiling BEGIN on the compute stream, keyed by this
++     * task class so it shows up as a named state (gemm/potrf/...) on the GPU
++     * stream lane — the same way CPU bodies do via hook_of_dtd_task(). The
++     * matching END is emitted generically by the GPU scheduler once the CUDA
++     * event completes (parsec/devices/cuda/dev_cuda.c:1463, which falls back to
++     * PARSEC_PROF_FUNC_KEY_END for streams whose key_end is -1, i.e. the
++     * compute streams). Without this BEGIN the scheduler's END events are
++     * unpaired and dbp2paje drops them, leaving the GPU compute streams empty.
++     * Mirrors the JDF-generated GPU body (jdf2c.c:5026). */
++    PARSEC_TASK_PROF_TRACE_IF(gpu_stream->prof_event_track_enable,
++                              gpu_stream->profiling,
++                              (-1 == gpu_stream->prof_event_key_start ?
++                               PARSEC_PROF_FUNC_KEY_START(this_task->taskpool,
++                                                          this_task->task_class->task_class_id) :
++                               gpu_stream->prof_event_key_start),
++                              (parsec_task_t *)this_task);
++
++    /* The execution stream pointer passed to the user is the calling thread's
++     * stream; for cuBLAS/cuSOLVER calls the relevant handle binds to the CUDA
++     * stream (third arg), not to a PaRSEC execution stream. */
++    rc = cuda_fp( NULL, this_task, (void *)gpu_stream->cuda_stream );
++    return rc;
++}
++
++/* Chore hook for the CUDA incarnation of a DTD task. Builds a parsec_gpu_task_t
++ * around the DTD task and hands it to the GPU scheduler. Returns
++ * PARSEC_HOOK_RETURN_NEXT if no GPU is available so the runtime falls back to
++ * the CPU chore. Modelled on the JDF-generated hook_cuda_* (see jdf2c.c:5042). */
++static int
++hook_of_dtd_task_cuda( parsec_execution_stream_t *es,
++                       parsec_task_t             *this_task )
++{
++    parsec_dtd_task_class_t *dtd_tc = (parsec_dtd_task_class_t *)this_task->task_class;
++    parsec_gpu_task_t       *gpu_task;
++    double                   ratio = 1.0;
++    int                      dev_index;
++    int                      i;
++
++    if( NULL == dtd_tc->cuda_fpointer ) {
++        return PARSEC_HOOK_RETURN_NEXT;
++    }
++
++    dev_index = parsec_gpu_get_best_device(this_task, ratio);
++    if( dev_index < 2 ) {
++        /* No CUDA device available: fall through to CPU chore. */
++        return PARSEC_HOOK_RETURN_NEXT;
++    }
++
++    gpu_task = (parsec_gpu_task_t *)calloc(1, sizeof(parsec_gpu_task_t));
++    OBJ_CONSTRUCT(gpu_task, parsec_list_item_t);
++    gpu_task->ec                   = this_task;
++    gpu_task->submit               = &gpu_kernel_submit_dtd_task_cuda;
++    gpu_task->task_type            = 0;
++    gpu_task->load                 = ratio * parsec_device_sweight[dev_index];
++    gpu_task->last_data_check_epoch = -1;
++    gpu_task->pushout              = 0;
++
++    /* Bind each DTD flow to its parsec_flow_t (populated lazily by
++     * parsec_dtd_set_flow_in_function) and mark write-side flows for pushout.
++     *
++     * NOTE (perf, identified but not yet fixed): pushout on every write flow
++     * eagerly copies each GPU task's output back to host. It is always correct
++     * but defeats GPU data residency — in a factorization a produced tile feeds
++     * the next GPU task, so this round-trips every tile H<->D (measured: 1 D2H
++     * per GPU kernel), which dominates the spotrf GPU cost vs StarPU. The
++     * JDF/PTG backend keeps tiles resident and only pushes out when the flow's
++     * consumer is a different task class (jdf2c.c:5127). A correct DTD version
++     * needs demand D2H wired into PaRSEC's version/coherence protocol (a naive
++     * "keep resident + pull on host read" attempt either deadlocks on the
++     * unbalanced reader count or returns wrong results — see docs/cuda_parsec.md). */
++    for( i = 0; i < this_task->task_class->nb_flows; i++ ) {
++        const parsec_flow_t *fl = this_task->task_class->in[i];
++        gpu_task->flow[i] = fl;
++        if( NULL != fl && (fl->flow_flags & FLOW_ACCESS_WRITE) ) {
++            gpu_task->pushout |= (1 << i);
++        }
++    }
++
++    parsec_device_load[dev_index] += gpu_task->load;
++
++    return parsec_gpu_kernel_scheduler(es, gpu_task, dev_index);
++}
++#endif /* PARSEC_HAVE_CUDA */
+ 
+ /* for GRAPHER purpose */
+ static symbol_t symb_dtd_taskid = {
+@@ -1965,6 +2128,7 @@ parsec_dtd_create_task_class( parsec_dtd_taskpool_t *__tp, parsec_dtd_funcptr_t*
+     dtd_tc->count_of_params    = count_of_params;
+     dtd_tc->size_of_param      = size_of_param;
+     dtd_tc->fpointer           = fpointer;
++    dtd_tc->cuda_fpointer      = NULL;
+     dtd_tc->ref_count          = 1;
+ 
+     /* Allocating mempool according to the size and param count */
+@@ -2017,7 +2181,23 @@ parsec_dtd_create_task_class( parsec_dtd_taskpool_t *__tp, parsec_dtd_funcptr_t*
+     tc->make_key              = DTD_make_key_identity;
+     tc->key_functions         = &DTD_key_fns;
+     tc->fini                  = NULL;
+-    *incarnations             = (__parsec_chore_t *)dtd_chore;
++    /* Allocate a per-task-class incarnations table so individual classes can
++     * carry their own chores (e.g. CUDA in addition to CPU). Slot 0 is CPU,
++     * slot 1 is reserved for an optional CUDA chore attached later, slot 2 is
++     * the END marker. Freed in parsec_dtd_destroy_template(). */
++    {
++        __parsec_chore_t *per_class = (__parsec_chore_t *)calloc(3, sizeof(__parsec_chore_t));
++        per_class[0].type     = PARSEC_DEV_CPU;
++        per_class[0].evaluate = NULL;
++        per_class[0].hook     = hook_of_dtd_task;
++        per_class[1].type     = PARSEC_DEV_NONE;
++        per_class[1].evaluate = NULL;
++        per_class[1].hook     = NULL;
++        per_class[2].type     = PARSEC_DEV_NONE;
++        per_class[2].evaluate = NULL;
++        per_class[2].hook     = NULL;
++        *incarnations         = per_class;
++    }
+     tc->find_deps             = NULL;
+     tc->iterate_successors    = parsec_dtd_iterate_successors;
+     tc->iterate_predecessors  = NULL;
+@@ -2061,6 +2241,9 @@ parsec_dtd_destroy_template( const parsec_task_class_t *tc )
+     }
+     parsec_mempool_destruct(&dtd_tc->context_mempool);
+     parsec_mempool_destruct(&dtd_tc->remote_task_mempool);
++    if( NULL != tc->incarnations ) {
++        free((void *)tc->incarnations);
++    }
+     free((void*)tc);
+ }
+ 
+@@ -3021,6 +3204,84 @@ parsec_dtd_taskpool_insert_task(parsec_taskpool_t  *tp,
+     }
+ }
+ 
++/* CUDA-aware variant of parsec_dtd_taskpool_insert_task. See header for the
++ * public contract. The first call for (cpu_fpointer, nb_flows) creates the
++ * task class and attaches a CUDA chore that delegates to cuda_fpointer.
++ * Subsequent calls reuse the cached task class; mismatched cuda_fpointer is
++ * a programming error. */
++void
++parsec_dtd_taskpool_insert_task_cuda(parsec_taskpool_t           *tp,
++                                     parsec_dtd_funcptr_t        *cpu_fpointer,
++                                     parsec_dtd_cuda_funcptr_t   *cuda_fpointer,
++                                     int                          priority,
++                                     const char                  *name_of_kernel,
++                                     ...)
++{
++    va_list args;
++    va_start(args, name_of_kernel);
++
++    parsec_task_t *this_task = __parsec_dtd_taskpool_create_task(tp, cpu_fpointer, priority,
++                                                                  name_of_kernel, args);
++    va_end(args);
++
++    if( NULL == this_task ) {
++        parsec_fatal("Unknow Error! Could not create task\n");
++    }
++
++#if defined(PARSEC_HAVE_CUDA)
++    {
++        parsec_dtd_task_class_t *dtd_tc =
++            (parsec_dtd_task_class_t *)this_task->task_class;
++        if( NULL == dtd_tc->cuda_fpointer ) {
++            /* First insertion of this task class: attach the CUDA chore.
++             * Order matters: __parsec_execute (scheduling.c:152) iterates
++             * incarnations[] in order and only advances past a chore when its
++             * hook returns PARSEC_HOOK_RETURN_NEXT. The CPU hook
++             * (hook_of_dtd_task) always returns DONE, so CUDA must be tried
++             * first; hook_of_dtd_task_cuda returns NEXT when no GPU is
++             * available, falling through to the CPU chore. Mirror the JDF
++             * convention (BODY [type=CUDA] listed before default CPU BODY). */
++            __parsec_chore_t *incs =
++                (__parsec_chore_t *)dtd_tc->super.incarnations;
++            dtd_tc->cuda_fpointer = (void *)cuda_fpointer;
++            incs[1] = incs[0];                       /* CPU moves to slot 1 */
++            incs[0].type     = PARSEC_DEV_CUDA;
++            incs[0].evaluate = NULL;
++            incs[0].hook     = hook_of_dtd_task_cuda;
++            incs[0].dyld     = NULL;
++            incs[0].dyld_fn  = NULL;
++            incs[2].type     = PARSEC_DEV_NONE;
++            incs[2].evaluate = NULL;
++            incs[2].hook     = NULL;
++            incs[2].dyld     = NULL;
++            incs[2].dyld_fn  = NULL;
++
++            /* DTD taskpools are handed to parsec_context_add_taskpool with zero
++             * task classes, so parsec_cuda_taskpool_register has already cleared
++             * every CUDA device from tp->devices_index_mask. Now that this task
++             * class carries a CUDA chore, re-arm the mask and re-run the per-
++             * device register hook so parsec_gpu_get_best_device will consider
++             * the GPU at dispatch time. */
++            for( uint32_t d = 0; d < parsec_nb_devices; d++ ) {
++                parsec_device_t *dev = parsec_devices_get(d);
++                if( NULL == dev ) continue;
++                if( PARSEC_DEV_CUDA != dev->type ) continue;
++                tp->devices_index_mask |= (1u << dev->device_index);
++                if( NULL != dev->device_taskpool_register ) {
++                    (void) dev->device_taskpool_register(dev, tp);
++                }
++            }
++        } else {
++            assert( dtd_tc->cuda_fpointer == (void *)cuda_fpointer );
++        }
++    }
++#else
++    (void)cuda_fpointer;
++#endif
++
++    parsec_insert_dtd_task(this_task);
++}
++
+ parsec_task_t *
+ parsec_dtd_taskpool_create_task(parsec_taskpool_t  *tp,
+                                 parsec_dtd_funcptr_t *fpointer, int priority,
+diff --git a/parsec/interfaces/superscalar/insert_function.h b/parsec/interfaces/superscalar/insert_function.h
+index eac54e1..169339e 100644
+--- a/parsec/interfaces/superscalar/insert_function.h
++++ b/parsec/interfaces/superscalar/insert_function.h
+@@ -238,6 +238,38 @@ parsec_dtd_taskpool_insert_task(parsec_taskpool_t  *tp,
+                                 parsec_dtd_funcptr_t *fpointer, int priority,
+                                 const char *name_of_kernel, ...);
+ 
++/*
++ * CUDA-aware task body. Same shape as parsec_dtd_funcptr_t with one extra
++ * argument: the CUDA stream the task should submit work to (passed as void*
++ * so this header does not need to pull in <cuda_runtime.h>; callers cast to
++ * cudaStream_t). The implementation is responsible for invoking cuBLAS/cuSOLVER
++ * with that stream (e.g. cublasSetStream(handle, (cudaStream_t)stream)).
++ */
++typedef int (parsec_dtd_cuda_funcptr_t)(parsec_execution_stream_t *,
++                                        parsec_task_t *,
++                                        void *cuda_stream);
++
++/*
++ * Insert a DTD task that has both a CPU body and a CUDA body. The first call
++ * for a given cpu_fpointer creates the task class and attaches the CUDA chore;
++ * subsequent calls reuse the cached task class (so the cuda_fpointer must match
++ * the first call's value).
++ *
++ * At dispatch time the runtime tries the CUDA chore first; if no GPU is
++ * available (PARSEC_MCA_device_cuda_enabled=0 or no devices found) the chore
++ * returns PARSEC_HOOK_RETURN_NEXT and the CPU chore runs.
++ *
++ * When PaRSEC was compiled without CUDA support, this function ignores
++ * cuda_fpointer and behaves exactly like parsec_dtd_taskpool_insert_task.
++ */
++void
++parsec_dtd_taskpool_insert_task_cuda(parsec_taskpool_t           *tp,
++                                     parsec_dtd_funcptr_t        *cpu_fpointer,
++                                     parsec_dtd_cuda_funcptr_t   *cuda_fpointer,
++                                     int                          priority,
++                                     const char                  *name_of_kernel,
++                                     ...);
++
+ /*
+  * This function behaves exactly like parsec_dtd_taskpool_insert_task()
+  * except it does not insert the task in PaRSEC and just returns it.
+diff --git a/parsec/interfaces/superscalar/insert_function_internal.h b/parsec/interfaces/superscalar/insert_function_internal.h
+index 4b6242f..4dc2f6c 100644
+--- a/parsec/interfaces/superscalar/insert_function_internal.h
++++ b/parsec/interfaces/superscalar/insert_function_internal.h
+@@ -254,6 +254,9 @@ struct parsec_dtd_task_class_s {
+     parsec_hash_table_item_t ht_item;
+     parsec_thread_mempool_t *mempool_owner;
+     parsec_dtd_funcptr_t    *fpointer;
++    /* Optional CUDA hook. NULL when this task class has no GPU variant.
++     * Set by parsec_dtd_taskpool_insert_task_cuda() on first occurrence. */
++    void                    *cuda_fpointer;
+     parsec_mempool_t         context_mempool;
+     parsec_mempool_t         remote_task_mempool;
+     int                      index_of_rank_info;
+diff --git a/tools/profiling/dbp2paje.c b/tools/profiling/dbp2paje.c
+index 7d58db2e5..2fbd34ba2 100644
+--- a/tools/profiling/dbp2paje.c
++++ b/tools/profiling/dbp2paje.c
+@@ -144,20 +144,6 @@ static void parse_arguments(int argc, char **argv)
+ 
+ #define max(a, b) ((a)>(b)?(a):(b))
+ 
+-FILE *pajeGetProcFile();
+-
+-static trace_return_t pajeSetState2(varPrec time, const char* type,
+-                                    const char *cont, const char* val)
+-{
+-    FILE *procFile = pajeGetProcFile();
+-    if (procFile){
+-        fprintf (procFile, "10 %.13e \"%s\" \"%s\" \"%s\"\n",
+-                 time, type, cont, val);
+-        return TRACE_SUCCESS;
+-    }
+-    return TRACE_ERR_WRITE;
+-}
+-
+ typedef struct {
+     int nb_matchsuccess;
+     int nb_matchthreads;
+@@ -756,8 +742,8 @@ static int dump_one_paje( const dbp_multifile_reader_t *dbp,
+             }
+             assert( s < nb_steps );
+             sprintf(cont_step_name, "%s-%d", cont_thread_name, s);
+-            pajeSetState2( ((double)cev->start) * 1e-3, "ST_TS", cont_step_name, keyid );
+-            pajeSetState2( ((double)cev->end)   * 1e-3, "ST_TS", cont_step_name, "Wait");
++            pajeSetState( ((double)cev->start) * 1e-3, "ST_TS", cont_step_name, keyid );
++            pajeSetState( ((double)cev->end)   * 1e-3, "ST_TS", cont_step_name, "Wait");
+         }
+         if( (cev->start_thread != cev->end_thread) &&
+             USERFLAGS.split_events_link ) {

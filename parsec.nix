@@ -47,9 +47,10 @@ stdenv.mkDerivation {
   pname = "parsec";
   version = "mymaster";
 
-  src = builtins.path {
-    path = /. + "${builtins.getEnv "PWD"}/parsec";
-    name = "parsec-source";
+  src = fetchgit {
+    url = "https://bitbucket.org/mfaverge/parsec.git";
+    rev = "83ff82ec9176513c912d46114ca6ae211a2720ee";
+    hash = "sha256-Esp8jUM3OLtliLbsnIR1jCViEbPzZANDt9fsZkj2hys=";
   };
 
   nativeBuildInputs = [
@@ -71,7 +72,7 @@ stdenv.mkDerivation {
     gtg
   ]
   ++ lib.optional enableCuda cudaPackages.cuda_cudart;
-  patches = [ ./parsec.patch ];
+  patches = [ ./patches/parsec.patch ];
 
   cmakeFlags = [
     "-DBUILD_SHARED_LIBS=ON"

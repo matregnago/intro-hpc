@@ -7,3 +7,5 @@ context
 teste
 chameleon-runtimes_782056
 data/*
+result
+result-*
