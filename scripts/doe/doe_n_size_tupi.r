@@ -1,32 +1,24 @@
 library(DoE.base)
 library(tidyverse)
 
-# E2b (tupi) -- Escalonamento vs tamanho do problema (N) na GPU, no pico de
-# tile (E1) da tupi. Gegenparte de final/doe_gpu_n_size_poti.r mas com o pico
-# de tile da RTX 4090: b=1000 (do job gpu_tile_tupi_20260701_095748: StarPU
-# pica em b=1000, PaRSEC em b=2000 -- usamos 1000 como compromisso;
-# 1000 tambem divide todos os N do sweep).
+# E2b (tupi) -- contraparte de doe_n_size_poti.r no pico de tile da RTX 4090
+# (b=1000 em FP64 -- ver doe_block_size.r / gflops_vs_b_compare.png).
 #
-# FP64-ONLY; mesmos Ns e estrutura do DoE poti, so troca b=500 -> b=1000.
-# b=1000 fixo e sempre divisor de N (PaRSEC+CUDA quebra com SIGSEGV se b nao
-#   divide n). Traca QR fora (dgeqrf invalido no PaRSEC+GPU).
-#
-# N varia em multiplos de 1000, mantendo N/b >= 5 (abaixo disso a GPU nao
-# satura e o erro numerico cresce). ESTENDIDO ate 60000 depois que o job
-# gpu_n_size_tupi_20260701_115305 mostrou a curva ainda subindo em N=40000
-# (dgetrf 1517 -> 1582 no ultimo degrau, sem plato):
+# FP64-ONLY; mesma estrutura do DoE poti, so troca b=500 -> b=1000. N varia em
+# multiplos de 1000, mantendo N/b >= 5 (abaixo disso a GPU nao satura e o erro
+# numerico cresce). ESTENDIDO ate 60000 (a curva ainda subia em N=40000 sem
+# platô):
 #   {5000..40000 passo 5000} + {50000, 60000}
-# N=50000 (20 GB) ja NAO cabe nos 21.2 GiB da RTX 4090 -> o regime out-of-core
-# (evicao, como no poti FP64) entra de proposito no fim da curva.
+# N=50000 (20 GB) ja nao cabe nos 21.2 GiB uteis da RTX 4090 -> o regime
+# out-of-core (evicao, como no poti FP64) entra de proposito no fim da curva.
 # Sobrescreva via env: N_SIZES="5000 10000 20000 40000" REPS=5 Rscript ... .
 #
-# Custo (reps=3, 10 Ns, tempos medidos do job 20260701_115305 + escala N^3):
-# 10 N x 2 alg x 4 sched x 3 reps = 240 execucoes ~= 67 min + ~11 min de
-# calibracao StarPU (2 passes por (alg,N)) + overhead de shell/rsync ->
-# ~1h40; alocar >= 3h de folga.
-#   Rscript final/doe_gpu_n_size_tupi.r
+# Fatoracoes: potrf + getrf_nopiv (QR fora). Escalonadores: StarPU
+# {dmda,dmdas}, PaRSEC {lfq,gd}.
 #
-# Escreve final/doe_gpu_n_size_tupi.csv.
+# Custo (reps=3, 10 Ns): 10 N x 2 alg x 4 sched x 3 reps = 240 execucoes.
+#   Rscript scripts/doe/doe_n_size_tupi.r
+# Saida: doe_n_size_tupi.csv
 
 reps <- as.integer(Sys.getenv("REPS", "3"))
 n_sizes <- as.integer(strsplit(
@@ -75,14 +67,12 @@ design <- fac.design(
   ungroup() |>
   select(precision, algorithm, n, b, runtime, scheduler, rep)
 
-# Guarda dura: b tem que dividir todos os N (senao PaRSEC+CUDA quebra).
 stopifnot(all(design$n %% design$b == 0))
 
-# Randomiza a ordem de execucao para nao correlacionar deriva termica com N.
 set.seed(1)
 design <- slice_sample(design, prop = 1)
 
-out <- Sys.getenv("OUT", "final/doe_gpu_n_size_tupi.csv")
+out <- "doe_n_size_tupi.csv"
 write_csv(design, out, progress = FALSE)
 
 cat(sprintf(

@@ -1,30 +1,31 @@
 library(DoE.base)
 library(tidyverse)
 
-# E2b -- Escalonamento vs tamanho do problema (N) na GPU, no pico de tile (E1).
-# Objetivo: tracar GFLOPS vs N e ler a ASSIMPTOTA de saturacao da RTX 4070,
-# ancorada no block size IDEAL (b=500) achado em E1 por algoritmo/escalonador
-# (doe_gpu_tile.r -> gpu_tile_poti_798331: pico FP64 quase sempre em b=500).
+# E2b (poti) -- Escalonamento vs tamanho do problema (N) na GPU, no pico de
+# tile de E1 (b=500 em FP64 -- ver doe_block_size.r / gflops_vs_b_compare.png).
+# Objetivo: tracar GFLOPS vs N e ler a ASSIMPTOTA de saturacao da RTX 4070.
 #
-# FP64-ONLY (a motivacao do trabalho e densa em precisao dupla);
-#   o pico de tile FP64 foi determinado na poti, entao so poti aqui.
-# b=500 fixo e sempre divisor de N (PaRSEC+CUDA quebra com SIGSEGV se b nao
-#   divide n -- job 797989). Traca QR de novo fora (dgeqrf invalido no PaRSEC+GPU).
-#
-# N varia em multiplos de 500, mantendo N/b entre 10 e 80 (abaixo de 10 a GPU
-# nao satura e o erro numerico cresce; acima de 40000 a memoria de 12GB doi):
-#   {5000, 10000, 15000, 20000, 25000, 30000, 35000, 40000}
+# FP64-ONLY (foco do estudo). b=500 fixo, sempre divisor de N (PaRSEC+CUDA
+# quebra com SIGSEGV se b nao divide n). N/b entre 10 e 120 (abaixo de 10 a
+# GPU nao satura e o erro numerico cresce); ESTENDIDO ate 60000 (como na tupi
+# -- ver doe_n_size_tupi.r) depois que a curva ainda subia em N=40000 sem
+# platô:
+#   {5000, 10000, 20000, 40000, 50000, 60000}
+# N=50000/60000 (20/28.8 GB) ja nao cabem nos 12GB da RTX 4070 -> o regime
+# out-of-core (evicao) entra de proposito no fim da curva.
 # Sobrescreva via env: N_SIZES="5000 10000 20000 40000" REPS=3 Rscript ... .
 #
-# Custo (reps=5, 8 Ns): 8 N x 2 alg x 4 sched = 320 execucoes (160/starpu +
-# 160/parsec), + 2 passes de calibracao StarPU por (alg,N) na fase starpu.
-#   Rscript final/doe_gpu_n_size_poti.r
+# Fatoracoes: potrf + getrf_nopiv (QR fora -- resultado numerico invalido no
+# PaRSEC+GPU). Escalonadores: StarPU {dmda,dmdas}, PaRSEC {lfq,gd}.
 #
-# Escreve final/doe_gpu_n_size_poti.csv.
+# Custo (reps=5, 6 Ns): 6 N x 2 alg x 4 sched x 5 reps = 240 execucoes
+# (120/starpu + 120/parsec), + calibracao StarPU por (alg,N) na fase starpu.
+#   Rscript scripts/doe/doe_n_size_poti.r
+# Saida: doe_n_size_poti.csv
 
 reps <- as.integer(Sys.getenv("REPS", "5"))
 n_sizes <- as.integer(strsplit(
-  trimws(Sys.getenv("N_SIZES", "5000 10000 15000 20000 25000 30000 35000 40000")),
+  trimws(Sys.getenv("N_SIZES", "5000 10000 20000 40000 50000 60000")),
   "\\s+")[[1]])
 block <- as.integer(Sys.getenv("BLOCK", "500"))
 
@@ -67,14 +68,12 @@ design <- fac.design(
   ungroup() |>
   select(precision, algorithm, n, b, runtime, scheduler, rep)
 
-# Guarda dura: b tem que dividir todos os N (senao PaRSEC+CUDA quebra).
 stopifnot(all(design$n %% design$b == 0))
 
-# Randomiza a ordem de execucao para nao correlacionar deriva termica com N.
 set.seed(1)
 design <- slice_sample(design, prop = 1)
 
-out <- "final/doe_gpu_n_size_poti.csv"
+out <- "doe_n_size_poti.csv"
 write_csv(design, out, progress = FALSE)
 
 cat(sprintf(

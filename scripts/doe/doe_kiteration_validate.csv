@@ -1,2 +1,0 @@
-precision,algorithm,n,b,runtime,scheduler,rep
-FP64,potrf,5760,960,parsec,lfq,1
