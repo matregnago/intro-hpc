@@ -7,7 +7,7 @@ sync-pcad:
     --exclude='plots/' \
     --exclude='slides/' \
     --exclude='*.out' \
-    --exclude='tex/' \
+    --exclude='sbc/' \
     --exclude='pcad/' \
     ./ "pcad:~/intro_hpc/"
 

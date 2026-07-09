@@ -9,3 +9,10 @@ chameleon-runtimes_782056
 data/*
 result
 result-*
+sbc/*.aux
+sbc/*.fls
+sbc/*.log
+sbc/*.fdb_latexmk
+sbc/*.blg
+sbc/*.bbl
+sbc/*.synctex.gz
