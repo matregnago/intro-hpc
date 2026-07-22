@@ -1,0 +1,111 @@
+% Intended LaTeX compiler: pdflatex
+\documentclass[12pt]{article}
+
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{graphicx}
+\usepackage{longtable}
+\usepackage{wrapfig}
+\usepackage{rotating}
+\usepackage[normalem]{ulem}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{capt-of}
+\usepackage{hyperref}
+\usepackage{url}
+\usepackage{sbc-template}
+\usepackage[brazilian]{babel}
+\sloppy
+\date{}
+\title{Análise do Impacto de Runtimes Task-Based no Desempenho de Algoritmos de Álgebra Linear Densa}
+\hypersetup{
+ pdfauthor={},
+ pdftitle={},
+ pdfkeywords={},
+ pdfsubject={},
+ pdfcreator={},
+ pdflang={Portuges}}
+\begin{document}
+
+\makeatletter
+\let\orgtitle\@title
+\makeatother
+
+\title{\orgtitle}
+
+\author{
+   Matheus Augusto Tregnago\inst{1},
+   Lucas Mello Schnorr\inst{1}
+}
+
+\address{
+   Institute of Informatics, Federal University of Rio Grande do Sul (UFRGS)\\
+   Caixa Postal 15.064 -- 91.501-970 -- Porto Alegre -- RS -- Brazil
+   \nextinstitute
+   Somebody else's Institution,
+   Adress --  Brazil
+     \email{\{matregnago,schnorr\}@inf.ufrgs.br}
+}
+
+\maketitle
+\begin{abstract}
+Put the abstract here.
+\end{abstract}
+
+\begin{resumo}
+Runtimes de escalonamento de tarefas como StarPU e PaRSEC abstraem a complexidade de plataformas heterogêneas, mas adotam estratégias diferentes de escalonamento e gerenciamento de dados. Este trabalho compara o desempenho dos dois runtimes nas fatorações de Cholesky e LU sem pivotamento da biblioteca Chameleon, mantendo fixa a biblioteca de álgebra linear para isolar o efeito do runtime, o que exigiu estender a interface de inserção dinâmica de tarefas do PaRSEC (DTD) e os codelets do Chameleon com suporte a GPU. Os experimentos, executados nas partições tupi e poti do cluster PCAD, mostram que nenhum runtime é sistematicamente superior: na poti, cuja GPU é fraca em precisão dupla, o PaRSEC com o escalonador gd vence por tratar a GPU como recurso acessório; na tupi, cuja GPU é forte, o StarPU vence com folga por ocupá-la de forma mais eficiente.
+\end{resumo}
+\section{Introdução}
+\label{sec:orgdd8df26}
+
+Nos últimos anos, as arquiteturas de computação de alto desempenho têm se tornado cada vez mais heterogêneas, combinando processadores multicore convencionais com aceleradores especializados, como GPUs, FPGAs e outros aceleradores. Essa diversidade de tecnologias, somada às diferenças entre os modelos de execução e as hierarquias de memória, torna difícil programar essas plataformas de forma eficiente. Nesse modelo, uma aplicação é decomposta em tarefas com dependências de dados explícitas, o que permite escalonar sua execução de forma dinâmica, conforme os recursos disponíveis \cite{10025520}.
+
+Para facilitar o uso desse paradigma, diversos runtimes de escalonamento de tarefas foram criados para mapear as tarefas de uma aplicação para os recursos computacionais disponíveis, de forma transparente ao programador. Esses sistemas decidem quando e onde cada tarefa será executada, gerenciam as transferências de dados necessárias entre as diferentes unidades de processamento e memórias e equilibram a carga de trabalho entre os recursos, tanto em ambientes de memória compartilhada quanto em ambientes distribuídos \cite{aguerrebere2018hdr}.
+
+StarPU \cite{starpu} é um desses runtimes. Nele, o desenvolvedor pode fornecer diferentes implementações para uma mesma tarefa, uma para CPU e outra para GPU, por exemplo, e deixar que o próprio ambiente de execução selecione automaticamente a implementação mais adequada, considerando o ambiente computacional e a disponibilidade de recursos, buscando otimizar o desempenho. Isso isola o desenvolvedor dos detalhes da arquitetura de destino, permitindo criar aplicações mais simples e fáceis de escalar.
+
+PaRSEC \cite{bosilca2011dague} é outro desses runtimes, com foco em ambientes de memória distribuída compostos por múltiplos nós multicore, possivelmente equipados com aceleradores. Diferentemente de abordagens que constroem o DAG completo da aplicação em memória antes de escaloná-lo, o PaRSEC representa as dependências entre tarefas de forma compacta e simbólica, o que lhe permite escalar para milhões de tarefas com baixo overhead e favorecer, de forma totalmente distribuída, tanto o balanceamento de carga quanto a sobreposição entre computação e comunicação.
+
+Embora StarPU e PaRSEC compartilhem o mesmo objetivo de abstrair o escalonamento de tarefas em plataformas heterogêneas, cada um adota estratégias diferentes de escalonamento e de gerenciamento de comunicações, o que pode impactar bastante o desempenho de algoritmos de álgebra linear densa.
+
+Para conduzir essa avaliação, este trabalho utiliza o Chameleon \cite{AGULLO2012473}, uma biblioteca de álgebra linear densa que implementa fatorações como LU, Cholesky e QR por meio de algoritmos por blocos \cite{DBLP}, delegando o escalonamento de suas tarefas a um runtime externo, como o StarPU e o PaRSEC.
+
+Os experimentos foram executados em duas partições do cluster PCAD, no INF/UFRGS: (i) tupi, equipada com um processador Intel Core i9-14900KF (24 núcleos físicos, 3,2 GHz) e uma GPU NVIDIA GeForce RTX 4090 (24 GB); (ii) poti, equipada com um processador Intel Core i7-14700KF (20 núcleos físicos, 3,4 GHz) e uma GPU NVIDIA GeForce RTX 4070 (12 GB).
+
+Os resultados dos experimentos mostraram que nenhum dos dois runtimes é sistematicamente superior ao outro: na partição poti, cuja GPU é fraca em precisão dupla, o PaRSEC com o escalonador \texttt{gd} superou o StarPU por usar a GPU como recurso acessório e não impor custo sobre os workers de CPU; na partição tupi, cuja GPU é forte, o StarPU venceu com folga graças a maior ocupação da GPU.
+
+O restante deste trabalho está organizado da seguinte forma. A Seção 2 apresenta os trabalhos relacionados. A Seção 3 descreve os conceitos utilizados neste trabalho, enquanto a Seção 4 apresenta as soluções desenvolvidas. A Seção 5 detalha nossa metodologia experimental, seguida pelos resultados experimentais na Seção 6. Por fim, a Seção 7 conclui este trabalho.
+
+\begin{figure*}
+\centering
+\includegraphics[width=\linewidth]{./img/lws-vs-dmdas-3x2-openmpi-traces.pdf}
+\caption{\label{fig:orge99e6e0}Application workers behavior along time in the 3\texttimes{}2 data distribution and using the \texttt{lws} and \texttt{dmdas} schedulers respectively.}
+\end{figure*}
+\section{Background and Experimental Context}
+\label{sec:org20a7605}
+\label{org9c0ffec}
+\subsection{Background}
+\label{sec:orgfd6ec9c}
+\label{org56011f0}
+\subsection{Experimental Context and Workload Details}
+\label{sec:org83b2002}
+\label{orgc69e8a8}
+\section{Related Work and Motivation}
+\label{sec:orgcc1f4e8}
+\label{org3e627ba}
+
+Check this paper \cite{schnorr2013visualizing} about how you need to
+semantically aggregate data.
+\section{Your Great Contribution to Computer Science}
+\label{sec:orgc986179}
+\label{org6ce8c7e}
+\section{Your Super Results}
+\label{sec:org8b736b8}
+\section{Conclusion}
+\label{sec:orgddb1293}
+\section*{Acknowledgments}
+\label{sec:org9c14139}
+Who paid for this?
+\bibliographystyle{sbc}
+\bibliography{refs}
+\end{document}

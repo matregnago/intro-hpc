@@ -1,0 +1,282 @@
+# -*- coding: utf-8 -*-
+# -*- mode: org -*-
+
+#+TITLE: Análise do Impacto de Runtimes Task-Based no Desempenho de Algoritmos de Álgebra Linear Densa
+#+AUTHOR: Matheus Augusto Tregnago, Lucas Mello Schnorr
+
+#+STARTUP: overview indent
+#+LANGUAGE: pt-br
+#+OPTIONS: H:3 creator:nil timestamp:nil skip:nil toc:nil num:t ^:nil ~:~
+#+OPTIONS: author:nil title:nil date:nil
+#+TAGS: noexport(n) deprecated(d) ignore(i)
+#+EXPORT_SELECT_TAGS: export
+#+EXPORT_EXCLUDE_TAGS: noexport
+
+#+LATEX_CLASS: article
+#+LATEX_CLASS_OPTIONS: [12pt]
+
+#+LATEX_HEADER: \sloppy
+
+# PDF generation can be done by make (thanks Luka Stanisic)
+#   or C-c C-e l p (thanks Vinicius Garcia)
+
+* *The Paper*                                                       :ignore:
+** Frontpage                                                        :ignore:
+
+#+BEGIN_EXPORT latex
+\makeatletter
+\let\orgtitle\@title
+\makeatother
+
+\title{\orgtitle}
+
+\author{
+   Matheus Augusto Tregnago\inst{1},
+   Lucas Mello Schnorr\inst{1}
+}
+
+\address{
+   Institute of Informatics, Federal University of Rio Grande do Sul (UFRGS)\\
+   Caixa Postal 15.064 -- 91.501-970 -- Porto Alegre -- RS -- Brazil
+   Adress --  Brazil
+     \email{\{matregnago,schnorr\}@inf.ufrgs.br}
+}
+#+END_EXPORT
+
+#+LaTeX: \maketitle
+
+#+begin_resumo
+Runtimes de escalonamento de tarefas como StarPU e PaRSEC abstraem a complexidade de plataformas heterogêneas, mas adotam estratégias diferentes de escalonamento e gerenciamento de dados. Este trabalho compara o desempenho dos dois runtimes nas fatorações de Cholesky e LU sem pivotamento da biblioteca Chameleon, mantendo fixa a biblioteca de álgebra linear para isolar o efeito do runtime, o que exigiu estender a interface de inserção dinâmica de tarefas do PaRSEC (DTD) e os codelets do Chameleon com suporte a GPU. Os experimentos, executados nas partições tupi e poti do cluster PCAD, mostram que nenhum runtime é sistematicamente superior: na poti, cuja GPU é fraca em precisão dupla, o PaRSEC com o escalonador gd vence por tratar a GPU como recurso acessório; na tupi, cuja GPU é forte, o StarPU vence com folga por ocupá-la de forma mais eficiente.
+#+end_resumo
+
+** Introdução
+Nos últimos anos, as arquiteturas de computação de alto desempenho têm se tornado cada vez mais heterogêneas, combinando processadores multicore convencionais com aceleradores especializados, como GPUs, FPGAs e outros aceleradores. Essa diversidade de tecnologias, somada às diferenças entre os modelos de execução e as hierarquias de memória, torna difícil programar essas plataformas de forma eficiente. Nesse modelo, uma aplicação é decomposta em tarefas com dependências de dados explícitas, o que permite escalonar sua execução de forma dinâmica, conforme os recursos disponíveis cite:10025520.
+
+Para facilitar o uso desse paradigma, diversos runtimes de escalonamento de tarefas foram criados para mapear as tarefas de uma aplicação para os recursos computacionais disponíveis, de forma transparente ao programador. Esses sistemas decidem quando e onde cada tarefa será executada, gerenciam as transferências de dados necessárias entre as diferentes unidades de processamento e memórias e equilibram a carga de trabalho entre os recursos, tanto em ambientes de memória compartilhada quanto em ambientes distribuídos cite:aguerrebere2018hdr.
+
+StarPU cite:starpu é um desses runtimes. Nele, o desenvolvedor pode fornecer diferentes implementações para uma mesma tarefa, uma para CPU e outra para GPU, por exemplo, e deixar que o próprio ambiente de execução selecione automaticamente a implementação mais adequada, considerando o ambiente computacional e a disponibilidade de recursos, buscando otimizar o desempenho. Isso isola o desenvolvedor dos detalhes da arquitetura de destino, permitindo criar aplicações mais simples e fáceis de escalar.
+
+PaRSEC cite:bosilca2011dague é outro desses runtimes, com foco em ambientes de memória distribuída compostos por múltiplos nós multicore, possivelmente equipados com aceleradores. Diferentemente de abordagens que constroem o DAG completo da aplicação em memória antes de escaloná-lo, o PaRSEC representa as dependências entre tarefas de forma compacta e simbólica, o que lhe permite escalar para milhões de tarefas com baixo overhead e favorecer, de forma totalmente distribuída, tanto o balanceamento de carga quanto a sobreposição entre computação e comunicação.
+
+Embora StarPU e PaRSEC compartilhem o mesmo objetivo de abstrair o escalonamento de tarefas em plataformas heterogêneas, cada um adota estratégias diferentes de escalonamento e de gerenciamento de comunicações, o que pode impactar bastante o desempenho de algoritmos de álgebra linear densa.
+
+Para conduzir essa avaliação, este trabalho utiliza o Chameleon cite:AGULLO2012473, uma biblioteca de álgebra linear densa que implementa fatorações como LU, Cholesky e QR por meio de algoritmos por blocos cite:DBLP, delegando o escalonamento de suas tarefas a um runtime externo, como o StarPU e o PaRSEC.
+
+Os experimentos foram executados em duas partições do cluster PCAD, no INF/UFRGS: (i) tupi, equipada com um processador Intel Core i9-14900KF (24 núcleos físicos, 3,2 GHz) e uma GPU NVIDIA GeForce RTX 4090 (24 GB); (ii) poti, equipada com um processador Intel Core i7-14700KF (20 núcleos físicos, 3,4 GHz) e uma GPU NVIDIA GeForce RTX 4070 (12 GB).
+
+Os resultados dos experimentos mostraram que nenhum dos dois runtimes é sistematicamente superior ao outro: na partição poti, cuja GPU é fraca em precisão dupla, o PaRSEC com o escalonador =gd= superou o StarPU por usar a GPU como recurso acessório e não impor custo sobre os workers de CPU; na partição tupi, cuja GPU é forte, o StarPU venceu com folga graças a maior ocupação da GPU.
+
+O restante deste trabalho está organizado da seguinte forma. A Seção 2 apresenta os trabalhos relacionados. A Seção 3 descreve os conceitos utilizados neste trabalho, enquanto a Seção 4 apresenta as soluções desenvolvidas. A Seção 5 detalha nossa metodologia experimental, seguida pelos resultados experimentais na Seção 6. Por fim, a Seção 7 conclui este trabalho.
+
+** Trabalhos Relacionados
+
+Diversos trabalhos avaliam runtimes task-based aplicados a algoritmos de álgebra linear densa, mas cada um deles isola apenas parte do problema, limitando a comparação a um único runtime ou comparando runtimes distintos por meio de bibliotecas de álgebra linear diferentes.
+
+Hoque et al. cite:10.1145/3148226.3148233 comparam os dois paradigmas de programação oferecidos pelo PaRSEC: o Parameterized Task Graph (PTG) e o Dynamic Task Discovery (DTD) utilizando o Chameleon em conjunto com PaRSEC, StarPU e QUARK. A avaliação, no entanto, é restrita a execuções somente em CPU, sem considerar aceleradores.
+
+Lisito et al. cite:11078555 avaliam a fatoração LU com pivotamento parcial, comparando o StarPU (com o Chameleon) e o PaRSEC (com o DPLASMA). Como cada runtime é avaliado em conjunto com uma biblioteca de álgebra linear diferente, eventuais diferenças de desempenho observadas podem ser atribuídas tanto ao runtime quanto à implementação específica de cada biblioteca.
+
+Agullo et al. cite:7284288 comparam o desempenho da fatoração de Cholesky sobre o StarPU com limites teóricos de desempenho em plataformas heterogêneas. O trabalho, contudo, considera apenas o StarPU, sem comparação direta com outro runtime de escalonamento de tarefas.
+
+Não foi encontrado nenhum trabalho anterior que compara StarPU e PaRSEC utilizando a mesma biblioteca de álgebra linear densa em um ambiente heterogêneo. Esse é o diferencial deste trabalho, no qual foi fixado o Chameleon como biblioteca única e variado apenas o runtime e o escalonador utilizado.
+
+
+** Fundamentação Teórica
+Nesta seção, apresentamos uma visão geral dos runtimes de escalonamento de tarefas, StarPU e PaRSEC, e da biblioteca de álgebra linear densa Chameleon utilizados neste trabalho.
+
+*** StarPU
+StarPU cite:starpu é um framework escrito em C para programação orientada a tarefas em plataformas híbridas compostas por CPUs e GPUs. As tarefas de uma aplicação StarPU são definidas por meio de codelets, estruturas que agrupam uma ou mais implementações de uma mesma operação, além da forma como cada um de seus parâmetros é acessado. A partir da ordem de submissão das tarefas e dos modos de acesso declarados para cada dado, o StarPU constrói implicitamente um grafo acíclico dirigido (DAG) de dependências, sem que o programador precise expressá-lo manualmente. Em tempo de execução, o runtime escolhe qual das implementações disponíveis será utilizada para cada tarefa, considerando a disponibilidade dos recursos, a distribuição de carga entre os workers e o custo das cópias de dados envolvidas. O gerenciamento de memória nos aceleradores também é responsabilidade do StarPU, que realiza alocação e liberação de buffers na GPU, cópias entre a memória do host e do dispositivo, e a sobreposição dessas transferências com a computação por meio de prefetching.
+
+*** PaRSEC
+PaRSEC cite:bosilca2011dague é um framework para escalonamento de tarefas voltado a ambientes de memória distribuída compostos por múltiplos nós multicore. Diferentemente de runtimes que desenrolam o DAG completo da aplicação em memória antes de escaloná-lo, o PaRSEC representa o grafo de dependências de forma compacta e simbólica, por meio de um formato conhecido como Parameterized Task Graph (PTG), também chamado de Job Data Flow (JDF). O escalonamento é totalmente distribuído, cada nó executa sua própria instância do escalonador, que utiliza filas locais por thread e mecanismos de furto de trabalho sensíveis à hierarquia NUMA para favorecer o reaproveitamento de cache. As comunicações entre nós são implícitas, inferidas diretamente das dependências de dados do grafo, e são tratadas de forma assíncrona por uma thread dedicada, permitindo a sobreposição entre computação e comunicação. Assim como o StarPU, o PaRSEC também oferece suporte a aceleradores por meio de múltiplas implementações para uma mesma tarefa, permitindo que o escalonador decida em tempo de execução em qual unidade.
+
+*** Chameleon
+Chameleon cite:AGULLO2012473 é uma biblioteca escrita em C que fornece rotinas para a resolução de sistemas lineares gerais densos, sistemas simétricos positivos definidos e problemas de mínimos quadrados lineares, por meio das fatorações LU, Cholesky, QR e LQ. Assim como as bibliotecas PLASMA e MAGMA, o Chameleon segue a abordagem de algoritmos por blocos cite:DBLP, em que cada fatoração é decomposta em uma sequência de tarefas de granularidade fina que operam sobre submatrizes quadradas, reduzindo a necessidade de sincronizações globais e expondo um grau de paralelismo bem maior do que o obtido pelas versões tradicionais orientadas a blocos de linha/coluna, como as do LAPACK e do ScaLAPACK. A fatoração de Cholesky por tiles, por exemplo, é expressa como uma sequência de chamadas às rotinas POTRF, TRSM, SYRK e GEMM, cada uma correspondendo a uma tarefa cujas dependências de dados definem um DAG. Em vez de escalonar essas tarefas de forma estática, o Chameleon delega essa responsabilidade a um runtime de escalonamento de tarefas, como o StarPU, o PaRSEC ou o OpenMP, enquanto a implementação interna de cada tarefa reutiliza rotinas clássicas de BLAS e LAPACK. Essa separação entre a descrição do algoritmo, em termos de tarefas e dependências, e sua execução propriamente dita é o que permite ao Chameleon explorar arquiteturas heterogêneas compostas por CPUs e GPUs sem que o algoritmo precise ser reescrito para cada plataforma. Neste trabalho, o Chameleon é utilizado em conjunto com os runtimes StarPU e PaRSEC para executar as fatorações Cholesky e LU sem pivotamento em um nó heterogêneo por vez, nas partições tupi e poti do cluster PCAD.
+
+Ao longo deste trabalho, identificamos que a comparação entre StarPU e PaRSEC não era diretamente possível a partir das versões atuais disponíveis do Chameleon e do PaRSEC, pois, enquanto os codelets do Chameleon para o StarPU já possuem suporte maduro a GPU, a interface de inserção dinâmica de tarefas do PaRSEC (DTD) não suportava a execução de tarefas em GPU, e os codelets do Chameleon para o PaRSEC estavam limitados à CPU. A seção a seguir descreve as principais modificações que desenvolvemos no PaRSEC e no Chameleon para permitir essa comparação.
+
+** Soluções desenvolvidas
+A interface DTD do PaRSEC permitia associar a cada tarefa apenas uma implementação em CPU, diferentemente da interface estática PTG, que já suporta múltiplas implementações por tarefa. Adicionamos ao PaRSEC uma nova função, que permite registrar, além da implementação em CPU, uma implementação em GPU para a mesma tarefa. Em tempo de execução, o escalonador passa a tentar primeiro a implementação em GPU, delegando a submissão ao mesmo mecanismo de escalonamento de GPU já utilizado pelo backend PTG, usando a implementação em CPU apenas quando nenhum dispositivo está disponível.
+
+Essa mudança expôs um problema de coerência de dados: quando uma tarefa executada em CPU escrevia um tile, o caminho de execução da DTD não invalidava corretamente eventuais cópias desse tile já presentes na memória da GPU. Uma tarefa de GPU subsequente podia então ler dados desatualizados, produzindo resultados numericamente incorretos. Corrigimos o problema invalidando explicitamente as cópias de dispositivo de um tile sempre que uma tarefa de CPU o modifica.
+
+Com o suporte a GPU já disponível na interface DTD do PaRSEC, implementamos, no lado do Chameleon, as implementações em GPU dos codelets utilizados pelas fatorações avaliadas neste trabalho, que até então só possuíam implementação em CPU quando executadas com o PaRSEC. Cada uma dessas implementações delega o cálculo às bibliotecas cuBLAS e cuSOLVER, de forma análoga aos codelets equivalentes já existentes para o StarPU, associando-as à sua contraparte de CPU por meio da nova função de inserção de tarefas com suporte a CUDA.
+
+** Metodologia
+Nesta seção, apresentamos nossa metodologia experimental. Primeiro, damos uma visão geral das aplicações de álgebra linear densa consideradas neste estudo, depois, descrevemos o ambiente de execução utilizado nos experimentos e, por fim, detalhamos o projeto experimental adotado.
+
+*** Aplicações
+Consideramos dois algoritmos de fatorações disponíveis no Chameleon: a fatoração de Cholesky e a fatoração LU sem pivotamento.
+
+** Your Super Results
+** Conclusion
+** Acknowledgments
+:PROPERTIES:
+:UNNUMBERED: t
+:END:
+
+Who paid for this?
+
+** References                                                        :ignore:
+
+# See next section to understand how refs.bib file is created.
+bibliographystyle:sbc
+[[bibliography:refs.bib]]
+
+* Bib file is here                                                 :noexport:
+
+Tangle this file with C-c C-v t
+#+begin_src bibtex :tangle refs.bib
+@article{starpu,
+author = {Augonnet, Cédric and Thibault, Samuel and Namyst, Raymond and Wacrenier, Pierre-André},
+title = {StarPU: a unified platform for task scheduling on heterogeneous multicore architectures},
+journal = {Concurrency and Computation: Practice and Experience},
+volume = {23},
+number = {2},
+pages = {187-198},
+keywords = {GPU, multicore, accelerator, scheduling, runtime system},
+doi = {https://doi.org/10.1002/cpe.1631},
+url = {https://onlinelibrary.wiley.com/doi/abs/10.1002/cpe.1631},
+eprint = {https://onlinelibrary.wiley.com/doi/pdf/10.1002/cpe.1631},
+year = {2011}
+}
+@inproceedings {bosilca2011dague,
+	title = {{DAGuE:} A Generic Distributed {DAG} Engine for High Performance Computing},
+	booktitle = {Proceedings of the Workshops of the 25th IEEE International Symposium on Parallel and Distributed Processing (IPDPS 2011 Workshops)},
+	year = {2011},
+	month = {2011-00},
+	pages = {1151-1158},
+	publisher = {IEEE},
+	address = {Anchorage, Alaska, USA},
+	keywords = {dague, parsec},
+	author = {George Bosilca and Aurelien Bouteiller and Anthony Danalis and Thomas Herault and Pierre Lemariner and Jack Dongarra}
+}
+
+@incollection{AGULLO2012473,
+title = {Chapter 34 - A Hybridization Methodology for High-Performance Linear Algebra Software for GPUs},
+editor = {Wen-mei W. Hwu},
+booktitle = {GPU Computing Gems Jade Edition},
+publisher = {Morgan Kaufmann},
+address = {Boston},
+pages = {473-484},
+year = {2012},
+series = {Applications of GPU Computing Series},
+isbn = {978-0-12-385963-1},
+doi = {https://doi.org/10.1016/B978-0-12-385963-1.00034-4},
+url = {https://www.sciencedirect.com/science/article/pii/B9780123859631000344},
+author = {Emmanuel Agullo and Cédric Augonnet and Jack Dongarra and Hatem Ltaief and Raymond Namyst and Samuel Thibault and Stanimire Tomov}
+}
+@article{DBLP,
+  author       = {Alfredo Buttari and
+                  Julien Langou and
+                  Jakub Kurzak and
+                  Jack J. Dongarra},
+  title        = {A Class of Parallel Tiled Linear Algebra Algorithms for Multicore
+                  Architectures},
+  journal      = {CoRR},
+  volume       = {abs/0709.1272},
+  year         = {2007},
+  url          = {http://arxiv.org/abs/0709.1272},
+  eprinttype   = {arXiv},
+  eprint       = {0709.1272},
+  timestamp    = {Mon, 13 Aug 2018 16:46:39 +0200},
+  biburl       = {https://dblp.org/rec/journals/corr/abs-0709-1272.bib},
+  bibsource    = {dblp computer science bibliography, https://dblp.org}
+}
+
+@inproceedings{10.1145/3148226.3148233,
+author = {Hoque, Reazul and Herault, Thomas and Bosilca, George and Dongarra, Jack},
+title = {Dynamic task discovery in PaRSEC: a data-flow task-based runtime},
+year = {2017},
+isbn = {9781450351256},
+publisher = {Association for Computing Machinery},
+address = {New York, NY, USA},
+url = {https://doi.org/10.1145/3148226.3148233},
+doi = {10.1145/3148226.3148233},
+booktitle = {Proceedings of the 8th Workshop on Latest Advances in Scalable Algorithms for Large-Scale Systems},
+articleno = {6},
+numpages = {8},
+keywords = {PaRSEC, data-flow, dynamic task-graph, task-based runtime},
+location = {Denver, Colorado},
+series = {ScalA '17}
+}
+
+@INPROCEEDINGS{7284288,
+  author={Agullo, Emmanuel and Beaumont, Olivier and Eyraud-Dubois, Lionel and Herrmann, Julien and Kumar, Suraj and Marchal, Loris and Thibault, Samuel},
+  booktitle={2015 IEEE International Parallel and Distributed Processing Symposium Workshop},
+  title={Bridging the Gap between Performance and Bounds of Cholesky Factorization on Heterogeneous Platforms},
+  year={2015},
+  volume={},
+  number={},
+  pages={34-45},
+  keywords={Dynamic scheduling;Kernel;Processor scheduling;Runtime;Schedules;Linear algebra;Electronic mail;Cholesky Factorization;Dense Linear Algebra;Simulation;Heterogeneous Resources;Scheduling;Resource Allocation;Dynamic Schedulers},
+  doi={10.1109/IPDPSW.2015.35}}
+
+@INPROCEEDINGS{11078555,
+  author={Lisito, Alycia and Faverge, Mathieu and Kuhn, Matthieu and Pruvost, Florent and Ramet, Pierre},
+  booktitle={2025 IEEE International Parallel and Distributed Processing Symposium (IPDPS)},
+  title={Scalable and Portable LU Factorization with Partial Pivoting on Top of Runtime Systems},
+  year={2025},
+  volume={},
+  number={},
+  pages={1011-1022},
+  keywords={Schedules;Runtime;Processor scheduling;Clustering algorithms;Linear algebra;Programming;Benchmark testing;Libraries;Supercomputers;Proposals;LU Partial pivoting;runtime system;task-based application;HPL},
+  doi={10.1109/IPDPS64566.2025.00094}}
+
+@INPROCEEDINGS{6126599,
+  author={Agullo, Emmanuel and Augonnet, Cédric and Dongarra, Jack and Faverge, Mathieu and Langou, Julien and Ltaief, Hatem and Tomov, Stanimire},
+  booktitle={2011 9th IEEE/ACS International Conference on Computer Systems and Applications (AICCSA)},
+  title={LU factorization for accelerator-based systems},
+  year={2011},
+  volume={},
+  number={},
+  pages={217-224},
+  keywords={Tiles;Kernel;Graphics processing unit;Algorithm design and analysis;Optimization;Multicore processing;High Performance Computing;Dense Linear Algebra;LU Factorization;Hybrid Architecture;Multiple GPU Accelerators;Multicore;Tile Algorithm;Numerical Accuracy},
+  doi={10.1109/AICCSA.2011.6126599}}
+
+@article{Pinto2021ProvidingIP,
+  title={Providing In-depth Performance Analysis for Heterogeneous Task-based Applications with StarVZ},
+  author={Vin{\'i}cius Garcia Pinto and Lucas Leandro Nesi and Marcelo Cogo Miletto and Lucas Mello Schnorr},
+  journal={2021 IEEE International Parallel and Distributed Processing Symposium Workshops (IPDPSW)},
+  year={2021},
+  pages={16-25},
+  url={https://api.semanticscholar.org/CorpusID:235637707}
+}
+
+@INPROCEEDINGS{10025520,
+  author={Pei, Yu and Bosilca, George and Dongarra, Jack},
+  booktitle={2022 IEEE/ACM International Workshop on Runtime and Operating Systems for Supercomputers (ROSS)},
+  title={Sequential Task Flow Runtime Model Improvements and Limitations},
+  year={2022},
+  volume={},
+  number={},
+  pages={1-8},
+  keywords={Runtime;Computational modeling;Heuristic algorithms;Conferences;Linear algebra;Benchmark testing;Supercomputers;Dynamic Runtime Systems;High Performance Computing;Numerical Linear Algebra},
+  doi={10.1109/ROSS56639.2022.00009}}
+
+@phdthesis{aguerrebere2018hdr,
+  author       = {Cecilia Aguerrebere},
+  title        = {Statistical Methods for Computational Photography},
+  school       = {Université Paris-Saclay},
+  institution  = {Inria},
+  type         = {Habilitation à Diriger des Recherches (HDR)},
+  year         = {2018},
+  month        = dec,
+  url          = {https://inria.hal.science/tel-01959127v1/file/hdr.pdf},
+  note         = {Inria, HAL Id: tel-01959127v1}
+}
+
+#+end_src
+* Emacs setup                                                      :noexport:
+# Local Variables:
+# eval: (add-to-list 'load-path ".")
+# eval: (require 'ox-extra)
+# eval: (ox-extras-activate '(ignore-headlines))
+# eval: (require 'org-ref)
+# eval: (require 'doi-utils)
+# eval: (add-to-list 'org-latex-packages-alist '("" "url") t)
+# eval: (add-to-list 'org-latex-packages-alist '("" "sbc-template") t)
+# eval: (add-to-list 'org-latex-packages-alist '("AUTO" "babel" t ("pdflatex")))
+# eval: (setq org-latex-pdf-process (list "latexmk -pdf %f"))
+# eval: (add-to-list 'org-export-before-processing-hook (lambda (be) (org-babel-tangle)))
+# End:

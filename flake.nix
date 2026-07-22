@@ -100,7 +100,6 @@
             pkgs.just
             starvz_tools
             rEnv
-            pkgs.texliveFull
           ];
         };
       };
