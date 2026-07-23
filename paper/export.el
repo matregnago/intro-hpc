@@ -8,7 +8,8 @@
 (add-to-list 'org-latex-packages-alist '("AUTO" "babel" t ("pdflatex")) t)
 
 (setq enable-local-variables nil
-      org-confirm-babel-evaluate nil)
+      org-confirm-babel-evaluate nil
+      org-latex-prefer-user-labels t)
 
 (with-current-buffer (find-file-noselect "sbc.org")
   (org-babel-tangle)

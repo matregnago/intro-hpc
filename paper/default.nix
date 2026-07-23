@@ -5,7 +5,8 @@ rec {
 
   pdf = pkgs.stdenv.mkDerivation {
     name = "sbc-paper";
-    src = ./.;
+    srcs = [ ./. ../plots ];
+    sourceRoot = "paper";
     nativeBuildInputs = [ emacs pkgs.texliveFull ];
     buildPhase = ''
       emacs --batch --load export.el
