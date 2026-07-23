@@ -150,7 +150,7 @@ A Figura [[fig:gflops-b]] mostra o resultado da varredura de tamanho de tile par
 #+CAPTION: GFLOPS em função do tamanho de tile $b$, por algoritmo e máquina.
 #+NAME: fig:gflops-b
 #+ATTR_LATEX: :width \linewidth :placement [h] :center t
-[[file:../plots/final/gflops_vs_b_compare.pdf]]
+[[file:../../plots/final/gflops_vs_b_compare.pdf]]
 
 Na poti, as quatro configurações convergem para um pico em torno de $b=500$. Na tupi, por outro lado, há uma divergência estrutural entre os dois runtimes: o StarPU tem o seu pico em $b=1.000$, enquanto o PaRSEC só atinge seu melhor resultado em $b=2.000$ e cai mais acentuadamente para tiles menores ou maiores que o seu próprio ótimo.
 
@@ -161,7 +161,7 @@ A Figura [[fig:gflops-n]] apresenta o resultado do projeto fatorial completo.
 #+CAPTION: GFLOPS médio em função de $N$, por algoritmo e máquina.
 #+NAME: fig:gflops-n
 #+ATTR_LATEX: :width \linewidth :placement [h] :center t
-[[file:../plots/final/gflops_vs_n_compare.pdf]]
+[[file:../../plots/final/gflops_vs_n_compare.pdf]]
 
 O padrão que aparece na Figura [[fig:gflops-n]] é a observação central que organiza o restante desta seção. Na poti, o StarPU lidera até $N\approx10.000$, mas a partir de $N\approx20.000$ o =parsec:gd= assume a liderança e a mantém até $N=60.000$, o maior valor testado. Na tupi, por sua vez, o StarPU lidera em toda a faixa de $N$, com a vantagem sobre o PaRSEC aumentando à medida que $N$ cresce. Esse resultado contraria a intuição de que o StarPU, por manter um modelo de desempenho aprendido em tempo de execução, deveria vencer sistematicamente o PaRSEC, que decide o escalonamento de GPU de forma estática, sem medir tempos reais de execução. A próxima seção usa os rastros de execução coletados nas configurações de $N=40.000$ para explicar por que o resultado se inverte entre as duas máquinas.
 
@@ -175,7 +175,7 @@ A Figura [[fig:gpu-split]] mostra o efeito dessa divisão sobre o desempenho tot
 #+CAPTION: GFLOPS entregues por classe de recurso (CPU/GPU) na poti, por algoritmo e configuração.
 #+NAME: fig:gpu-split
 #+ATTR_LATEX: :width \linewidth :placement [h] :center t
-[[file:../plots/final/why_gd_poti/gpu_split_contrib.pdf]]
+[[file:../../plots/final/why_gd_poti/gpu_split_contrib.pdf]]
 
 Duas assimetrias, uma em cada lado, explicam o resultado da poti. Do lado da CPU, a tarefa =gemm= custa cerca de 26% mais no StarPU do que no PaRSEC, pois o StarPU dedica quatro threads de worker à gestão da GPU, que disputam os mesmos núcleos físicos usados pelos workers de CPU comuns. Por outro lado, o PaRSEC gerencia a GPU sem thread dedicada, e por isso seus workers de CPU rendem mais por segundo ocupado. Do lado da GPU, porém, a tarefa =gemm= executa 2,9 vezes mais rápido no StarPU do que no PaRSEC na poti e cerca de 3 vezes mais rápido na tupi. O prefetching e o pipelining entre as fases de H2D, execução e D2H do StarPU tornam sua execução de GPU mais eficiente por tarefa em qualquer uma das duas máquinas.
 
@@ -186,14 +186,14 @@ A Figura [[fig:st-compare]] mostra os painéis espaço-tempo das quatro configur
 #+CAPTION: Painéis espaço-tempo de StarPU e PaRSEC na poti.
 #+NAME: fig:st-compare
 #+ATTR_LATEX: :width \linewidth :placement [h] :center t
-[[file:../plots/final/gpu_traces_poti_20260701_131857/st_compare_dpotrf.pdf]]
+[[file:../../plots/final/gpu_traces_poti_20260701_131857/st_compare_dpotrf.pdf]]
 
 A Figura [[fig:kiteration]] mostra a progressão da fatoração ao longo de suas iterações em função do tempo. O =dmda= progride de forma quase linear. O =dmdas= mostra uma dispersão, o que significa que sua política de priorização pelo caminho crítico adianta a execução de tarefas de iterações futuras. Já o =gd= e o =lfq= progridem de forma irregular, por conta da ausência de um modelo de desempenho guiando a ordem de despacho das tarefas para a GPU no PaRSEC.
 
 #+CAPTION: Progressão das iterações da fatoração de Cholesky ao longo do tempo, na poti.
 #+NAME: fig:kiteration
 #+ATTR_LATEX: :width \linewidth :placement [h] :center t
-[[file:../plots/final/gpu_traces_poti_20260701_131857/kiteration_compare_dpotrf.pdf]]
+[[file:../../plots/final/gpu_traces_poti_20260701_131857/kiteration_compare_dpotrf.pdf]]
 
 **** Transferências H2D/D2H: dois modelos de memória opostos
 
@@ -202,7 +202,7 @@ A Figura [[fig:transfers]] mostra o volume de dados transferido entre host e dev
 #+CAPTION: Volume de transferência H2D/D2H na poti, por configuração.
 #+NAME: fig:transfers
 #+ATTR_LATEX: :width 0.7\linewidth :placement [h] :center t
-[[file:../plots/final/gpu_traces_poti_20260701_131857/transfers_d2h.pdf]]
+[[file:../../plots/final/gpu_traces_poti_20260701_131857/transfers_d2h.pdf]]
 
 Na poti, o StarPU transfere 36,4GB H2D contra apenas 6,0GB do PaRSEC. Isso acontece pois, como a matriz em precisão dupla não cabe na VRAM da RTX 4070, o cache do StarPU envia os mesmos tiles repetidamente para a GPU. O PaRSEC quase não re-envia dados, porque a sua política de afinidade de dispositivo e seu cache seguram a maior parte dos pedidos, mas devolve ao host todo tile escrito por uma tarefa de GPU, imediatamente após a execução do kernel, o que gera um D2H muito maior. As duas direções têm custos diferentes na execução: o H2D é síncrono do ponto de vista do kernel, que só dispara quando o dado chega. O D2H do PaRSEC, por sair por um /stream/ dedicado e assíncrono, quase não custa tempo de computação apesar do volume maior.
 
