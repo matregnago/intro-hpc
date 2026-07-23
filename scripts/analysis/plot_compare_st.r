@@ -1,33 +1,13 @@
 #!/usr/bin/env Rscript
 #
-# Side-by-side StarVZ space-time (panel_st) for StarPU vs PaRSEC on the SAME
-# problem, so the two runtimes' execution can be eyeballed and validated next to
-# each other. This is the payoff of the parsec-cuda branch: the GPU PaRSEC runs
-# now carry the full StarVZ phase-1 parquet set (application/dag/colors/y/...,
-# reconstructed offline by parsec_phase1.sh), so the SAME native panel StarVZ
-# draws for StarPU draws for PaRSEC, and they line up in one figure.
-#
-# For each algorithm found under base_dir it renders one composite figure laid
-# out as a grid with StarPU on the LEFT column and PaRSEC on the RIGHT column,
-# one scheduler per row:
-#
-#     starpu:dmda  | parsec:lfq
-#     starpu:dmdas | parsec:gd
-#
-# Kernel-colour alignment: StarPU ("sgemm"/"spotrf"/"strsm"...) and PaRSEC
-# ("gemm"/"potrf"/"Trsm"...) emit different Value labels with different
-# colours.parquet hues, so the same op paints a different colour per runtime on
-# a side-by-side panel. norm_st_kernels() (in trace_common.r) rewrites each
-# run's Application$Value via norm_kernel() AND rebuilds Colors from the shared
-# KERNEL_COLORS, so "gemm" lands on the same hue in both columns.
-#
-# Outputs <PLOTS_DIR>/st_compare_<algo>.{png,pdf}. PLOTS_DIR defaults to "plots"
-# (honoured via trace_common.r); compare_all.sh sets it to plots/compare.
+# Side-by-side StarVZ space-time (panel_st) for StarPU vs PaRSEC on the same
+# problem. One composite figure per algorithm: StarPU on the left column,
+# PaRSEC on the right, one scheduler per row. norm_st_kernels() aligns the
+# kernel names/colours across the two runtimes.
 #
 # Usage:  plot_compare_st.r [base_dir]
-#   base_dir defaults to the GPU job (spotrf/sgeqrf n19200 b960, 4 StarPU + 4
-#   PaRSEC runs). Needs each run's application.parquet (run parsec_phase1.sh for
-#   the PaRSEC GPU runs first).
+#   needs each run's application.parquet (run parsec_phase1.sh for the PaRSEC
+#   GPU runs first). Outputs <PLOTS_DIR>/st_compare_<algo>.{png,pdf}.
 
 suppressMessages({
   library(tidyverse); library(starvz); library(patchwork)
@@ -42,8 +22,8 @@ args     <- commandArgs(trailingOnly = TRUE)
 base_dir <- if (length(args) >= 1) args[[1]] else
   "data/manual_traces_20260621_172820/runs"
 
-# panel_st knobs: same as plot_gpu_st.r -- aggregation on, ABE off (heterogeneous
-# CPU+GPU set), idleness off (async GPU spans), CPB only when the run has a Dag.
+# panel_st knobs: aggregation on, ABE off (heterogeneous CPU+GPU set),
+# idleness off (async GPU spans), CPB only when the run has a Dag.
 configure <- function(svz) {
   svz$config$st$outliers           <- FALSE
   svz$config$st$aggregation$active <- TRUE
@@ -60,7 +40,7 @@ configure <- function(svz) {
 panel_for <- function(run_dir, label) {
   message("lendo: ", run_dir)
   svz <- configure(starvz_read(run_dir, selective = FALSE))
-  svz <- drop_init_kernels(svz)   # plgsy etc.: geracao da matriz, nao algoritmo
+  svz <- drop_init_kernels(svz)
   svz <- norm_st_kernels(svz)
   panel_st(svz) + ggtitle(label)
 }
@@ -79,8 +59,8 @@ for (alg in sort(unique(runs$algo))) {
     next
   }
 
-  # Build the by-row plot order so wrap_plots(ncol = 2) puts StarPU left,
-  # PaRSEC right. Pad the shorter side with NULL so rows stay aligned.
+  # Row-major plot order so wrap_plots(ncol = 2) puts StarPU left, PaRSEC
+  # right; the shorter side is padded to keep rows aligned.
   nrows <- max(nrow(starpu), nrow(parsec))
   cell  <- function(df, i) if (i <= nrow(df))
     panel_for(df$path[i], paste0(df$runtime[i], ":", df$scheduler[i]))

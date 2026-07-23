@@ -1,55 +1,24 @@
 #!/usr/bin/env Rscript
 #
-# Build a StarVZ-style tasks.parquet for a PaRSEC run from its grapher .dot +
-# binary .prof, mirroring the per-task metadata table StarVZ derives from
-# StarPU's tasks.rec. One row per task (DAG node), carrying its dependencies,
-# the worker it ran on, and its timing.
+# Build a StarVZ-style tasks.parquet for a PaRSEC run from its grapher .dot
+# (structure: dependencies, kernel names, priorities) + binary .prof (timing,
+# via dbp2xml), joined on the tpid:tid key both carry. Also writes
+# states.parquet: every timed interval in the .prof (compute + runtime/
+# scheduler/memory classes) as a long StarVZ-style table.
 #
-# What maps from PaRSEC (and what doesn't):
-#   - JobId/Name/Priority/{tpid}      <- .dot node: tooltip + label
-#       label is "<thread/vp> name(tid)[tid]<priority>{tpid}"
-#   - DependsOn / DepLabels           <- .dot incoming edges (src + edge label)
-#   - StartTime / EndTime / WorkerId  <- .prof via dbp2xml (per-task span + the
-#                                        THREAD it executed on); tpid:tid joins
-#                                        structure to timing (see dag converter)
-#   - SubmitOrder                     <- rank over (tpid, tid); DTD assigns task
-#                                        ids at insertion, so this is submit order
-#   - Iteration                       <- DERIVED, not in the trace. Chameleon submits
-#                                        a right-looking factorization, so each outer
-#                                        iteration k opens with exactly one diagonal
-#                                        kernel (potrf/geqrt/getrf_nopiv -- the exact
-#                                        PaRSEC kernel names). Counting those over
-#                                        SubmitOrder gives the exact k; tasks before
-#                                        the first opener (matrix gen) -> NA.
-#                                        This feeds StarVZ's panel_kiteration().
-#   - Model/File/Line/Footprint/GFlop/Parameters/SubmitTime/Tag/
-#     NumaNodes/Control               <- not in the PaRSEC trace -> NA
-#       (GFlop is derivable analytically per kernel+tile; left NA for now.)
-#
-# Also writes <run_dir>/states.parquet: every timed interval the .prof records
-# (not just compute kernels) as a StarVZ-style long table, one row per event,
-# categorised into Computation / Scheduling / Idle / Runtime / Memory /
-# DataTransfer / GPU. parsec.nix builds with PARSEC_PROF_TRACE_SCHEDULING_EVENTS
-# and _ACTIVE_ARENA_SET, so the scheduler/idle/memory spans are already in the
-# trace -- this surfaces them for the per-worker occupancy breakdown that
-# distinguishes the schedulers (lfq vs gd). dbp2xml runs once for both tables.
+# Iteration is DERIVED (not in the trace): each outer iteration k of a
+# right-looking factorization opens with exactly one diagonal kernel, so
+# counting those over the DTD submit order recovers k.
 #
 # Usage:  parsec_tasks_to_parquet.r <run_dir> [run_dir ...]
 #   needs cham_*.dot + cham_*.prof-* in run_dir, dbp2xml on PATH or $DBP2XML.
-#   Writes <run_dir>/tasks.parquet and <run_dir>/states.parquet. See
-#   parsec_dag_to_parquet.r for the companion dag.parquet and the shared
-#   dbp2xml/out.xml gotcha.
 
 suppressMessages({
   library(xml2); library(arrow); library(dplyr); library(stringr); library(tidyr)
 })
 
-# PaRSEC tags every timed interval with a dictionary "class". Compute kernels
-# (gemm/potrf/...) become task rows; everything else is a runtime/scheduler/
-# memory state the build emits (PARSEC_PROF_TRACE_SCHEDULING_EVENTS /
-# _ACTIVE_ARENA_SET). We keep them all (categorised) in states.parquet for the
-# per-worker occupancy breakdown. Anything not listed -- i.e. a kernel -- falls
-# through to "Computation".
+# PaRSEC dictionary classes that are not compute kernels; anything not listed
+# falls through to "Computation".
 event_category <- function(name) {
   dplyr::case_when(
     name %in% c("Sched POLL", "Sched PUSH", "Queue REMOVE")          ~ "Scheduling",
@@ -65,14 +34,11 @@ event_category <- function(name) {
   )
 }
 
-# Diagonal kernels that open one outer iteration k of a right-looking
-# factorization (Cholesky/QR/LU). Exactly one fires per k, so counting them over
-# the DTD submission order recovers the iteration index (see Iteration below).
-# Diagonal opener kernel per outer iteration, by EXACT PaRSEC kernel name:
-# Cholesky -> potrf, QR -> geqrt, LU(nopiv) -> getrf_nopiv (NOT "getrf").
+# Diagonal kernel that opens one outer iteration, by EXACT PaRSEC kernel name:
+# Cholesky -> potrf, QR -> geqrt, LU(nopiv) -> getrf_nopiv.
 ITER_OPENERS <- c("potrf", "geqrt", "getrf_nopiv")
 
-# Final schema (column order + types) of StarVZ's StarPU tasks.parquet.
+# Column order/types of StarVZ's StarPU tasks.parquet.
 TASKS_COLS <- c(
   "Control", "JobId", "SubmitOrder", "SubmitTime", "MPIRank", "Name", "Model",
   "File", "Line", "Priority", "DependsOn", "DepLabels", "Tag", "WorkerId",
@@ -80,9 +46,6 @@ TASKS_COLS <- c(
   "Parameters", "NumaNodes"
 )
 
-# Long "state" table: one row per occupancy interval (overlapping recordings of
-# the same class on a worker are unioned, see build_states), anchored to the
-# same t0 as tasks so both tables share a clock. Times in microseconds.
 STATES_COLS <- c("Worker", "ResourceId", "Type", "Value",
                  "Start", "End", "Duration", "JobId")
 
@@ -132,18 +95,16 @@ parse_dot <- function(dot_path) {
   list(nodes = nodes, edges = edges)
 }
 
-# .prof -> dbp2xml -> one row per timed event across ALL dictionary classes:
-# the class name, the tpid:tid key it is attached to, the THREAD it ran on, and
-# its [start,end] in ns. Both the per-task timing and the states table are
-# derived from this, so dbp2xml runs only once.
+# .prof -> dbp2xml -> one row per timed event across ALL dictionary classes.
 parse_prof_events <- function(prof_path, dbp2xml) {
+  # dbp2xml hardcodes its output to "out.xml" in the CWD, so run it in a
+  # scratch dir with an absolute prof path.
   prof_abs <- normalizePath(prof_path)
   work <- tempfile("dbp2xml_"); dir.create(work)
   on.exit(unlink(work, recursive = TRUE), add = TRUE)
   old <- setwd(work); on.exit(setwd(old), add = TRUE)
-  # dbp2xml is a self-contained Nix binary (carries its own RPATH); the analysis
-  # dev shell's R wrapper exports an LD_LIBRARY_PATH with a different glibc that
-  # makes it fail to load, so run the child with LD_LIBRARY_PATH cleared.
+  # dbp2xml carries its own RPATH; the R wrapper's LD_LIBRARY_PATH points at a
+  # different glibc that breaks it, so clear it for the child.
   system2(dbp2xml, shQuote(prof_abs), stdout = FALSE, stderr = FALSE,
           env = "LD_LIBRARY_PATH=")
   xml_path <- file.path(work, "out.xml")
@@ -158,11 +119,9 @@ parse_prof_events <- function(prof_path, dbp2xml) {
 
   rows <- lapply(xml_find_all(doc, "//THREAD"), function(th) {
     ident  <- xml_text(xml_find_first(th, "./IDENTIFIER"))
-    # Two thread kinds in a hybrid CPU+GPU run: CPU workers identify as
-    # "PaRSEC Thread N of VP ...", GPU streams as "GPU <dev>-<stream>". Keep
-    # WorkerId as the CPU thread int (NA for GPU, for back-compat) but ALWAYS set a
-    # ResourceId: "CPU<N>" / "CUDA<dev>_<stream>". Without this the GPU-executed
-    # tasks (often the bulk of the gemms) get WorkerId=NA and are silently dropped.
+    # CPU workers identify as "PaRSEC Thread N of VP ...", GPU streams as
+    # "GPU <dev>-<stream>". WorkerId stays the CPU thread int (NA for GPU) but
+    # ResourceId is always set -- otherwise GPU-executed tasks are dropped.
     cpu <- str_match(ident, "Thread (\\d+)")[, 2]
     gpu <- str_match(ident, "GPU (\\d+)-(\\d+)")
     worker   <- as.integer(cpu)
@@ -192,20 +151,12 @@ parse_prof_events <- function(prof_path, dbp2xml) {
   rows
 }
 
-# compute kernels only, collapsed to one [start,end] + worker per task key.
-#
-# A GPU-executed kernel is profiled TWICE (confirmed in parsec dev_cuda.c): the
-# CPU manager thread records a ~2us submit hook (prof_event_key_start at submit),
-# and the CUDA stream it runs on records the real execution span -- host-observed
-# [submit-on-stream, completion-detected-by-cudaEventQuery]. dbp2xml gives the CPU
-# hook the earlier start, so a naive min(start)/max(end) + which.min(start) BOTH
-# mis-attributes the task to a CPU lane AND inflates its span to the whole
-# [CPU submit -> GPU complete] window (the ~16ms artifact). Fix: when a key has a
-# CUDA-stream event, keep ONLY the CUDA rows, so the task lands on its real device
-# with its device-side span. (Those spans overlap across a stream's in-flight
-# tasks -- PaRSEC submits up to max_events ahead -- exactly like StarPU's async
-# GPU spans; build_states/occupancy handle that by unioning per resource.)
-# CPU-only keys keep their CPU rows unchanged.
+# Compute kernels only, collapsed to one [start,end] + worker per task key.
+# A GPU-executed kernel is profiled TWICE: the CPU manager thread records a
+# ~2us submit hook, and the CUDA stream records the real execution span. A
+# naive min/max merge would both mis-attribute the task to a CPU lane and
+# inflate its span to the whole [CPU submit -> GPU complete] window, so when a
+# key has a CUDA-stream event only the CUDA rows are kept.
 compute_timing <- function(ev) {
   ev <- ev[event_category(ev$class) == "Computation", , drop = FALSE]
   if (nrow(ev) == 0) {
@@ -218,18 +169,16 @@ compute_timing <- function(ev) {
     summarise(gpu = any(.data$is_gpu), .groups = "drop")
   ev |>
     left_join(has_gpu, by = "key") |>
-    filter(!.data$gpu | .data$is_gpu) |>          # GPU keys -> GPU rows; else CPU rows
+    filter(!.data$gpu | .data$is_gpu) |>
     group_by(.data$key) |>
     summarise(start_ns = min(start_ns), end_ns = max(end_ns),
               WorkerId   = WorkerId[which.min(start_ns)],
               ResourceId = ResourceId[which.min(start_ns)], .groups = "drop")
 }
 
-# every timed interval as a long StarVZ-style state row, anchored to t0.
-# PaRSEC records some events more than once with overlapping spans (each compute
-# kernel appears twice), so we union overlapping intervals within each
-# (worker, class): occupancy is not double-counted, while genuinely separate
-# events -- gaps between them -- stay as distinct rows.
+# Every timed interval as a long state row, anchored to t0. Overlapping
+# recordings of the same class on a resource are unioned so occupancy is not
+# double-counted; genuinely separate events stay distinct rows. Times in us.
 build_states <- function(ev, t0) {
   empty <- tibble(Worker = integer(), ResourceId = character(),
                   Type = character(), Value = character(), Start = numeric(),
@@ -246,7 +195,7 @@ build_states <- function(ev, t0) {
               WorkerId = first(WorkerId), JobId = first(key), .groups = "drop") |>
     transmute(
       Worker     = as.integer(WorkerId),
-      ResourceId = ResourceId,                     # CPU<N> or CUDA<dev>_<stream>
+      ResourceId = ResourceId,
       Type       = event_category(class),
       Value      = class,
       Start      = (start_ns - t0) / 1000,
@@ -277,7 +226,6 @@ convert_one <- function(run_dir, dbp2xml) {
     StartTime = (start_ns - t0) / 1000, EndTime = (end_ns - t0) / 1000
   )
 
-  # collapse incoming edges into space-separated DependsOn / DepLabels
   deps <- g$edges |>
     arrange(dst, src) |>
     group_by(key = dst) |>
@@ -290,8 +238,8 @@ convert_one <- function(run_dir, dbp2xml) {
               tid  = as.integer(str_extract(key, "\\d+$"))) |>
     arrange(tpid, tid) |>
     mutate(SubmitOrder = row_number()) |>
-    # k = (#openers seen so far) - 1, over submission order. Tasks before the
-    # first opener (matrix generation) get -1 -> NA, so they drop out cleanly.
+    # k = (#openers seen so far) - 1 over submit order; tasks before the first
+    # opener (matrix generation) get NA.
     mutate(Iteration = {
       it <- cumsum(tolower(Name) %in% ITER_OPENERS) - 1L
       ifelse(it < 0L, NA_integer_, it)
@@ -313,7 +261,7 @@ convert_one <- function(run_dir, dbp2xml) {
       DepLabels   = DepLabels,
       Tag         = NA_character_,
       WorkerId    = as.integer(WorkerId),
-      ResourceId  = ResourceId,                    # CPU<N>/CUDA<dev>_<stream>; GPU-aware
+      ResourceId  = ResourceId,
       MemoryNode  = 0L,
       StartTime   = StartTime,
       EndTime     = EndTime,

@@ -1,32 +1,16 @@
 #!/usr/bin/env Rscript
 #
-# Idea #3 (graficos.md): the k-iteration plot -- iterations on Y, time on X --
-# to see whether each scheduler leaves a different "signature" across the outer
-# loop of a right-looking factorization.
-#
-# StarVZ ships exactly this as panel_kiteration() (R/phase2_kchart.R), but it
-# needs an Application$Iteration column that StarPU's trace carries and PaRSEC's
-# does NOT. We recover k for PaRSEC in parsec_tasks_to_parquet.r (one diagonal
-# kernel per iteration over the DTD submit order) and feed StarVZ's own panel a
-# hand-built starvz_data list -- panel_kiteration only touches $Application,
-# $Colors and a few $config fields, so no application.parquet / starvz_read is
-# needed. This is the GPU-complete path (tasks.parquet, not dbp2paje).
+# k-iteration plot (iterations on Y, time on X) via StarVZ's panel_kiteration(),
+# to compare the schedulers' "signatures" across the outer factorization loop.
+# PaRSEC has no Application$Iteration in its trace; parsec_tasks_to_parquet.r
+# derives it, and panel_kiteration only needs $Application/$Colors/$config, so
+# a hand-built starvz_data list is enough (no starvz_read).
 #
 # Usage:  plot_kiteration.r <run_dir|base_dir> [run_dir ...]
-#   Each arg is either a run dir (holding tasks.parquet) or a base dir (a job's
-#   runs/ folder) that gets expanded to its run subdirs -- so this takes the SAME
-#   single base_dir compare_all.sh hands every other comparison script. Needs
-#   <run_dir>/tasks.parquet with a non-NA Iteration column (re-run
-#   parsec_tasks_to_parquet.r if it predates the Iteration derivation).
-#
-#   Groups the runs BY ALGORITHM and, per algorithm, arranges every
-#   scheduler/runtime in a 2-column grid on a SHARED time axis (within one algo
-#   all runs share N/b, so makespans are comparable and the per-scheduler
-#   "signatures" line up):
-#     plots/kiteration_compare_<algo>.{png,pdf}   (>1 run for that algo)
-#     plots/kiteration_<runtime>_<sched>_<algo>.{png,pdf}  (a lone run)
-#   Row order is fixed (starpu:dmda, starpu:dmdas, parsec:lfq, parsec:gd) to match
-#   plot_compare_st.r. Honours PLOTS_DIR (compare_all.sh routes here).
+#   run dirs need tasks.parquet with a non-NA Iteration column.
+# Output: one figure per algorithm, all schedulers/runtimes on a shared time
+#   axis: plots/kiteration_compare_<algo>.{png,pdf} (or kiteration_<cfg>_<algo>
+#   for a lone run). Honours PLOTS_DIR.
 
 suppressMessages({
   library(ggplot2); library(starvz); library(patchwork)
@@ -37,14 +21,8 @@ this_file <- sub("^--file=", "",
 script_dir <- if (length(this_file)) dirname(normalizePath(this_file)) else "."
 source(file.path(script_dir, "trace_common.r"))
 
-# Stable colors for the usual factorization kernels, so a kernel keeps its hue
-# across runs/runtimes; anything else gets filled in from the default hue palette.
-KERNEL_COLORS <- c(
-  potrf = "#e41a1c", trsm = "#377eb8", syrk = "#4daf4a", gemm = "#984ea3",
-  herk = "#4daf4a", trmm = "#377eb8",
-  geqrt = "#e41a1c", ormqr = "#984ea3", qr_couple = "#377eb8", qr_apply = "#4daf4a"
-)
-
+# Colors table in panel_kiteration's expected shape (Value character, no Use),
+# with the shared KERNEL_COLORS hues + hue_pal fallback.
 build_colors <- function(values) {
   vals <- sort(unique(values))
   cols <- KERNEL_COLORS[vals]
@@ -53,8 +31,7 @@ build_colors <- function(values) {
   tibble(Value = vals, Color = unname(cols))
 }
 
-# Build the k-iteration panel for one run via StarVZ's panel_kiteration(). Returns
-# a list(panel, label, stem, x_max, niter) or NULL if the run has no usable data.
+# panel_kiteration for one run; NULL if the run has no usable data.
 build_panel <- function(run_dir) {
   meta <- parse_run_id(run_dir)
   tasks <- read_tasks_norm(run_dir)            # StartTime/EndTime -> ms
@@ -72,12 +49,10 @@ build_panel <- function(run_dir) {
       Node         = 0L,
       Start        = .data$StartTime,
       End          = .data$EndTime,
-      Value        = norm_kernel(.data$Name)   # precision-agnostic stem
+      Value        = norm_kernel(.data$Name)
     ) %>%
-    # keep only factorization work: matrix-gen (splgsy) lands before the first
-    # opener (Iteration NA, already dropped); runtime data-flush tasks would
-    # otherwise show up against the last k. names(KERNEL_COLORS) is exactly the
-    # post-alias factorization kernel set.
+    # factorization work only: names(KERNEL_COLORS) is exactly the post-alias
+    # factorization kernel set (matrix-gen and runtime sinks drop out).
     filter(.data$Value %in% names(KERNEL_COLORS))
   if (nrow(app) == 0) { message("no timed iterated tasks in ", run_dir, ", skip"); return(NULL) }
 
@@ -87,12 +62,11 @@ build_panel <- function(run_dir) {
     config = list(
       base_size = 22, expand = 0.05,
       limits = list(start = NA, end = NA),
-      # subite=FALSE -> Y is the real Iteration; pernode=FALSE -> no Node facet.
-      # Both must be explicit: panel_kiteration does `if (per_node)` (errors on NULL).
+      # subite/pernode must be explicit FALSE: panel_kiteration errors on NULL.
       kiteration = list(subite = FALSE, pernode = FALSE,
                         middlelines = NULL, legend = TRUE)
     )
-  ), class = "starvz_data")   # panel_kiteration's starvz_check_data requires this
+  ), class = "starvz_data")
 
   label <- meta$label
   p <- panel_kiteration(svz) + ggtitle(label) + ylab("Iteration (k)")
@@ -121,7 +95,7 @@ if (length(run_dirs) == 0)
 panels <- Filter(Negate(is.null), lapply(run_dirs, build_panel))
 if (length(panels) == 0) stop("no runs with usable k-iteration data")
 
-# Fixed scheduler/runtime row order, matching plot_compare_st.r's grid.
+# Fixed row order, matching plot_compare_st.r's grid.
 CONFIG_ORDER <- c("starpu:dmda", "starpu:dmdas", "parsec:lfq", "parsec:gd")
 config_rank <- function(p) {
   m <- match(paste0(p$runtime, ":", p$scheduler), CONFIG_ORDER)
@@ -129,9 +103,8 @@ config_rank <- function(p) {
 }
 stem_of <- function(p) paste0("kiteration_", p$runtime, "_", p$scheduler, "_", p$algo)
 
-# One figure per algorithm: stack all schedulers/runtimes on a SHARED time axis
-# (within an algo every run shares N/b, so makespans are comparable) and collect
-# the (identical) kernel legend once. A lone run for an algo -> single panel.
+# One figure per algorithm: within an algo every run shares N/b, so a shared
+# time axis keeps makespans comparable.
 by_algo <- split(panels, vapply(panels, function(p) p$algo, character(1)))
 for (algo in names(by_algo)) {
   grp <- by_algo[[algo]]
@@ -143,8 +116,6 @@ for (algo in names(by_algo)) {
     next
   }
   x_end <- max(vapply(grp, function(p) p$x_max, numeric(1)))
-  # 2-column landscape grid (fits a 16:9 slide), same config order as
-  # plot_compare_st.r; the shared xlim keeps makespans comparable.
   combined <- wrap_plots(
     lapply(grp, function(p) p$panel + coord_cartesian(xlim = c(0, x_end))),
     ncol = 2

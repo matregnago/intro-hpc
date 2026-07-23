@@ -1,17 +1,10 @@
 #!/usr/bin/env Rscript
-
-# Comparativo poti vs tupi da montanha de block size. Mesma metrica do
-# plot_block_size.r (GFLOPS medio vs b, barras min/max), mas
-# sobrepoe os dois nos -- facet_wrap(algorithm ~ node) com escalas LIVRES por
-# painel, color = config. So FP64: o job de tile do poti tambem tem FP32, mas o
-# do tupi nao, e o deck final compara FP64 -- sem o filtro a grade ficaria com
-# celulas vazias.
 #
-# As grades de b dos dois jobs nao coincidem (poti: varredura densa 250..4000 do
-# job 798331; tupi: so {1000,2000,4000} do doe_gpu_tile.r), entao eixos
-# compartilhados so achatam as curvas. NO PLOT a poti corta b=1000/2000/4000
-# (cauda plana bem depois do pico); o block_size_peak_compare.csv continua
-# vindo da grade completa.
+# Comparativo poti vs tupi da montanha de block size: GFLOPS medio vs b (barras
+# min/max), facet_wrap(algorithm ~ node) com escalas livres, color = config.
+# So FP64. As grades de b dos dois jobs nao coincidem (poti: varredura densa;
+# tupi: {1000,2000,4000}); no plot a poti corta a cauda b=1000/2000/4000, mas o
+# block_size_peak_compare.csv vem da grade completa.
 #
 #   Rscript scripts/analysis/plot_block_size_compare.r poti_dir tupi_dir
 #   (default: data/gpu_tile_poti_* e data/gpu_tile_tupi_* mais recentes)
@@ -64,7 +57,7 @@ agg <- results |>
   ) |>
   mutate(config = paste(runtime, scheduler, sep = "/"))
 
-# Pico por (node, kernel, config). O b de maior GFLOPS medio = b ideal.
+# Pico por (node, kernel, config): o b de maior GFLOPS medio = b ideal.
 peaks <- agg |>
   group_by(node, gpu, algorithm, config, runtime, scheduler, n) |>
   slice_max(gflops_mean, n = 1, with_ties = FALSE) |>
@@ -80,17 +73,16 @@ write_csv(
   file.path(out_dir, "block_size_peak_compare.csv")
 )
 
-# Dados so do plot: poti sem a cauda b=1000/2000/4000 (ver cabecalho) e largura
-# das barras de erro relativa a grade de b de cada no (as grades diferem ~4x).
+# So no plot: poti sem a cauda plana, largura das barras relativa a grade de b
+# de cada no (as grades diferem ~4x).
 plot_dat <- agg |>
   filter(!(node == "poti" & b %in% c(1000, 2000, 4000))) |>
   group_by(node) |>
   mutate(ebw = 0.02 * max(b)) |>
   ungroup()
 
-# facet_wrap(algorithm ~ gpu): linhas = algoritmos, colunas = nos (poti | tupi).
-# scales="free" da a cada painel seus proprios eixos -- as grades de b e os
-# teto de GFLOPS (4070 capada em FP64 vs 4090) diferem demais para compartilhar.
+# scales="free": as grades de b e o teto de GFLOPS (4070 capada em FP64 vs
+# 4090) diferem demais para compartilhar eixos.
 p <- ggplot(plot_dat, aes(x = b, y = gflops_mean, color = config)) +
   geom_line() +
   geom_point(size = 1) +
@@ -111,4 +103,3 @@ p <- ggplot(plot_dat, aes(x = b, y = gflops_mean, color = config)) +
 ggsave(file.path(out_dir, "gflops_vs_b_compare.png"), p,
        width = 13, height = 7, dpi = 140)
 ggsave(file.path(out_dir, "gflops_vs_b_compare.pdf"), p, width = 13, height = 7)
-message("escrito ", out_dir, "/gflops_vs_b_compare.{png,pdf} e block_size_peak_compare.csv")

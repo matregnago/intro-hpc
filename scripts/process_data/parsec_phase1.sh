@@ -1,27 +1,19 @@
 #!/usr/bin/env bash
 #
-# Offline "phase 1" for PaRSEC runs -- the analogue of trace_phase1.sh, but for the
-# path that reconstructs the StarVZ parquet tables directly from cham_*.dot +
-# cham_*.prof-* via dbp2xml, instead of dbp2paje + `starvz -1`. Use this when the
-# official phase 1 can't produce the tables, i.e. the GPU runs (dbp2paje breaks on
-# the GPU paje, leaving no application.parquet).
+# Offline phase 1 for PaRSEC runs: reconstruct the StarVZ parquet set directly
+# from cham_*.dot + cham_*.prof-* via dbp2xml. Use when the official phase 1
+# can't produce the tables, i.e. the GPU runs (dbp2paje breaks on the GPU paje).
 #
 # Per run_dir, in order:
 #   parsec_tasks_to_parquet.r        -> tasks.parquet + states.parquet
 #   parsec_dag_to_parquet.r          -> dag.parquet
-#   parsec_application_to_parquet.r  -> application.parquet + y.parquet + colors.parquet
+#   parsec_application_to_parquet.r  -> application.parquet + y/colors.parquet
 #   parsec_ready_to_parquet.r        -> variable.parquet (reconstructed Ready)
 #
-# The result is the full set of parquets starvz_read() expects, so the stock StarVZ
-# panels (panel_st + CPB, panel_ready, panel_kiteration, panel_imbalance, ...) run
-# on a PaRSEC GPU trace. Render them with scripts/analysis/plot_gpu_st.r.
-#
-# dbp2xml is resolved ONCE (PATH, $DBP2XML, or built from the flake's .#parsec) and
-# exported, so the tasks/dag converters reuse it instead of each re-resolving.
+# dbp2xml is resolved once and exported, so the converters reuse it.
 #
 # Usage:
-#   scripts/analysis/parsec_phase1.sh <run_dir> [run_dir...]
-#   scripts/analysis/parsec_phase1.sh data/manual_traces_20260621_172820/runs/000*_parsec_*
+#   scripts/process_data/parsec_phase1.sh <run_dir> [run_dir...]
 
 set -euo pipefail
 
@@ -33,7 +25,8 @@ fi
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO="$(cd "$HERE/../.." && pwd)"
 
-# Resolve dbp2xml once. --impure: parsec.nix reads its source from $PWD.
+# Resolve dbp2xml: $DBP2XML, PATH, or build the flake's .#parsec.
+# --impure: parsec.nix reads its source from $PWD.
 if [[ -z "${DBP2XML:-}" || ! -x "${DBP2XML:-}" ]]; then
     if command -v dbp2xml >/dev/null 2>&1; then
         DBP2XML="$(command -v dbp2xml)"
@@ -62,8 +55,7 @@ phase1_one() {
     local dot=("$run_dir"/cham_*.dot)
     local prof=("$run_dir"/cham_*.prof-*)
     shopt -u nullglob
-    # ignore a compressed-only prof (the converters extract from .tar.gz themselves
-    # is not implemented here; this driver expects the unpacked .prof)
+    # the converters expect an unpacked .prof; ignore a compressed-only one
     local p clean=()
     for p in "${prof[@]}"; do [[ "$p" == *.tar.gz ]] || clean+=("$p"); done
     prof=("${clean[@]}")

@@ -1,9 +1,8 @@
 #!/usr/bin/env Rscript
-
-# Comparativo poti vs tupi de GFLOPS vs N. Mesma metrica do plot_n_size.r
-# (media +- 1 desvio-padrao entre repeticoes), mas sobrepoe os dois nos no mesmo
-# painel -- facet_grid(op ~ node), color = config. Cada no roda no seu b ideal
-# (E1): poti b=500, tupi b=1000 -- o subtitulo deriva isso dos dados.
+#
+# Comparativo poti vs tupi de GFLOPS vs N (media +- 1 desvio-padrao entre
+# repeticoes), facet_grid(op ~ node), color = config. Cada no roda no seu b
+# ideal; o subtitulo deriva isso dos dados.
 #
 #   Rscript scripts/analysis/plot_n_size_compare.r poti_dir tupi_dir
 #   (default: data/gpu_n_size_poti_* e data/gpu_n_size_tupi_* mais recentes)
@@ -54,7 +53,7 @@ agg <- results |>
   ) |>
   mutate(
     config    = paste(runtime, scheduler, sep = "/"),
-    # configs com 1 rep nao tem DP (NA) -> 0 p/ o ponto ainda plotar sem barra
+    # 1 rep -> sd NA -> 0, p/ o ponto plotar sem barra
     gflops_sd = ifelse(is.na(gflops_sd), 0, gflops_sd)
   )
 
@@ -65,9 +64,8 @@ b_tbl <- results |>
 sub <- paste0("FP64  |  ",
               paste(sprintf("%s: b=%d", b_tbl$node, b_tbl$b), collapse = "  |  "))
 
-# facet_grid(op ~ gpu): colunas = nos (poti | tupi), linhas = algoritmos.
-# scales="free_y" libera o eixo por LINHA; cada linha compartilha Y entre as
-# duas colunas, entao a comparacao poti-vs-tupi fica no mesmo eixo.
+# scales="free_y" libera o eixo por linha; as duas colunas (poti | tupi)
+# compartilham o eixo, entao a comparacao entre nos fica direta.
 p <- ggplot(agg, aes(x = n, y = gflops_mean, colour = config)) +
   geom_line() +
   geom_point() +

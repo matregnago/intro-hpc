@@ -1,33 +1,18 @@
 #!/usr/bin/env Rscript
 #
 # Convert a PaRSEC run's task-graph .dot + binary .prof into a StarVZ-style
-# dag.parquet (columns: JobId, Dependent, Start, End, Cost, Value), the same
-# table StarVZ builds from StarPU's dag.dot. With it, the DAG-based analyses
-# StarVZ does for StarPU (critical path, gantt overlay, ...) also run on PaRSEC.
+# dag.parquet (JobId, Dependent, Start, End, Cost, Value) -- the same table
+# StarVZ builds from StarPU's dag.dot, so the DAG-based analyses (critical
+# path, gantt overlay, ...) also run on PaRSEC. The .dot carries the graph
+# structure + kernel name, the .prof the per-task timing; tpid:tid joins them.
 #
-# Why two inputs:
-#   - the .dot (PaRSEC grapher, built with PARSEC_PROF_GRAPHER=ON) carries the
-#     graph STRUCTURE + kernel name. Each node's tooltip is
-#     "tpid=<p>:did=<d>:tname=<kernel>:tid=<t>" and edges are dependencies.
-#   - the .prof carries the per-task TIMING. `dbp2xml` dumps it to XML where each
-#     <EVENT> under a compute-class <KEY> has <ID>tpid:tid</ID> + <START>/<END>
-#     in ns. tpid:tid is the SAME key the .dot uses -> we join timing onto
-#     structure. (dbp2paje drops this id, which is why the starvz application
-#     trace has JobId = NA and can't be joined directly.)
+# StarVZ conventions: one row per dependency edge (JobId = task, Dependent =
+# predecessor); times in us shifted so the earliest event is 0; Cost =
+# Start - End (negative duration, the critical-path edge weight); untimed
+# tasks keep Start/End = NA, Cost = 0.
 #
-# StarVZ conventions reproduced here:
-#   - one row per dependency edge: JobId = task, Dependent = its predecessor.
-#   - Start/End/Value describe the JobId task; times in microseconds, shifted so
-#     the earliest profiled event is 0.
-#   - Cost = Start - End (negative duration; used as edge weight so a
-#     shortest-path on Cost is the timing critical path). 0 when untimed.
-#   - tasks with no profiling event (init splgsy/splrnt, parsec_dtd_data_flush)
-#     keep Start/End = NA, Cost = 0, mirroring StarPU's data nodes.
-#
-# Usage:
-#   parsec_dag_to_parquet.r <run_dir> [run_dir ...]
-# Each run_dir must contain cham_*.dot and cham_*.prof-*; dbp2xml must be on
-# PATH or pointed to by $DBP2XML. Writes <run_dir>/dag.parquet.
+# Usage:  parsec_dag_to_parquet.r <run_dir> [run_dir ...]
+#   needs cham_*.dot + cham_*.prof-* in run_dir, dbp2xml on PATH or $DBP2XML.
 
 suppressMessages({
   library(xml2)
@@ -36,8 +21,7 @@ suppressMessages({
   library(stringr)
 })
 
-# PaRSEC profiling dictionary classes that are runtime bookkeeping, not tasks.
-# Everything else in the dictionary is a task class (potrf, gemm, geqrt, ...).
+# Profiling dictionary classes that are runtime bookkeeping, not tasks.
 INTERNAL_CLASSES <- c(
   "MEMALLOC", "Sched POLL", "Sched PUSH", "Sched SLEEP", "Queue REMOVE",
   "ARENA_MEMORY", "ARENA_ACTIVE_SET", "TASK_MEMORY", "Device delegate",
@@ -49,8 +33,6 @@ resolve_dbp2xml <- function() {
   if (nzchar(env) && file.exists(env)) return(env)
   found <- Sys.which("dbp2xml")
   if (nzchar(found)) return(unname(found))
-  # Fallback: build the flake's parsec package and use its dbp2xml (mirrors
-  # scripts/analysis/trace_phase1.sh). --impure: parsec.nix reads $PWD.
   message("dbp2xml not on PATH; building .#parsec (first run only)...")
   out <- suppressWarnings(system2(
     "nix",
@@ -64,11 +46,10 @@ resolve_dbp2xml <- function() {
        "where `nix build --impure .#parsec` works")
 }
 
-# --- .dot: nodes (tpid:tid -> kernel) and edges (predecessor -> task) ----------
+# .dot: nodes (tpid:tid -> kernel) and edges (predecessor -> task)
 parse_dot <- function(dot_path) {
   ln <- readLines(dot_path, warn = FALSE)
 
-  # node declarations: <name> [ ... tooltip="tpid=P:did=D:tname=K:tid=T" ... ];
   decl <- str_match(
     ln, '^\\s*(\\S+)\\s+\\[.*tooltip="tpid=(\\d+):did=\\d+:tname=([^:"]+):tid=(\\d+)"'
   )
@@ -81,7 +62,6 @@ parse_dot <- function(dot_path) {
   name2key   <- setNames(nodes$key, nodes$name)
   key2tname  <- setNames(nodes$tname, nodes$key)
 
-  # edges: <src> -> <dst>
   em <- str_match(ln, '^\\s*(\\S+)\\s*->\\s*(\\S+)')
   em <- em[!is.na(em[, 1]), , drop = FALSE]
   edges <- tibble(
@@ -92,11 +72,10 @@ parse_dot <- function(dot_path) {
   list(nodes = nodes, edges = edges, key2tname = key2tname)
 }
 
-# --- .prof -> dbp2xml -> per-task timing (tpid:tid -> Start/End in ns) ----------
+# .prof -> dbp2xml -> per-task timing (tpid:tid -> Start/End in ns)
 parse_prof_timing <- function(prof_path, dbp2xml) {
-  # dbp2xml ignores stdout and hardcodes its output to "out.xml" in the CWD
-  # (tools/profiling/dbp2xml.c: dump_xml("out.xml", dbp)). Run it in a scratch
-  # dir, with an absolute prof path, and read that out.xml back.
+  # dbp2xml hardcodes its output to "out.xml" in the CWD, so run it in a
+  # scratch dir with an absolute prof path.
   prof_abs <- normalizePath(prof_path)
   work <- tempfile("dbp2xml_")
   dir.create(work)
@@ -104,10 +83,8 @@ parse_prof_timing <- function(prof_path, dbp2xml) {
   old <- setwd(work)
   on.exit(setwd(old), add = TRUE)
 
-  # dbp2xml is a self-contained Nix binary (own RPATH); the analysis shell's R
-  # wrapper exports an LD_LIBRARY_PATH with a different glibc that makes it fail
-  # to load, so run the child with LD_LIBRARY_PATH cleared (same as the tasks
-  # converter's parse_prof_events).
+  # dbp2xml carries its own RPATH; the R wrapper's LD_LIBRARY_PATH points at a
+  # different glibc that breaks it, so clear it for the child.
   system2(dbp2xml, shQuote(prof_abs), stdout = FALSE, stderr = FALSE,
           env = "LD_LIBRARY_PATH=")
   xml_path <- file.path(work, "out.xml")
@@ -116,7 +93,6 @@ parse_prof_timing <- function(prof_path, dbp2xml) {
   }
   doc <- read_xml(xml_path)
 
-  # dictionary: KEY ID -> class name; keep only task (non-internal) classes
   keys <- xml_find_all(doc, "//DICTIONARY/KEY")
   dict <- tibble(
     id   = xml_attr(keys, "ID"),
@@ -124,8 +100,6 @@ parse_prof_timing <- function(prof_path, dbp2xml) {
   )
   compute_ids <- dict$id[!(dict$name %in% INTERNAL_CLASSES)]
 
-  # each <THREAD>/<KEY ID=k> block holds the <EVENT>s of class k for one worker.
-  # Pull (key=tpid:tid, START, END) per block, tagging it with its class id.
   blocks <- xml_find_all(doc, "//THREAD/KEY")
   ev <- lapply(blocks, function(b) {
     evs <- xml_find_all(b, "./EVENT")
@@ -141,7 +115,7 @@ parse_prof_timing <- function(prof_path, dbp2xml) {
   if (nrow(ev) == 0) return(tibble(key = character(), start_ns = numeric(), end_ns = numeric()))
   ev |>
     filter(class_id %in% compute_ids) |>
-    group_by(key) |>                                      # one span per task
+    group_by(key) |>
     summarise(start_ns = min(start_ns), end_ns = max(end_ns), .groups = "drop")
 }
 
@@ -163,8 +137,6 @@ convert_one <- function(run_dir, dbp2xml) {
   start_of <- setNames(timing$Start, timing$key)
   end_of   <- setNames(timing$End,   timing$key)
 
-  # column order/types mirror StarVZ's StarPU dag.parquet so starvz_read() and
-  # the DAG panels consume it unchanged.
   dag <- g$edges |>
     transmute(
       JobId     = as.character(dst_key),
@@ -179,13 +151,10 @@ convert_one <- function(run_dir, dbp2xml) {
   out <- file.path(run_dir, "dag.parquet")
   write_parquet(dag, out)
 
-  n_tasks <- length(unique(g$nodes$key))
-  n_timed <- nrow(timing)
-  n_job   <- length(unique(dag$JobId))
-  hit     <- mean(!is.na(dag$Start))
   message(sprintf(
     "    nodes=%d edges=%d timed_tasks=%d | dag rows=%d distinct JobId=%d timed=%.0f%% -> %s",
-    n_tasks, nrow(g$edges), n_timed, nrow(dag), n_job, 100 * hit, out
+    length(unique(g$nodes$key)), nrow(g$edges), nrow(timing),
+    nrow(dag), length(unique(dag$JobId)), 100 * mean(!is.na(dag$Start)), out
   ))
   invisible(dag)
 }

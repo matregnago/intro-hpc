@@ -38,8 +38,13 @@ marp --pdf part1.md --allow-local-files
 Isso gera um arquivo chamado `part1.pdf`.
 
 ## DOE e Análise dos Dados
-Os scripts estão disponíveis na pasta `scripts` e podem ser rodados com o `RScript`. Exemplo:
+Os scripts estão na pasta `scripts`:
+
+- `scripts/run.sh` — executa o design (`DESIGN_FILE`) para um runtime (chamado pelos jobs em `slurm/`);
+- `scripts/process_data/` — converte os traces brutos em parquets StarVZ (`trace_phase1.sh`, `parsec_phase1.sh` e os conversores `parsec_*_to_parquet.r`);
+- `scripts/analysis/` — gera as figuras a partir dos resultados/parquets. Exemplo:
 
 ```bash
-Rscript scripts/analysis/plot_traces.r
+Rscript scripts/analysis/plot_n_size_compare.r
+scripts/process_data/parsec_phase1.sh data/<job>/runs/00*_parsec_*
 ```

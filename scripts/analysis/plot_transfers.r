@@ -1,27 +1,14 @@
 #!/usr/bin/env Rscript
 #
-# Painel de movimentacao de dados H2D/D2H -- a evidencia direta do "thrashing"
-# de D2H do PaRSEC, a partir dos CONTADORES NATIVOS que o sweep grava no .log de
-# cada run (TRACE_STATS=1 em gpu_doe_sweep.sh). Funciona nos DOIS runtimes, sem
-# depender do trace:
+# Painel de movimentacao de dados H2D/D2H a partir dos contadores nativos que
+# scripts/run.sh (TRACE_STATS=1) grava no .log de cada run -- funciona nos dois
+# runtimes, sem depender do trace:
+#   StarPU: blocos "Data transfer stats" (STARPU_BUS_STATS) + "Worker stats".
+#   PaRSEC: linha "|All Devs |" (device_show_statistics).
 #
-#   StarPU (STARPU_BUS_STATS): bloco "Data transfer stats:" com
-#       "NUMA i -> CUDA j  <GB> GB ... (transfers : <n> ...)"   (H2D)
-#       "CUDA j -> NUMA i  <GB> GB ... (transfers : <n> ...)"   (D2H)
-#     + "Worker stats" -> nº de tarefas que rodaram em CUDA.
-#   PaRSEC (device_show_statistics): linha
-#       "|All Devs | <kernels> | % | <H2D_req> | <H2D_xfer>(%) | <D2H_req> | <D2H_xfer>(%) |"
-#
-# Render: plots/transfers_d2h.{png,pdf} -- volume D2H (MB) por runtime:scheduler,
-# facet por algoritmo, rotulado com MB-por-kernel-GPU (a "taxa de writeback").
-# Tambem grava plots/transfers_summary.csv.
-#
-# Uso:  plot_transfers.r [base_dir] [algo] [maquina]   (default = job de GPU)
-#   algo (opcional) mantem so os runs daquele algoritmo (ex.: dpotrf).
-#   maquina (opcional) rotula o painel; default = poti/tupi extraido do base_dir.
-#   Com um unico algoritmo no plot a faixa do facet vira o nome da maquina (os
-#   transfers_d2h de poti e tupi ficam lado a lado no slide e e a maquina que os
-#   distingue); com varios algoritmos mantem o algoritmo.
+# Uso:  plot_transfers.r [base_dir] [algo] [maquina]
+#   algo (opcional) filtra os runs; maquina rotula o painel (default extraido
+#   do base_dir). Saida: plots/transfers_d2h.{png,pdf} + transfers_summary.csv.
 
 suppressMessages({
   library(dplyr); library(ggplot2); library(stringr); library(tidyr)
@@ -41,7 +28,7 @@ machine  <- if (length(args) >= 3) args[[3]] else
 
 num <- function(x) as.numeric(str_replace_all(x, "[^0-9.eE+-]", ""))
 
-# StarPU: parse the "Data transfer stats" + "Worker stats" blocks (GB -> MB).
+# StarPU: "Data transfer stats" + "Worker stats" (GB -> MB).
 parse_starpu <- function(lines) {
   h2d <- str_match(lines, "NUMA \\d+ -> CUDA \\d+\\s+([0-9.eE+-]+) GB.*transfers : (\\d+)")
   d2h <- str_match(lines, "CUDA \\d+ -> NUMA \\d+\\s+([0-9.eE+-]+) GB.*transfers : (\\d+)")
@@ -60,16 +47,15 @@ parse_starpu <- function(lines) {
     }
   }
   tibble(
-    h2d_mb      = sum(num(h2d[, 2]) * 1000),     # GB -> MB
+    h2d_mb      = sum(num(h2d[, 2]) * 1000),
     d2h_mb      = sum(num(d2h[, 2]) * 1000),
     d2h_xfers   = sum(as.integer(d2h[, 3])),
     gpu_kernels = cuda_tasks
   )
 }
 
-# PaRSEC: parse the "|All Devs |" summary line. PaRSEC scales the unit with the
-# volume ("0.00 B", "21.09MB(33.33)", "61.40GB(100.00)"), so the parse must be
-# unit-aware -- an MB-only regex left the big GPU runs as NA.
+# PaRSEC: "|All Devs |" summary. PaRSEC scales the unit with the volume
+# ("21.09MB(33.33)", "61.40GB(100.00)"), so the parse must be unit-aware.
 parse_parsec <- function(lines) {
   ln <- grep("\\|All Devs", lines, value = TRUE)
   if (!length(ln)) return(NULL)
@@ -114,6 +100,7 @@ long <- res %>%
   mutate(dir = factor(ifelse(.data$dir == "h2d_mb", "H2D", "D2H"),
                       levels = c("H2D", "D2H")))
 
+# com um unico algoritmo a faixa do facet vira o nome da maquina
 one_algo <- n_distinct(long$algo) == 1
 long <- long %>%
   mutate(panel = if (one_algo && !is.na(machine)) machine else .data$algo)

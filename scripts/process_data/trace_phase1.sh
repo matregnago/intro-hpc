@@ -1,33 +1,16 @@
 #!/usr/bin/env bash
 #
-# StarVZ phase 1 for Chameleon trace runs (PaRSEC or StarPU, auto-detected).
+# StarVZ phase 1 for Chameleon trace runs (StarPU or PaRSEC, auto-detected):
+# writes the phase-1 *.parquet files next to each run's raw trace.
+#   PaRSEC -> dbp2paje converts cham_*.prof-* to paje.trace, then `starvz -1 -t`.
+#   StarPU -> `starvz -1` runs starpu_fxt_tool on the prof_file_* itself.
 #
-# Each run dir holds a raw trace captured by chameleon_dtesting with TRACE=1
-# (scripts/gpu_doe_sweep.sh):
-#   - PaRSEC: a binary profile  cham_<kernel>-0.prof-XXXXXX
-#   - StarPU: one or more FxT files  prof_file_*
-#
-# StarVZ cannot read either format directly. This script runs phase 1 and writes
-# the phase-1 *.parquet files next to the trace (application.parquet,
-# starpu.parquet, y.parquet, ...), which starvz_read() and
-# scripts/analysis/plot_trace.r consume.
-#
-#   PaRSEC  -> dbp2paje converts the .prof to paje.trace, then
-#              `starvz -1 -t` (--use-paje-trace) runs phase 1 on it.
-#   StarPU  -> `starvz -1` runs starpu_fxt_tool on the prof_file_* itself.
-#
-# IMPORTANT (PaRSEC): dbp2paje is invoked with -n (--name-all-containers).
-# Without it the worker/stream containers get empty aliases, parsec_paje_fix.sh
-# dedups them into one, every state ends up with ResourceId " ", and phase 1
-# dies in hl_y_paje_tree ("Column `Nature` doesn't exist"). -n keeps them apart.
+# dbp2paje MUST get -n (--name-all-containers): without it the worker/stream
+# containers get empty aliases, every state ends up with ResourceId " ", and
+# phase 1 dies in hl_y_paje_tree.
 #
 # Usage:
-#   scripts/analysis/trace_phase1.sh <run_dir> [run_dir...]
-#   scripts/analysis/trace_phase1.sh data/chameleon-gpu-phases_795377/e4_traces/runs/00*_*dpotrf*
-#
-# dbp2paje comes from the `parsec-cpu` flake package and `starvz` from
-# `starvz-tools`; both are resolved automatically (built on first use, then
-# cached) if not already on PATH, so this also works from a plain `nix develop`.
+#   scripts/process_data/trace_phase1.sh <run_dir> [run_dir...]
 
 set -euo pipefail
 
@@ -38,8 +21,8 @@ fi
 
 REPO="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 
-# Resolve a tool: prefer PATH, otherwise build the flake package and point at its
-# binary. --impure is required because parsec.nix reads its source from $PWD.
+# Resolve a tool: prefer PATH, otherwise build the flake package and point at
+# its binary. --impure: parsec.nix reads its source from $PWD.
 resolve_tool() {
     local bin="$1" attr="$2" out
     if command -v "$bin" >/dev/null 2>&1; then
@@ -59,7 +42,6 @@ STARVZ="$(resolve_tool starvz starvz-tools)"
 DBP2PAJE=""  # resolved lazily, only if a PaRSEC run is found
 echo "starvz: $STARVZ"
 
-# PaRSEC: cham_<kernel>-0.prof-XXXX -> paje.trace -> starvz -1 -t
 phase1_parsec() {
     local run_dir="$1"
     shopt -s nullglob
@@ -87,7 +69,6 @@ phase1_parsec() {
     "$STARVZ" -1 -t "$run_dir"
 }
 
-# StarPU: prof_file_* (FxT) -> starvz -1 runs starpu_fxt_tool itself
 phase1_starpu() {
     local run_dir="$1"
     echo "    runtime: StarPU ; fxt: $(cd "$run_dir" && echo prof_file_*)"
