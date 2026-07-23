@@ -5,12 +5,6 @@
 #SBATCH --output=%x_%j.out
 #SBATCH --error=%x_%j.err
 
-# E1 -- montanha de GFLOPS vs block size na poti (i7-14700KF, RTX 4070 12GB).
-# THREADS=19 (reserva 1 core p/ dirigir a GPU). TRACE=0 -- so time,gflops.
-#
-#   sbatch slurm/block_size_poti.slurm
-# Saida: data/block_size_poti_<jobid>/{results.csv,design.csv,runs/.../}
-
 set -euxo pipefail
 
 WORK_DIR="$SCRATCH/intro_hpc"
@@ -38,13 +32,11 @@ export DESIGN_FILE="$RESULTS_DIR/design.csv"
 export THREADS=19
 export GPUS=1
 
-# StarPU
 nixw nix develop .#starpu --impure --command bash -c '
 set -euo pipefail
 bash scripts/run.sh starpu
 '
 
-# PaRSEC
 nixw nix develop .#parsec --impure --command bash -c '
 set -euo pipefail
 bash scripts/run.sh parsec

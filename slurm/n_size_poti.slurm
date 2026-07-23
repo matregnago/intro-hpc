@@ -5,12 +5,6 @@
 #SBATCH --output=%x_%j.out
 #SBATCH --error=%x_%j.err
 
-# E2b -- GFLOPS vs N na poti (RTX 4070), no tile ideal de E1 (b=500 FP64).
-# THREADS=19. TRACE=0 -- so time,gflops.
-#
-#   sbatch slurm/n_size_poti.slurm
-# Saida: data/n_size_poti_<jobid>/{results.csv,design.csv,runs/.../}
-
 set -euxo pipefail
 
 WORK_DIR="$SCRATCH/intro_hpc"
@@ -38,13 +32,11 @@ export DESIGN_FILE="$RESULTS_DIR/design.csv"
 export THREADS=19
 export GPUS=1
 
-# StarPU
 nixw nix develop .#starpu --impure --command bash -c '
 set -euo pipefail
 bash scripts/run.sh starpu
 '
 
-# PaRSEC
 nixw nix develop .#parsec --impure --command bash -c '
 set -euo pipefail
 bash scripts/run.sh parsec
