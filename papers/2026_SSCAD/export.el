@@ -11,6 +11,6 @@
       org-confirm-babel-evaluate nil
       org-latex-prefer-user-labels t)
 
-(with-current-buffer (find-file-noselect "sbc.org")
+(with-current-buffer (find-file-noselect "SSCAD.org")
   (org-babel-tangle)
   (org-latex-export-to-latex))
