@@ -16,6 +16,7 @@ all: $(NAME).pdf
 	bibtex `basename $^ .tex`
 	pdflatex $^
 	pdflatex $^
+	pdflatex $^
 
 %.html: %.org
 	emacs -batch -l ~/.emacs.d/init.el --eval "(setq enable-local-eval t)" --eval "(setq enable-local-variables t)" \
