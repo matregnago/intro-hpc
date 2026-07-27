@@ -50,27 +50,89 @@
 #+LaTeX: \maketitle
 
 #+begin_resumo
-Runtimes de escalonamento de tarefas dependentes como StarPU e PaRSEC abstraem a complexidade de plataformas heterogêneas, mas adotam estratégias diferentes de escalonamento e gerenciamento de dados. Este trabalho compara o desempenho dos dois runtimes nas fatorações de Cholesky e LU sem pivotamento da biblioteca Chameleon, mantendo fixa a biblioteca de álgebra linear para isolar o efeito do runtime. Este estudo exigiu estender a interface de inserção dinâmica de tarefas do PaRSEC (DTD) e os codelets do Chameleon com suporte a GPU. Os experimentos mostram que nenhum runtime é sistematicamente superior: em máquina com GPU fraca em precisão dupla, o PaRSEC com o escalonador gd vence por tratar a GPU como recurso acessório; já em máquina com GPU forte, o StarPU vence com folga por ocupá-la de forma mais eficiente.
+Runtimes de escalonamento de tarefas dependentes como StarPU e PaRSEC abstraem a
+complexidade de plataformas heterogêneas, mas adotam estratégias diferentes de
+escalonamento e gerenciamento de dados. Este trabalho compara o desempenho dos
+dois runtimes nas fatorações de Cholesky e LU sem pivotamento da biblioteca
+Chameleon, mantendo fixa a biblioteca de álgebra linear para isolar o efeito do
+runtime. Este estudo exigiu estender a interface de inserção dinâmica de tarefas
+do PaRSEC (DTD) e os codelets do Chameleon com suporte a GPU. Os experimentos
+mostram que nenhum runtime é sistematicamente superior: em máquina com GPU fraca
+em precisão dupla, o PaRSEC com o escalonador gd vence por tratar a GPU como
+recurso acessório; já em máquina com GPU forte, o StarPU vence com folga por
+ocupá-la de forma mais eficiente.
 #+end_resumo
 
 ** Introdução
-Nos últimos anos, as arquiteturas de computação de alto desempenho têm se tornado cada vez mais heterogêneas, combinando processadores multicore convencionais com aceleradores especializados, como GPUs, FPGAs e outros aceleradores. Essa diversidade de tecnologias, somada às diferenças entre os modelos de execução e as hierarquias de memória, torna difícil programar essas plataformas de forma eficiente. Nesse modelo, uma aplicação é decomposta em tarefas com dependências de dados explícitas, o que permite escalonar sua execução de forma dinâmica, conforme os recursos disponíveis cite:10025520.
+Nos últimos anos, as arquiteturas de computação de alto desempenho têm se
+tornado cada vez mais heterogêneas, combinando processadores multicore
+convencionais com aceleradores especializados, como GPUs, FPGAs e outros
+aceleradores. Essa diversidade de tecnologias, somada às diferenças entre os
+modelos de execução e as hierarquias de memória, torna difícil programar essas
+plataformas de forma eficiente. Uma das soluções para esse problema é a
+utilização de runtimes que utilizam o modelo Sequential Task Flow (STF). Nesse
+modelo, uma aplicação é decomposta em tarefas com dependências de dados
+explícitas, o que permite escalonar sua execução de forma dinâmica, conforme os
+recursos disponíveis cite:10025520.
 
-Para facilitar o uso desse paradigma, diversos runtimes de escalonamento de tarefas foram criados para mapear as tarefas de uma aplicação para os recursos computacionais disponíveis, de forma transparente ao programador. Esses sistemas decidem quando e onde cada tarefa será executada, gerenciam as transferências de dados necessárias entre as diferentes unidades de processamento e memórias e equilibram a carga de trabalho entre os recursos, tanto em ambientes de memória compartilhada quanto em ambientes distribuídos cite:aguerrebere2018hdr.
+Para facilitar o uso desse paradigma, diversos runtimes de escalonamento de
+tarefas foram criados para mapear as tarefas de uma aplicação para os recursos
+computacionais disponíveis, de maneira transparente ao desenvolvedor. Esses sistemas
+decidem quando e onde cada tarefa será executada, gerenciam as transferências de
+dados necessárias entre as diferentes unidades de processamento e memórias e
+equilibram a carga de trabalho entre os recursos cite:aguerrebere2018hdr.
 
-StarPU cite:starpu é um desses runtimes. Nele, o desenvolvedor pode fornecer diferentes implementações para uma mesma tarefa, uma para CPU e outra para GPU, por exemplo, e deixar que o próprio ambiente de execução selecione automaticamente a implementação mais adequada, considerando o ambiente computacional e a disponibilidade de recursos, buscando otimizar o desempenho. Isso isola o desenvolvedor dos detalhes da arquitetura de destino, permitindo criar aplicações mais simples e fáceis de escalar.
+Dentre os runtimes de escalonamento de tarefas existentes, este trabalho
+compara especificamente o StarPU e o PaRSEC por serem dois runtimes utilizados
+pelo Chameleon como backend para execução das tarefas e por estarem, entre os
+runtimes suportados, entre os mais maduros e amplamente utilizados para
+algoritmos de álgebra linear densa em plataformas heterogêneas.
 
-PaRSEC cite:bosilca2011dague é outro desses runtimes, com foco em ambientes de memória distribuída compostos por múltiplos nós multicore, possivelmente equipados com aceleradores. Diferentemente de abordagens que constroem o DAG completo da aplicação em memória antes de escaloná-lo, o PaRSEC representa as dependências entre tarefas de forma compacta e simbólica, o que lhe permite escalar para milhões de tarefas com baixo overhead e favorecer, de forma totalmente distribuída, tanto o balanceamento de carga quanto a sobreposição entre computação e comunicação.
+StarPU cite:starpu é um desses runtimes. Nele, o desenvolvedor pode fornecer
+diferentes implementações para uma mesma tarefa, uma para CPU e outra para GPU,
+por exemplo, e deixar que o próprio ambiente de execução selecione
+automaticamente a implementação mais adequada, considerando o ambiente
+computacional e a disponibilidade de recursos, buscando otimizar o desempenho.
+Isso isola o desenvolvedor dos detalhes da arquitetura de destino, permitindo
+criar aplicações mais simples e fáceis de escalar.
 
-Embora StarPU e PaRSEC compartilhem o mesmo objetivo de abstrair o escalonamento de tarefas em plataformas heterogêneas, cada um adota estratégias diferentes de escalonamento e de gerenciamento de comunicações, o que pode impactar bastante o desempenho de algoritmos de álgebra linear densa.
+PaRSEC cite:bosilca2011dague é outro desses runtimes, com foco em ambientes de
+memória distribuída compostos por múltiplos nós multicore, possivelmente
+equipados com aceleradores. Diferentemente de runtimes baseados no modelo STF,
+como o StarPU, que instanciam explicitamente um nó de DAG na memória para cada
+tarefa submetida, o PaRSEC representa as dependências entre tarefas de forma
+compacta e simbólica, o que lhe permite escalar para milhões de tarefas com
+baixo overhead de memória. O escalonamento é totalmente distribuído -- cada nó
+executa sua própria instância do escalonador, sem coordenação central -- o que
+favorece a sobreposição entre computação e comunicação.
 
-Para conduzir essa avaliação, este trabalho utiliza o Chameleon cite:AGULLO2012473, uma biblioteca de álgebra linear densa que implementa fatorações como LU, Cholesky e QR por meio de algoritmos por blocos cite:DBLP, delegando o escalonamento de suas tarefas a um runtime externo, como o StarPU e o PaRSEC.
+Embora StarPU e PaRSEC compartilhem o mesmo objetivo de abstrair o escalonamento
+de tarefas em plataformas heterogêneas, cada um adota estratégias diferentes de
+escalonamento e de gerenciamento de comunicações, o que pode impactar bastante o
+desempenho de algoritmos de álgebra linear densa.
 
-Os experimentos foram executados em duas partições do cluster PCAD, no INF/UFRGS: (i) tupi, equipada com um processador Intel Core i9-14900KF (24 núcleos físicos, 3,2 GHz) e uma GPU NVIDIA GeForce RTX 4090 (24 GB); (ii) poti, equipada com um processador Intel Core i7-14700KF (20 núcleos físicos, 3,4 GHz) e uma GPU NVIDIA GeForce RTX 4070 (12 GB).
+Este trabalho utiliza o Chameleon cite:AGULLO2012473, uma biblioteca de álgebra
+linear densa que implementa fatorações como LU, Cholesky e QR por meio de
+algoritmos por blocos cite:DBLP, delegando o escalonamento de suas tarefas a um
+runtime externo, como o StarPU e o PaRSEC. Os experimentos foram executados em
+duas partições do cluster PCAD, no INF/UFRGS: (i) tupi, equipada com um
+processador Intel Core i9-14900KF (24 núcleos físicos, 3,2 GHz) e uma GPU NVIDIA
+GeForce RTX 4090 (24 GB); (ii) poti, equipada com um processador Intel Core
+i7-14700KF (20 núcleos físicos, 3,4 GHz) e uma GPU NVIDIA GeForce RTX 4070 (12
+GB).
 
-Os resultados dos experimentos mostraram que nenhum dos dois runtimes é sistematicamente superior ao outro: na partição poti, cuja GPU é fraca em precisão dupla, o PaRSEC com o escalonador =gd= superou o StarPU por usar a GPU como recurso acessório e não impor custo sobre os workers de CPU; na partição tupi, cuja GPU é forte, o StarPU venceu com folga graças a maior ocupação da GPU.
+Os resultados dos experimentos mostraram que nenhum dos dois runtimes é
+sistematicamente superior ao outro: na partição poti, cuja GPU é fraca em
+precisão dupla, o PaRSEC com o escalonador =gd= superou o StarPU por usar a GPU
+como recurso acessório e não impor custo sobre os workers de CPU; na partição
+tupi, cuja GPU é forte, o StarPU venceu com folga graças a maior ocupação da
+GPU.
 
-O restante deste trabalho está organizado da seguinte forma. A Seção 2 apresenta os trabalhos relacionados. A Seção 3 descreve os conceitos utilizados neste trabalho, enquanto a Seção 4 apresenta as soluções desenvolvidas. A Seção 5 detalha nossa metodologia experimental, seguida pelos resultados experimentais na Seção 6. Por fim, a Seção 7 conclui este trabalho.
+O restante deste trabalho está organizado da seguinte forma. A Seção 2 apresenta
+os trabalhos relacionados. A Seção 3 descreve os conceitos utilizados neste
+trabalho, enquanto a Seção 4 apresenta as soluções desenvolvidas. A Seção 5
+detalha nossa metodologia experimental, seguida pelos resultados experimentais
+na Seção 6. Por fim, a Seção 7 conclui este trabalho.
 
 ** Trabalhos Relacionados
 
@@ -83,7 +145,6 @@ Lisito et al. cite:11078555 avaliam a fatoração LU com pivotamento parcial, co
 Agullo et al. cite:7284288 comparam o desempenho da fatoração de Cholesky sobre o StarPU com limites teóricos de desempenho em plataformas heterogêneas. O trabalho, contudo, considera apenas o StarPU, sem comparação direta com outro runtime de escalonamento de tarefas.
 
 Não foi encontrado nenhum trabalho anterior que compara StarPU e PaRSEC utilizando a mesma biblioteca de álgebra linear densa em um ambiente heterogêneo. Esse é o diferencial deste trabalho, no qual foi fixado o Chameleon como biblioteca única e variado apenas o runtime e o escalonador utilizado.
-
 
 ** Fundamentação Teórica
 Nesta seção, apresentamos uma visão geral dos runtimes de escalonamento de tarefas, StarPU e PaRSEC, e da biblioteca de álgebra linear densa Chameleon utilizados neste trabalho.
