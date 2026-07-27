@@ -82,9 +82,9 @@ decidem quando e onde cada tarefa será executada, gerenciam as transferências 
 dados necessárias entre as diferentes unidades de processamento e memórias e
 equilibram a carga de trabalho entre os recursos cite:aguerrebere2018hdr.
 
-Dentre os runtimes de escalonamento de tarefas existentes, este trabalho
-compara especificamente o StarPU e o PaRSEC por serem dois runtimes utilizados
-pelo Chameleon como backend para execução das tarefas e por estarem, entre os
+Dentre os runtimes de escalonamento de tarefas existentes, este trabalho compara
+especificamente o StarPU e o PaRSEC por serem dois runtimes utilizados pelo
+Chameleon como backend para execução das tarefas e por estarem, entre os
 runtimes suportados, entre os mais maduros e amplamente utilizados para
 algoritmos de álgebra linear densa em plataformas heterogêneas.
 
@@ -136,29 +136,103 @@ na Seção 6. Por fim, a Seção 7 conclui este trabalho.
 
 ** Trabalhos Relacionados
 
-Diversos trabalhos avaliam runtimes task-based aplicados a algoritmos de álgebra linear densa, mas cada um deles isola apenas parte do problema, limitando a comparação a um único runtime ou comparando runtimes distintos por meio de bibliotecas de álgebra linear diferentes.
+Diversos trabalhos avaliam runtimes task-based aplicados a algoritmos de álgebra
+linear densa, mas cada um deles isola apenas parte do problema, limitando a
+comparação a um único runtime ou comparando runtimes distintos por meio de
+bibliotecas de álgebra linear diferentes.
 
-Hoque et al. cite:10.1145/3148226.3148233 comparam os dois paradigmas de programação oferecidos pelo PaRSEC: o Parameterized Task Graph (PTG) e o Dynamic Task Discovery (DTD) utilizando o Chameleon em conjunto com PaRSEC, StarPU e QUARK. A avaliação, no entanto, é restrita a execuções somente em CPU, sem considerar aceleradores.
+Hoque et al. cite:10.1145/3148226.3148233 comparam os dois paradigmas de
+programação oferecidos pelo PaRSEC: o Parameterized Task Graph (PTG) e o Dynamic
+Task Discovery (DTD) utilizando o Chameleon em conjunto com PaRSEC, StarPU e
+QUARK. A avaliação, no entanto, é restrita a execuções somente em CPU, sem
+considerar aceleradores.
 
-Lisito et al. cite:11078555 avaliam a fatoração LU com pivotamento parcial, comparando o StarPU (com o Chameleon) e o PaRSEC (com o DPLASMA). Como cada runtime é avaliado em conjunto com uma biblioteca de álgebra linear diferente, eventuais diferenças de desempenho observadas podem ser atribuídas tanto ao runtime quanto à implementação específica de cada biblioteca.
+Lisito et al. cite:11078555 avaliam a fatoração LU com pivotamento parcial,
+comparando o StarPU (com o Chameleon) e o PaRSEC (com o DPLASMA). Como cada
+runtime é avaliado em conjunto com uma biblioteca de álgebra linear diferente,
+eventuais diferenças de desempenho observadas podem ser atribuídas tanto ao
+runtime quanto à implementação específica de cada biblioteca.
 
-Agullo et al. cite:7284288 comparam o desempenho da fatoração de Cholesky sobre o StarPU com limites teóricos de desempenho em plataformas heterogêneas. O trabalho, contudo, considera apenas o StarPU, sem comparação direta com outro runtime de escalonamento de tarefas.
+Agullo et al. cite:7284288 comparam o desempenho da fatoração de Cholesky sobre
+o StarPU com limites teóricos de desempenho em plataformas heterogêneas. O
+trabalho, contudo, considera apenas o StarPU, sem comparação direta com outro
+runtime de escalonamento de tarefas.
 
-Não foi encontrado nenhum trabalho anterior que compara StarPU e PaRSEC utilizando a mesma biblioteca de álgebra linear densa em um ambiente heterogêneo. Esse é o diferencial deste trabalho, no qual foi fixado o Chameleon como biblioteca única e variado apenas o runtime e o escalonador utilizado.
+Não foi encontrado nenhum trabalho anterior que compara StarPU e PaRSEC
+utilizando a mesma biblioteca de álgebra linear densa em um ambiente
+heterogêneo. Esse é o diferencial deste trabalho, no qual foi fixado o Chameleon
+como biblioteca única e variado apenas o runtime e o escalonador utilizado.
 
 ** Fundamentação Teórica
-Nesta seção, apresentamos uma visão geral dos runtimes de escalonamento de tarefas, StarPU e PaRSEC, e da biblioteca de álgebra linear densa Chameleon utilizados neste trabalho.
+Nesta seção, apresentamos uma visão geral dos runtimes de escalonamento de
+tarefas, StarPU e PaRSEC, e da biblioteca de álgebra linear densa Chameleon
+utilizados neste trabalho.
 
 *** StarPU
-StarPU cite:starpu é um framework escrito em C para programação orientada a tarefas em plataformas híbridas compostas por CPUs e GPUs. As tarefas de uma aplicação StarPU são definidas por meio de codelets, estruturas que agrupam uma ou mais implementações de uma mesma operação, além da forma como cada um de seus parâmetros é acessado. A partir da ordem de submissão das tarefas e dos modos de acesso declarados para cada dado, o StarPU constrói implicitamente um grafo acíclico dirigido (DAG) de dependências, sem que o programador precise expressá-lo manualmente. Em tempo de execução, o runtime escolhe qual das implementações disponíveis será utilizada para cada tarefa, considerando a disponibilidade dos recursos, a distribuição de carga entre os workers e o custo das cópias de dados envolvidas. O gerenciamento de memória nos aceleradores também é responsabilidade do StarPU, que realiza alocação e liberação de buffers na GPU, cópias entre a memória do host e do dispositivo, e a sobreposição dessas transferências com a computação por meio de prefetching.
+StarPU cite:starpu é um framework escrito em C para programação orientada a
+tarefas em plataformas híbridas compostas por CPUs e GPUs, com suporte também a
+ambientes de memória distribuída por meio da extensão StarPU-MPI. As tarefas de
+uma aplicação StarPU são definidas por meio de codelets, estruturas que agrupam
+uma ou mais implementações de uma mesma operação, além da forma como cada um de
+seus parâmetros é acessado. A partir da ordem de submissão das tarefas e dos
+modos de acesso declarados para cada dado, o StarPU desenrola implicitamente,
+tarefa a tarefa, o grafo acíclico dirigido (DAG) completo de dependências, sem
+que o programador precise expressá-lo manualmente. Em tempo de execução, o
+runtime escolhe qual das implementações disponíveis será utilizada para cada
+tarefa, considerando a disponibilidade dos recursos, a distribuição de carga
+entre os workers e o custo das cópias de dados envolvidas. O gerenciamento de
+memória nos aceleradores também é responsabilidade do StarPU, que realiza
+alocação e liberação de buffers na GPU, cópias entre a memória do host e do
+dispositivo, e a sobreposição dessas transferências com a computação por meio de
+prefetching.
 
 *** PaRSEC
-PaRSEC cite:bosilca2011dague é um framework para escalonamento de tarefas voltado a ambientes de memória distribuída compostos por múltiplos nós multicore. Diferentemente de runtimes que desenrolam o DAG completo da aplicação em memória antes de escaloná-lo, o PaRSEC representa o grafo de dependências de forma compacta e simbólica, por meio de um formato conhecido como Parameterized Task Graph (PTG), também chamado de Job Data Flow (JDF). O escalonamento é totalmente distribuído, cada nó executa sua própria instância do escalonador, que utiliza filas locais por thread e mecanismos de furto de trabalho sensíveis à hierarquia NUMA para favorecer o reaproveitamento de cache. As comunicações entre nós são implícitas, inferidas diretamente das dependências de dados do grafo, e são tratadas de forma assíncrona por uma thread dedicada, permitindo a sobreposição entre computação e comunicação. Assim como o StarPU, o PaRSEC também oferece suporte a aceleradores por meio de múltiplas implementações para uma mesma tarefa, permitindo que o escalonador decida em tempo de execução em qual unidade.
+PaRSEC cite:bosilca2011dague é um framework para escalonamento de tarefas
+voltado a ambientes de memória distribuída compostos por múltiplos nós
+multicore. Diferentemente de runtimes STF como o StarPU, que desenrolam
+explicitamente, tarefa a tarefa, um DAG completo de dependências, o PaRSEC
+representa o grafo de dependências de forma compacta e simbólica, por meio de um
+formato conhecido como Parameterized Task Graph (PTG), também chamado de Job
+Data Flow (JDF). O escalonamento é totalmente distribuído, cada nó executa sua
+própria instância do escalonador, que utiliza filas locais por thread e
+mecanismos de furto de trabalho sensíveis à hierarquia NUMA para favorecer o
+reaproveitamento de cache. Assim como o StarPU sobrepõe transferências e
+computação por meio de prefetching, o PaRSEC sobrepõe computação e comunicação
+entre nós: as comunicações são implícitas, inferidas diretamente das
+dependências de dados do grafo, e tratadas de forma assíncrona por uma thread
+dedicada. Assim como o StarPU, o PaRSEC também oferece suporte a aceleradores
+por meio de múltiplas implementações para uma mesma tarefa, permitindo que o
+escalonador decida em tempo de execução em qual unidade.
 
 *** Chameleon
-Chameleon cite:AGULLO2012473 é uma biblioteca escrita em C que fornece rotinas para a resolução de sistemas lineares gerais densos, sistemas simétricos positivos definidos e problemas de mínimos quadrados lineares, por meio das fatorações LU, Cholesky, QR e LQ. Assim como as bibliotecas PLASMA e MAGMA, o Chameleon segue a abordagem de algoritmos por blocos cite:DBLP, em que cada fatoração é decomposta em uma sequência de tarefas de granularidade fina que operam sobre submatrizes quadradas, reduzindo a necessidade de sincronizações globais e expondo um grau de paralelismo bem maior do que o obtido pelas versões tradicionais orientadas a blocos de linha/coluna, como as do LAPACK e do ScaLAPACK. A fatoração de Cholesky por tiles, por exemplo, é expressa como uma sequência de chamadas às rotinas POTRF, TRSM, SYRK e GEMM, cada uma correspondendo a uma tarefa cujas dependências de dados definem um DAG. Em vez de escalonar essas tarefas de forma estática, o Chameleon delega essa responsabilidade a um runtime de escalonamento de tarefas, como o StarPU, o PaRSEC ou o OpenMP, enquanto a implementação interna de cada tarefa reutiliza rotinas clássicas de BLAS e LAPACK. Essa separação entre a descrição do algoritmo, em termos de tarefas e dependências, e sua execução propriamente dita é o que permite ao Chameleon explorar arquiteturas heterogêneas compostas por CPUs e GPUs sem que o algoritmo precise ser reescrito para cada plataforma. Neste trabalho, o Chameleon é utilizado em conjunto com os runtimes StarPU e PaRSEC para executar as fatorações Cholesky e LU sem pivotamento em um nó heterogêneo por vez, nas partições tupi e poti do cluster PCAD.
+Chameleon cite:AGULLO2012473 é uma biblioteca escrita em C que fornece rotinas
+para a resolução de sistemas lineares gerais densos, sistemas simétricos
+positivos definidos e problemas de mínimos quadrados lineares, por meio das
+fatorações LU, Cholesky, QR e LQ. Assim como as bibliotecas PLASMA e MAGMA, o
+Chameleon segue a abordagem de algoritmos por blocos cite:DBLP, em que cada
+fatoração é decomposta em uma sequência de tarefas de granularidade fina que
+operam sobre submatrizes quadradas, reduzindo a necessidade de sincronizações
+globais e expondo um grau de paralelismo bem maior do que o obtido pelas versões
+tradicionais orientadas a blocos de linha/coluna, como as do LAPACK e do
+ScaLAPACK. A fatoração de Cholesky por blocos, por exemplo, é expressa como uma
+sequência de chamadas às rotinas POTRF, TRSM, SYRK e GEMM, cada uma
+correspondendo a uma tarefa cujas dependências de dados definem um DAG. Em vez
+de escalonar essas tarefas de forma estática, o Chameleon delega essa
+responsabilidade a um runtime de escalonamento de tarefas, como o StarPU, o
+PaRSEC ou o OpenMP, enquanto a implementação interna de cada tarefa reutiliza
+rotinas clássicas de alto desempenho. Essa separação entre a descrição do
+algoritmo, em termos de tarefas e dependências, e sua execução propriamente dita
+é o que permite ao Chameleon explorar arquiteturas heterogêneas compostas por
+CPUs e GPUs sem que o algoritmo precise ser reescrito para cada plataforma.
 
-Ao longo deste trabalho, identificamos que a comparação entre StarPU e PaRSEC não era diretamente possível a partir das versões atuais disponíveis do Chameleon e do PaRSEC, pois, enquanto os codelets do Chameleon para o StarPU já possuem suporte maduro a GPU, a interface de inserção dinâmica de tarefas do PaRSEC (DTD) não suportava a execução de tarefas em GPU, e os codelets do Chameleon para o PaRSEC estavam limitados à CPU. A seção a seguir descreve as principais modificações que desenvolvemos no PaRSEC e no Chameleon para permitir essa comparação.
+Ao longo deste trabalho, identificamos que a comparação entre StarPU e PaRSEC
+não era diretamente possível a partir das versões atuais disponíveis do
+Chameleon e do PaRSEC, pois, enquanto os codelets do Chameleon para o StarPU já
+possuem suporte maduro a GPU, a interface de inserção dinâmica de tarefas do
+PaRSEC (DTD) não suportava a execução de tarefas em GPU, e os codelets do
+Chameleon para o PaRSEC estavam limitados à CPU. A seção a seguir descreve as
+principais modificações que desenvolvemos no PaRSEC e no Chameleon para permitir
+essa comparação.
 
 ** Soluções desenvolvidas
 A interface DTD do PaRSEC permitia associar a cada tarefa apenas uma implementação em CPU, diferentemente da interface estática PTG, que já suporta múltiplas implementações por tarefa. Adicionamos ao PaRSEC uma nova função, que permite registrar, além da implementação em CPU, uma implementação em GPU para a mesma tarefa. Em tempo de execução, o escalonador passa a tentar primeiro a implementação em GPU, delegando a submissão ao mesmo mecanismo de escalonamento de GPU já utilizado pelo backend PTG, usando a implementação em CPU apenas quando nenhum dispositivo está disponível.
