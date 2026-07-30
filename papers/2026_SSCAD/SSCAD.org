@@ -42,7 +42,6 @@
 \address{
    Institute of Informatics, Federal University of Rio Grande do Sul (UFRGS)\\
    Caixa Postal 15.064 -- 91.501-970 -- Porto Alegre -- RS -- Brazil
-   Adress --  Brazil
      \email{\{matregnago,navaux,schnorr\}@inf.ufrgs.br}
 }
 #+END_EXPORT
@@ -58,7 +57,7 @@ Chameleon, mantendo fixa a biblioteca de álgebra linear para isolar o efeito do
 runtime. Este estudo exigiu estender a interface de inserção dinâmica de tarefas
 do PaRSEC (DTD) e os codelets do Chameleon com suporte a GPU. Os experimentos
 mostram que nenhum runtime é sistematicamente superior: em máquina com GPU fraca
-em precisão dupla, o PaRSEC com o escalonador gd vence por tratar a GPU como
+em precisão dupla, o =parsec:gd= vence por tratar a GPU como
 recurso acessório; já em máquina com GPU forte, o StarPU vence com folga por
 ocupá-la de forma mais eficiente.
 #+end_resumo
@@ -113,8 +112,8 @@ desempenho de algoritmos de álgebra linear densa.
 
 Este trabalho utiliza o Chameleon cite:AGULLO2012473, uma biblioteca de álgebra
 linear densa que implementa fatorações como LU, Cholesky e QR por meio de
-algoritmos por blocos cite:DBLP, delegando o escalonamento de suas tarefas a um
-runtime externo, como o StarPU e o PaRSEC. Os experimentos foram executados em
+algoritmos por blocos cite:DBLP, delegando o escalonamento de suas tarefas a
+runtimes externos, o StarPU e o PaRSEC. Os experimentos foram executados em
 duas partições do cluster PCAD, no INF/UFRGS: (i) tupi, equipada com um
 processador Intel Core i9-14900KF (24 núcleos físicos, 3,2 GHz) e uma GPU NVIDIA
 GeForce RTX 4090 (24 GB); (ii) poti, equipada com um processador Intel Core
@@ -123,7 +122,7 @@ GB).
 
 Os resultados dos experimentos mostraram que nenhum dos dois runtimes é
 sistematicamente superior ao outro: na partição poti, cuja GPU é fraca em
-precisão dupla, o PaRSEC com o escalonador =gd= superou o StarPU por usar a GPU
+precisão dupla, o =parsec:gd= superou o StarPU por usar a GPU
 como recurso acessório e não impor custo sobre os workers de CPU; na partição
 tupi, cuja GPU é forte, o StarPU venceu com folga graças a maior ocupação da
 GPU.
@@ -195,7 +194,7 @@ representa o grafo de dependências de forma compacta e simbólica, por meio de 
 formato conhecido como Parameterized Task Graph (PTG), também chamado de Job
 Data Flow (JDF). O escalonamento é totalmente distribuído, cada nó executa sua
 própria instância do escalonador, que utiliza filas locais por thread e
-mecanismos de furto de trabalho sensíveis à hierarquia NUMA para favorecer o
+mecanismos de roubo de tarefas sensíveis à hierarquia NUMA para favorecer o
 reaproveitamento de cache. Assim como o StarPU sobrepõe transferências e
 computação por meio de prefetching, o PaRSEC sobrepõe computação e comunicação
 entre nós: as comunicações são implícitas, inferidas diretamente das
@@ -286,8 +285,8 @@ utiliza três tipos de tarefa: GETRF, TRSM e GEMM. A tarefa GETRF, que fatora o
 bloco da diagonal, possui apenas implementação em CPU, enquanto TRSM e GEMM
 possuem implementações em CPU e em GPU.
 
-*** Ambiente de Execução
-Utilizamos duas partições do cluster PCAD, no INF/UFRGS, nos experimentos: tupi e poti. A Tabela [[tab:hw]] especifica o hardware de cada partição.
+*** Ambiente Experimental
+A Tabela [[tab:hw]] especifica o hardware das duas partições do cluster PCAD, no INF/UFRGS, utilizadas nos experimentos: tupi e poti.
 
 #+CAPTION: Especificação de hardware das partições utilizadas.
 #+NAME: tab:hw
@@ -328,11 +327,12 @@ ideal para cada máquina, por meio de uma varredura sistemática de configuraç�
 de bloco em precisão dupla. Fixamos o tamanho da matriz de entrada em $N=40.000$
 com precisão dupla e variamos o tamanho do bloco dentro de um conjunto de
 valores. Cruzamos essas configurações com as duas fatorações (=potrf=,
-=getrf_nopiv=) e quatro combinações de runtime e escalonador: StarPU com =dmda=
-e =dmdas=; PaRSEC com =lfq= e =gd=. Além disso, executamos o mesmo desenho
+=getrf_nopiv=) e quatro combinações de runtime e escalonador. Ao longo do texto
+e das figuras, cada combinação é identificada na forma =runtime:escalonador=:
+=starpu:dmda=, =starpu:dmdas=, =parsec:lfq= e =parsec:gd=. Além disso, executamos o mesmo desenho
 experimental em ambas as partições do PCAD, tupi e poti, variando apenas o
 número de threads de acordo com o número de núcleos físicos disponíveis em cada
-uma. A ordem de execução foi aleatorizada, com cinco repetições por
+uma. A ordem de execução foi aleatória, com cinco repetições por
 configuração. O pico de GFLOPS observado em cada máquina, em precisão dupla,
 determina o tamanho de bloco utilizado no segundo e no terceiro projetos
 experimentais.
@@ -351,7 +351,7 @@ Como esse valor de bloco determina a granularidade computacional disponível par
 cada GPU, o intervalo de valores de N explorado também foi definido por máquina:
 dez níveis entre 5.000 e 60.000 na tupi, e seis níveis entre 5.000 e 60.000 na
 poti. Para cada uma das duas fatorações, executamos todas as combinações desse
-desenho fatorial em ordem aleatorizada, com três repetições na tupi e cinco na
+desenho fatorial em ordem aleatória, com três repetições na tupi e cinco na
 poti.
 # TODO(prof): justificar o intervalo e o número de níveis de N testados em cada
 # máquina. TODO(prof): justificar o número de repetições em cada máquina.
@@ -359,7 +359,7 @@ poti.
 Por fim, o terceiro projeto experimental tem como objetivo explicar, por meio
 dos rastros de execução do StarPU e do PaRSEC, por que o runtime que mantém um
 modelo de desempenho aprendido em tempo de execução (o StarPU, com os
-escalonadores =dmda= e =dmdas=) não vence sistematicamente o PaRSEC, que decide
+=starpu:dmda= e =starpu:dmdas=) não vence sistematicamente o PaRSEC, que decide
 o escalonamento de GPU de forma estática -- expectativa que o segundo projeto
 experimental mostrou não se confirmar em ambas as máquinas. Empregamos os
 mecanismos de coleta de rastros de execução do StarPU e do PaRSEC, por meio de
@@ -399,7 +399,7 @@ Para entender a inversão observada na seção anterior, analisamos em detalhe o
 
 O ponto de partida é a diferença de capacidade das duas GPUs em precisão dupla. A RTX 4070 da poti tem pico teórico de apenas 458 GFLOPS em FP64, um valor abaixo da capacidade agregada dos 20 núcleos de CPU do nó, enquanto a RTX 4090 da tupi tem pico de aproximadamente 1,3 TFLOPS, muito acima da capacidade da CPU da tupi.
 
-A Figura [[fig:gpu-split]] mostra o efeito dessa divisão sobre o desempenho total na poti, decompondo o GFLOPS entregue por cada classe de recurso. Na poti, a melhor estratégia é usar a GPU como recurso à parte, e é exatamente isso que o =gd= faz, porque sua fila global simples não introduz custo estrutural sobre os workers de CPU.
+A Figura [[fig:gpu-split]] mostra o efeito dessa divisão sobre o desempenho total na poti, decompondo o GFLOPS entregue por cada classe de recurso. Na poti, a melhor estratégia é usar a GPU como recurso à parte, e é exatamente isso que o =parsec:gd= faz, porque sua fila global simples não introduz custo estrutural sobre os workers de CPU.
 
 #+CAPTION: GFLOPS entregues por classe de recurso (CPU/GPU) na poti, por algoritmo e configuração.
 #+NAME: fig:gpu-split
@@ -417,7 +417,7 @@ A Figura [[fig:st-compare]] mostra os painéis espaço-tempo das quatro configur
 #+ATTR_LATEX: :width \linewidth :placement [h] :center t
 [[file:../../plots/final/gpu_traces_poti_20260701_131857/st_compare_dpotrf.pdf]]
 
-A Figura [[fig:kiteration]] mostra a progressão da fatoração ao longo de suas iterações em função do tempo. O =dmda= progride de forma quase linear. O =dmdas= mostra uma dispersão, o que significa que sua política de priorização pelo caminho crítico adianta a execução de tarefas de iterações futuras. Já o =gd= e o =lfq= progridem de forma irregular, por conta da ausência de um modelo de desempenho guiando a ordem de despacho das tarefas para a GPU no PaRSEC.
+A Figura [[fig:kiteration]] mostra a progressão da fatoração ao longo de suas iterações em função do tempo. O =starpu:dmda= progride de forma quase linear. O =starpu:dmdas= mostra uma dispersão, o que significa que sua política de priorização pelo caminho crítico adianta a execução de tarefas de iterações futuras. Já o =parsec:gd= e o =parsec:lfq= progridem de forma irregular, por conta da ausência de um modelo de desempenho guiando a ordem de despacho das tarefas para a GPU no PaRSEC.
 
 #+CAPTION: Progressão das iterações da fatoração de Cholesky ao longo do tempo, na poti.
 #+NAME: fig:kiteration
@@ -439,7 +439,7 @@ Na poti, o StarPU transfere 36,4GB H2D contra apenas 6,0GB do PaRSEC. Isso acont
 
 Este trabalho comparou o desempenho dos runtimes StarPU e PaRSEC nas fatorações de Cholesky e LU sem pivotamento da biblioteca Chameleon, mantendo fixa a biblioteca de álgebra linear para isolar o efeito do runtime sobre o desempenho. Para viabilizar essa comparação, estendemos a interface DTD do PaRSEC com suporte à execução de tarefas em GPU e implementamos os codelets de GPU correspondentes no Chameleon, capacidades até então restritas ao caminho do StarPU.
 
-Os resultados mostram que o runtime vencedor depende do equilíbrio entre a capacidade de CPU e de GPU de cada máquina. Na poti, cuja GPU é fraca em precisão dupla, o PaRSEC com o escalonador =gd= venceu por tratar a GPU como recurso adicional, sem impor custo estrutural sobre os workers de CPU. Na tupi, cuja GPU é forte, o StarPU venceu com folga por ocupá-la de forma mais eficiente, apesar do custo adicional que suas threads dedicadas à gestão da GPU impõem sobre a CPU. A análise dos rastros de execução confirmou que essa inversão ocorre por conta das diferenças entre os dois runtimes, onde o StarPU obtém maior eficiência por tarefa de GPU graças ao prefetching e ao pipelining entre host e device, mas paga por isso reservando workers de CPU à gestão da GPU. Por outro lado, o PaRSEC gerencia a GPU de forma oportunista e mais barata para a CPU, mas devolve ao host todo bloco modificado por uma tarefa de GPU, gerando um volume de transferências D2H muito maior.
+Os resultados mostram que o runtime vencedor depende do equilíbrio entre a capacidade de CPU e de GPU de cada máquina. Na poti, cuja GPU é fraca em precisão dupla, o =parsec:gd= venceu por tratar a GPU como recurso adicional, sem impor custo estrutural sobre os workers de CPU. Na tupi, cuja GPU é forte, o StarPU venceu com folga por ocupá-la de forma mais eficiente, apesar do custo adicional que suas threads dedicadas à gestão da GPU impõem sobre a CPU. A análise dos rastros de execução confirmou que essa inversão ocorre por conta das diferenças entre os dois runtimes, onde o StarPU obtém maior eficiência por tarefa de GPU graças ao prefetching e ao pipelining entre host e device, mas paga por isso reservando workers de CPU à gestão da GPU. Por outro lado, o PaRSEC gerencia a GPU de forma oportunista e mais barata para a CPU, mas devolve ao host todo bloco modificado por uma tarefa de GPU, gerando um volume de transferências D2H muito maior.
 
 ** Acknowledgments
 :PROPERTIES:

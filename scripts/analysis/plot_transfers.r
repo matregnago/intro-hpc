@@ -18,6 +18,7 @@ this_file <- sub("^--file=", "",
                  grep("^--file=", commandArgs(FALSE), value = TRUE))
 script_dir <- if (length(this_file)) dirname(normalizePath(this_file)) else "."
 source(file.path(script_dir, "trace_common.r"))
+source(file.path(script_dir, "plot_style.r"))
 
 args     <- commandArgs(trailingOnly = TRUE)
 base_dir <- if (length(args) >= 1) args[[1]] else
@@ -85,7 +86,7 @@ rows <- lapply(seq_len(nrow(runs)), function(i) {
   st <- if (r$runtime == "starpu") parse_starpu(lines) else parse_parsec(lines)
   if (is.null(st)) { message("  sem stats em ", r$dir); return(NULL) }
   bind_cols(tibble(algo = r$algo, runtime = r$runtime,
-                   cfg = paste0(r$runtime, ":", r$scheduler)), st)
+                   cfg = cfg_label(r$runtime, r$scheduler)), st)
 })
 res <- bind_rows(rows)
 if (nrow(res) == 0) stop("nenhum log com contadores de transferencia em ", base_dir,
@@ -105,15 +106,18 @@ one_algo <- n_distinct(long$algo) == 1
 long <- long %>%
   mutate(panel = if (one_algo && !is.na(machine)) machine else .data$algo)
 
-p <- ggplot(long, aes(.data$cfg, .data$mb, fill = .data$dir)) +
+# Sem titulo (vai para o caption). Barras coloridas por direcao com o Set1 do
+# ColorBrewer; as configs no eixo X seguem a ordem canonica.
+p <- ggplot(long, aes(cfg_factor(.data$cfg), .data$mb, fill = .data$dir)) +
   geom_col(position = position_dodge(width = 0.7), width = 0.65, alpha = 0.9) +
   geom_text(aes(label = sprintf("%.1f", .data$mb / 1000)),
-            position = position_dodge(width = 0.7), vjust = -0.4, size = 3) +
+            position = position_dodge(width = 0.7), vjust = -0.4,
+            size = BASE_SIZE / 4) +
   facet_wrap(~panel) +
   scale_y_continuous(labels = function(x) sprintf("%.0f", x / 1000)) +
-  labs(title = "Trafego PCIe H2D/D2H por runtime:scheduler",
-       x = NULL, y = "volume transferido (GB)", fill = "direcao") +
-  theme_bw(base_size = 12) +
-  theme(axis.text.x = element_text(angle = 20, hjust = 1),
-        legend.position = "bottom")
+  scale_fill_brewer(palette = "Set1") +
+  expand_y_zero() +
+  labs(x = NULL, y = "Volume transferido (GB)") +
+  theme_sscad(legend = "bottom") +
+  theme(axis.text.x = element_text(angle = 20, hjust = 1))
 save_plot(p, "transfers_d2h", width = 11, height = 6)

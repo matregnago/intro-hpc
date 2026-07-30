@@ -20,6 +20,7 @@ this_file <- sub("^--file=", "",
                  grep("^--file=", commandArgs(FALSE), value = TRUE))
 script_dir <- if (length(this_file)) dirname(normalizePath(this_file)) else "."
 source(file.path(script_dir, "trace_common.r"))
+source(file.path(script_dir, "plot_style.r"))
 
 # Colors table in panel_kiteration's expected shape (Value character, no Use),
 # with the shared KERNEL_COLORS hues + hue_pal fallback.
@@ -60,7 +61,7 @@ build_panel <- function(run_dir) {
     Application = app,
     Colors      = build_colors(app$Value),
     config = list(
-      base_size = 22, expand = 0.05,
+      base_size = BASE_SIZE, expand = 0.05,
       limits = list(start = NA, end = NA),
       # subite/pernode must be explicit FALSE: panel_kiteration errors on NULL.
       kiteration = list(subite = FALSE, pernode = FALSE,
@@ -95,10 +96,10 @@ if (length(run_dirs) == 0)
 panels <- Filter(Negate(is.null), lapply(run_dirs, build_panel))
 if (length(panels) == 0) stop("no runs with usable k-iteration data")
 
-# Fixed row order, matching plot_compare_st.r's grid.
-CONFIG_ORDER <- c("starpu:dmda", "starpu:dmdas", "parsec:lfq", "parsec:gd")
+# Ordem das linhas: CONFIG_ORDER vem de plot_style.r, a mesma usada nas cores e
+# no grid do plot_compare_st.r.
 config_rank <- function(p) {
-  m <- match(paste0(p$runtime, ":", p$scheduler), CONFIG_ORDER)
+  m <- match(cfg_label(p$runtime, p$scheduler), CONFIG_ORDER)
   if (is.na(m)) length(CONFIG_ORDER) + 1L else m
 }
 stem_of <- function(p) paste0("kiteration_", p$runtime, "_", p$scheduler, "_", p$algo)

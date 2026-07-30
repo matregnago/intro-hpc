@@ -17,6 +17,11 @@ library(dplyr)
 library(readr)
 library(tidyr)
 
+this_file <- sub("^--file=", "",
+                 grep("^--file=", commandArgs(FALSE), value = TRUE))
+script_dir <- if (length(this_file)) dirname(normalizePath(this_file)) else "."
+source(file.path(script_dir, "plot_style.r"))
+
 args <- commandArgs(trailingOnly = TRUE)
 dirs <- if (length(args) >= 2) {
   args[1:2]
@@ -55,7 +60,8 @@ agg <- results |>
     gflops_max  = max(gflops),
     .groups = "drop"
   ) |>
-  mutate(config = paste(runtime, scheduler, sep = "/"))
+  mutate(config = cfg_factor(cfg_label(runtime, scheduler)),
+         algo   = algo_label(algorithm))
 
 # Pico por (node, kernel, config): o b de maior GFLOPS medio = b ideal.
 peaks <- agg |>
@@ -82,23 +88,25 @@ plot_dat <- agg |>
   ungroup()
 
 # scales="free": as grades de b e o teto de GFLOPS (4070 capada em FP64 vs
-# 4090) diferem demais para compartilhar eixos.
-p <- ggplot(plot_dat, aes(x = b, y = gflops_mean, color = config)) +
+# 4090) diferem demais para compartilhar eixos. facet_grid (e nao facet_wrap)
+# para que algoritmo e maquina sejam lidos como linhas x colunas.
+# Sem titulo/subtitulo: essa informacao vive no caption do artigo.
+p <- ggplot(plot_dat, aes(x = b, y = gflops_mean,
+                          colour = config, shape = config)) +
   geom_line() +
-  geom_point(size = 1) +
+  geom_point(size = 1.8) +
   geom_errorbar(
     aes(ymin = gflops_min, ymax = gflops_max, width = ebw)
   ) +
-  facet_wrap(vars(algorithm, gpu), scales = "free", ncol = 2) +
+  facet_grid(algo ~ gpu, scales = "free") +
+  scale_config_colour() +
+  scale_config_shape() +
+  expand_y_zero() +
   labs(
-    x = "b (tamanho do bloco)",
-    y = "GFLOPS (media; barras = min/max)",
-    color = NULL,
-    subtitle = "FP64, N=40000"
+    x = "Tamanho do Bloco",
+    y = "GFLOPS (média; barras = mín/máx)"
   ) +
-  theme_bw(base_size = 14) +
-  theme(legend.position = "top",
-        strip.text = element_text(face = "bold"))
+  theme_sscad()
 
 ggsave(file.path(out_dir, "gflops_vs_b_compare.png"), p,
        width = 13, height = 7, dpi = 140)

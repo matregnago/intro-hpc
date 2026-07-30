@@ -18,6 +18,7 @@ this_file <- sub("^--file=", "",
                  grep("^--file=", commandArgs(FALSE), value = TRUE))
 script_dir <- if (length(this_file)) dirname(normalizePath(this_file)) else "."
 source(file.path(script_dir, "trace_common.r"))
+source(file.path(script_dir, "plot_style.r"))
 
 args     <- commandArgs(trailingOnly = TRUE)
 base_dir <- if (length(args) >= 1) args[[1]] else
@@ -38,7 +39,7 @@ read_kernels <- function(row) {
     transmute(.data$kernel, .data$Duration, .data$src,
               class = ifelse(grepl("CUDA", .data$worker), "GPU", "CPU"),
               runtime = row$runtime, scheduler = row$scheduler,
-              algo = row$algo, cfg = paste0(row$runtime, ":", row$scheduler))
+              algo = row$algo, cfg = cfg_label(row$runtime, row$scheduler))
 }
 
 dat <- bind_rows(lapply(seq_len(nrow(runs)), function(i) read_kernels(runs[i, ])))
@@ -83,9 +84,8 @@ p_mean <- ggplot(mean_tbl, aes(.data$cfg, .data$mean_us, fill = .data$class)) +
   scale_fill_manual(values = c(CPU = "#377eb8", GPU = "#e41a1c")) +
   labs(title = "Tempo medio por tipo de tarefa (kernel) x runtime:scheduler x classe",
        x = NULL, y = "duracao media (ms)", fill = "classe") +
-  theme_bw(base_size = 12) +
-  theme(axis.text.x = element_text(angle = 30, hjust = 1),
-        legend.position = "bottom")
+  theme_sscad(legend = "bottom") +
+  theme(axis.text.x = element_text(angle = 30, hjust = 1))
 save_plot(p_mean, "task_times_mean", width = 12, height = 8)
 
 # (2) duration distribution (violin + boxplot) per algo+kernel
@@ -99,7 +99,6 @@ p_violin <- ggplot(core, aes(.data$cfg, .data$Duration, fill = .data$class)) +
   labs(title = "Distribuicao da duracao por tarefa (kernel) x runtime:scheduler x classe",
        caption = caption_cls,
        x = NULL, y = "duracao (ms)", fill = "classe") +
-  theme_bw(base_size = 12) +
-  theme(axis.text.x = element_text(angle = 30, hjust = 1),
-        legend.position = "bottom")
+  theme_sscad(legend = "bottom") +
+  theme(axis.text.x = element_text(angle = 30, hjust = 1))
 save_plot(p_violin, "task_times_violin", width = 12, height = 8)

@@ -13,6 +13,11 @@ library(ggplot2)
 library(dplyr)
 library(readr)
 
+this_file <- sub("^--file=", "",
+                 grep("^--file=", commandArgs(FALSE), value = TRUE))
+script_dir <- if (length(this_file)) dirname(normalizePath(this_file)) else "."
+source(file.path(script_dir, "plot_style.r"))
+
 args <- commandArgs(trailingOnly = TRUE)
 dirs <- if (length(args) >= 2) {
   args[1:2]
@@ -42,7 +47,7 @@ read_one <- function(base_dir) {
 
 results <- bind_rows(lapply(dirs, read_one)) |>
   filter(precision == "FP64") |>
-  mutate(op = toupper(sub("^[sdcz]", "", algorithm)))
+  mutate(op = algo_label(algorithm))
 
 agg <- results |>
   group_by(node, gpu, runtime, scheduler, op, n) |>
@@ -52,36 +57,45 @@ agg <- results |>
     .groups = "drop"
   ) |>
   mutate(
-    config    = paste(runtime, scheduler, sep = "/"),
+    config    = cfg_factor(cfg_label(runtime, scheduler)),
     # 1 rep -> sd NA -> 0, p/ o ponto plotar sem barra
     gflops_sd = ifelse(is.na(gflops_sd), 0, gflops_sd)
-  )
+  ) |>
+  # Largura da barra de erro em unidades de N: com o eixo X linear, uma largura
+  # fixa some. 1.5% da amplitude de N do proprio no.
+  group_by(node) |>
+  mutate(ebw = 0.015 * diff(range(n))) |>
+  ungroup()
 
-# b ideal de cada no (constante dentro do job), p/ o subtitulo
+# b ideal de cada no (constante dentro do job). Nao vira subtitulo: o revisor
+# pediu que o conteudo do titulo va para o caption do artigo -- imprimimos aqui
+# para que o texto do caption possa ser escrito a partir dos dados.
 b_tbl <- results |>
   distinct(node, b) |>
   arrange(node)
-sub <- paste0("FP64  |  ",
-              paste(sprintf("%s: b=%d", b_tbl$node, b_tbl$b), collapse = "  |  "))
+message("para o caption: FP64, ",
+        paste(sprintf("%s b=%d", b_tbl$node, b_tbl$b), collapse = ", "))
 
 # scales="free_y" libera o eixo por linha; as duas colunas (poti | tupi)
 # compartilham o eixo, entao a comparacao entre nos fica direta.
-p <- ggplot(agg, aes(x = n, y = gflops_mean, colour = config)) +
+# Eixo X LINEAR (era log10): em log a distancia entre os niveis de N engana a
+# leitura da curva. Eixo Y inclui o zero.
+p <- ggplot(agg, aes(x = n, y = gflops_mean,
+                     colour = config, shape = config)) +
   geom_line() +
-  geom_point() +
-  geom_errorbar(aes(ymin = gflops_mean - gflops_sd, ymax = gflops_mean + gflops_sd),
-                width = 0.03) +
-  scale_x_log10() +
+  geom_point(size = 1.8) +
+  geom_errorbar(aes(ymin = gflops_mean - gflops_sd,
+                    ymax = gflops_mean + gflops_sd,
+                    width = ebw)) +
   facet_grid(op ~ gpu, scales = "free_y") +
+  scale_config_colour() +
+  scale_config_shape() +
+  expand_y_zero() +
   labs(
     x = "N (matriz N x N)",
-    y = "GFLOPS (media)",
-    colour = NULL,
-    subtitle = sub
+    y = "GFLOPS (média)"
   ) +
-  theme_bw(base_size = 14) +
-  theme(legend.position = "top",
-        strip.text = element_text(face = "bold"))
+  theme_sscad()
 
 out_dir <- "plots/final"
 dir.create(out_dir, showWarnings = FALSE, recursive = TRUE)
