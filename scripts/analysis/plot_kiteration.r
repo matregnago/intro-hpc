@@ -112,8 +112,10 @@ for (algo in names(by_algo)) {
   grp <- grp[order(vapply(grp, config_rank, integer(1)))]
   if (length(grp) == 1L) {
     pn <- grp[[1]]
-    save_plot(pn$panel + ggtitle(paste0("k-iteration  ", pn$label, "  ", algo)),
-              stem_of(pn), width = 14, height = 8)
+    # Sem titulo: o rotulo do painel ja identifica a config, e algo/n/b vao para
+    # o caption do artigo (mesma regra das demais figuras).
+    message("para o caption: k-iteration, ", pn$label, ", ", algo)
+    save_plot(pn$panel, stem_of(pn), width = 14, height = 8)
     next
   }
   x_end <- max(vapply(grp, function(p) p$x_max, numeric(1)))

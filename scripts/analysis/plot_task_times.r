@@ -49,6 +49,19 @@ message("fontes: ", paste(unique(paste0(dat$runtime, "=", dat$src)), collapse = 
 # init/util kernels stay in the summary but out of the plots.
 core <- dat %>% filter(!.data$kernel %in% INIT_KERNELS)
 
+# Blindagem contra o artefato de medicao: os spans de GPU do PaRSEC sao abertos e
+# fechados no host e se sobrepoem entre as streams de execucao, o que infla a
+# duracao em ate 4x (observado ~2.9x). Comparar essa coluna com a GPU do StarPU
+# leva a concluir que o mesmo cuBLAS dgemm e 2.9x mais lento num runtime que no
+# outro, o que e falso. As linhas continuam no CSV (registro bruto), mas ficam
+# fora de qualquer figura, para que a comparacao indevida nao possa ser lida de
+# um grafico. Comparacoes cross-runtime: so CPU vs CPU.
+n_drop <- sum(core$runtime == "parsec" & core$class == "GPU")
+if (n_drop > 0)
+  message("suprimindo ", n_drop, " spans de GPU do PaRSEC das figuras ",
+          "(host-observados, sobrepostos entre streams); seguem no CSV")
+core <- core %>% filter(!(.data$runtime == "parsec" & .data$class == "GPU"))
+
 summary_tbl <- dat %>%
   group_by(.data$algo, .data$cfg, .data$class, .data$kernel) %>%
   summarise(n = n(), mean_ms = mean(.data$Duration),
@@ -64,10 +77,9 @@ core <- core %>%
   mutate(panel = if (one_algo) .data$kernel
          else paste0(.data$algo, ": ", .data$kernel))
 
-caption_cls <- paste("classe = onde o span executou (ResourceId).",
-                     "GPU do PaRSEC: spans host-observados com overlap entre streams",
-                     "(duracao inflada) -- comparar GPU só entre configs StarPU;",
-                     "CPU vs CPU e like-for-like.")
+message("para o caption: ", base_dir, " | classe = onde o span executou ",
+        "(ResourceId); a GPU do PaRSEC nao aparece porque seus spans sao ",
+        "host-observados e se sobrepoem entre streams -- cross-runtime so CPU")
 
 # (1) mean duration bars, facet per algo+kernel, split CPU/GPU
 mean_tbl <- core %>%
@@ -81,9 +93,8 @@ p_mean <- ggplot(mean_tbl, aes(.data$cfg, .data$mean_us, fill = .data$class)) +
                     ymax = .data$mean_us + .data$se),
                 position = position_dodge(width = 0.8), width = 0.3) +
   facet_wrap(~panel, scales = "free_y") +
-  scale_fill_manual(values = c(CPU = "#377eb8", GPU = "#e41a1c")) +
-  labs(title = "Tempo medio por tipo de tarefa (kernel) x runtime:scheduler x classe",
-       x = NULL, y = "duracao media (ms)", fill = "classe") +
+  scale_fill_brewer(palette = "Set1") +
+  labs(x = NULL, y = "duracao media (ms)") +
   theme_sscad(legend = "bottom") +
   theme(axis.text.x = element_text(angle = 30, hjust = 1))
 save_plot(p_mean, "task_times_mean", width = 12, height = 8)
@@ -95,10 +106,8 @@ p_violin <- ggplot(core, aes(.data$cfg, .data$Duration, fill = .data$class)) +
   geom_boxplot(width = 0.15, outlier.size = 0.3, alpha = 0.8,
                position = position_dodge(width = 0.8)) +
   facet_wrap(~panel, scales = "free_y") +
-  scale_fill_manual(values = c(CPU = "#377eb8", GPU = "#e41a1c")) +
-  labs(title = "Distribuicao da duracao por tarefa (kernel) x runtime:scheduler x classe",
-       caption = caption_cls,
-       x = NULL, y = "duracao (ms)", fill = "classe") +
+  scale_fill_brewer(palette = "Set1") +
+  labs(x = NULL, y = "duracao (ms)") +
   theme_sscad(legend = "bottom") +
   theme(axis.text.x = element_text(angle = 30, hjust = 1))
 save_plot(p_violin, "task_times_violin", width = 12, height = 8)

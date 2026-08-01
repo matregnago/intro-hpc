@@ -105,35 +105,15 @@ baixo overhead de memória. O escalonamento é totalmente distribuído -- cada n
 executa sua própria instância do escalonador, sem coordenação central -- o que
 favorece a sobreposição entre computação e comunicação.
 
-Embora StarPU e PaRSEC compartilhem o mesmo objetivo de abstrair o escalonamento
-de tarefas em plataformas heterogêneas, cada um adota estratégias diferentes de
-escalonamento e de gerenciamento de comunicações, o que pode impactar bastante o
-desempenho de algoritmos de álgebra linear densa.
-
-Este trabalho utiliza o Chameleon cite:AGULLO2012473, uma biblioteca de álgebra
-linear densa que implementa fatorações como LU, Cholesky e QR por meio de
-algoritmos por blocos cite:DBLP, delegando o escalonamento de suas tarefas a
-runtimes externos, o StarPU e o PaRSEC. Os experimentos foram executados em
-duas partições do cluster PCAD, no INF/UFRGS: (i) tupi, equipada com um
-processador Intel Core i9-14900KF (24 núcleos físicos, 3,2 GHz) e uma GPU NVIDIA
-GeForce RTX 4090 (24 GB); (ii) poti, equipada com um processador Intel Core
-i7-14700KF (20 núcleos físicos, 3,4 GHz) e uma GPU NVIDIA GeForce RTX 4070 (12
-GB).
-
-Os resultados dos experimentos mostraram que nenhum dos dois runtimes é
-sistematicamente superior ao outro: na partição poti, cuja GPU é fraca em
-precisão dupla, o =parsec:gd= superou o StarPU por usar a GPU
-como recurso acessório e não impor custo sobre os workers de CPU; na partição
-tupi, cuja GPU é forte, o StarPU venceu com folga graças a maior ocupação da
-GPU.
-
-O restante deste trabalho está organizado da seguinte forma. A Seção 2 apresenta
-os trabalhos relacionados. A Seção 3 descreve os conceitos utilizados neste
-trabalho, enquanto a Seção 4 apresenta os métodos e materiais utilizados. A Seção 5
-detalha nossa metodologia experimental, seguida pelos resultados experimentais
-na Seção 6. Por fim, a Seção 7 conclui este trabalho.
-
-** Trabalhos Relacionados
+Embora StarPU e PaRSEC compartilhem o objetivo de abstrair o escalonamento de
+tarefas em plataformas heterogêneas, os escalonadores de cada runtime avaliados
+neste trabalho diferem numa dimensão central: o StarPU decide o uso da GPU
+dinamicamente, orientado por um modelo de desempenho aprendido a partir do
+histórico de execuções, enquanto os escalonadores do PaRSEC decidem de forma
+estática, sem medir tempos reais de execução. Essa diferença de filosofia
+sugere, à primeira vista, que o StarPU deveria ter vantagem sistemática sobre o
+PaRSEC em algoritmos de álgebra linear densa; um dos objetivos deste trabalho é
+verificar empiricamente se essa expectativa se confirma.
 
 Diversos trabalhos avaliam runtimes task-based aplicados a algoritmos de álgebra
 linear densa, mas cada um deles isola apenas parte do problema, limitando a
@@ -162,6 +142,22 @@ utilizando a mesma biblioteca de álgebra linear densa em um ambiente
 heterogêneo. Esse é o diferencial deste trabalho, no qual foi fixado o Chameleon
 como biblioteca única e variado apenas o runtime e o escalonador utilizado.
 
+Este trabalho utiliza o Chameleon cite:AGULLO2012473, uma biblioteca de álgebra
+linear densa que implementa fatorações como LU, Cholesky e QR por meio de
+algoritmos por blocos cite:DBLP, delegando o escalonamento de suas tarefas a
+runtimes externos, o StarPU e o PaRSEC. Os experimentos foram executados em
+duas partições do cluster PCAD, no INF/UFRGS: (i) tupi, equipada com um
+processador Intel Core i9-14900KF (24 núcleos físicos, 3,2 GHz) e uma GPU NVIDIA
+GeForce RTX 4090 (24 GB); (ii) poti, equipada com um processador Intel Core
+i7-14700KF (20 núcleos físicos, 3,4 GHz) e uma GPU NVIDIA GeForce RTX 4070 (12
+GB).
+
+O restante deste trabalho está organizado da seguinte forma. A Seção 2 descreve
+os conceitos utilizados neste trabalho, enquanto a Seção 3 apresenta os métodos
+e materiais utilizados. A Seção 4 detalha nossa metodologia experimental,
+seguida pelos resultados experimentais na Seção 5. Por fim, a Seção 6 conclui
+este trabalho.
+
 ** Fundamentação Teórica
 Nesta seção, apresentamos uma visão geral dos runtimes de escalonamento de
 tarefas, StarPU e PaRSEC, e da biblioteca de álgebra linear densa Chameleon
@@ -170,7 +166,7 @@ utilizados neste trabalho.
 *** StarPU
 StarPU cite:starpu é um framework escrito em C para programação orientada a
 tarefas em plataformas híbridas compostas por CPUs e GPUs, com suporte também a
-ambientes de memória distribuída por meio da extensão StarPU-MPI. As tarefas de
+ambientes distribuídos por meio da extensão StarPU-MPI. As tarefas de
 uma aplicação StarPU são definidas por meio de codelets, estruturas que agrupam
 uma ou mais implementações de uma mesma operação, além da forma como cada um de
 seus parâmetros é acessado. A partir da ordem de submissão das tarefas e dos
@@ -184,6 +180,14 @@ memória nos aceleradores também é responsabilidade do StarPU, que realiza
 alocação e liberação de buffers na GPU, cópias entre a memória do host e do
 dispositivo, e a sobreposição dessas transferências com a computação por meio de
 prefetching.
+
+Neste trabalho utilizamos dois escalonadores do StarPU: o Deque Model Data Aware
+(=dmda=), que mantém um modelo de desempenho por par tarefa-recurso, estimado a
+partir do histórico de execuções, e atribui cada tarefa ao recurso que minimiza
+o tempo estimado de conclusão, somando o tempo de computação previsto ao custo
+estimado de transferência de dados; e o =dmdas=, uma variante
+que processa as tarefas seguindo a ordem de prioridade dada pela distância ao
+caminho crítico do DAG, ao custo de uma ordenação adicional.
 
 *** PaRSEC
 PaRSEC cite:bosilca2011dague é um framework para escalonamento de tarefas
@@ -202,6 +206,13 @@ dependências de dados do grafo, e tratadas de forma assíncrona por uma thread
 dedicada. Assim como o StarPU, o PaRSEC também oferece suporte a aceleradores
 por meio de múltiplas implementações para uma mesma tarefa, permitindo que o
 escalonador decida em tempo de execução em qual unidade.
+
+Neste trabalho utilizamos dois escalonadores do PaRSEC: o Global Dequeue (=gd=),
+que mantém uma única fila dupla compartilhada por todos os workers, com
+balanceamento natural de carga mas sem localidade de dados nem roubo de tarefas;
+e o Local Flat Queues (=lfq=), em que cada worker mantém uma fila local
+ordenada por prioridade e recorre ao roubo de tarefas das filas vizinhas, na
+ordem de distância na hierarquia de hardware, quando fica ocioso.
 
 *** Chameleon
 Chameleon cite:AGULLO2012473 é uma biblioteca escrita em C que fornece rotinas
@@ -265,47 +276,53 @@ visão geral das aplicações de álgebra linear densa consideradas neste estudo
 depois, descrevemos o ambiente de execução utilizado nos experimentos e, por
 fim, detalhamos o projeto experimental adotado.
 
+# Aqui teria que ir a figura, mas não sei direito como ela deve ser
+
 *** Aplicações
-Consideramos dois algoritmos de fatorações disponíveis no Chameleon: a fatoração
-de Cholesky e a fatoração LU sem pivotamento.
-
-A fatoração de Cholesky (=potrf=) decompõe uma matriz real simétrica positiva
-definida $A$, de ordem $n \times n$, na forma $A = LL^T$, em que $L$ é uma
-matriz real triangular inferior de ordem $n \times n$ com elementos diagonais
-positivos. O algoritmo por blocos utiliza quatro tipos de tarefa: POTRF, SYRK,
-TRSM e GEMM. A tarefa POTRF, executada sobre os blocos da diagonal, possui
-apenas implementação em CPU, enquanto as demais possuem implementações em CPU e
-em GPU.
-
-A fatoração LU sem pivotamento (=getrf_nopiv=) decompõe uma matriz real $A$, de
-ordem $n \times n$, na forma $A = LU$, em que $L$ é triangular inferior e $U$ é
-triangular superior. O projeto desse algoritmo por blocos para sistemas
-acelerados por GPU é descrito por Agullo et al. cite:6126599. O algoritmo
-utiliza três tipos de tarefa: GETRF, TRSM e GEMM. A tarefa GETRF, que fatora o
-bloco da diagonal, possui apenas implementação em CPU, enquanto TRSM e GEMM
-possuem implementações em CPU e em GPU.
+Consideramos dois algoritmos de fatoração disponíveis no Chameleon: a fatoração
+de Cholesky (=potrf=) e a fatoração LU sem pivotamento (=getrf_nopiv=). A
+fatoração de Cholesky decompõe uma matriz real simétrica positiva definida $A$,
+de ordem $n \times n$, na forma $A = LL^T$, em que $L$ é uma matriz real
+triangular inferior de ordem $n \times n$ com elementos diagonais positivos. O
+algoritmo por blocos utiliza quatro tipos de tarefa: POTRF, SYRK, TRSM e GEMM, todas com implementações em CPU e em GPU. Já a fatoração LU sem pivotamento decompõe uma
+matriz real $A$, de ordem $n \times n$, na forma $A = LU$, em que $L$ é
+triangular inferior e $U$ é triangular superior. O projeto desse algoritmo
+por blocos para sistemas acelerados por GPU é descrito por Agullo et al.
+cite:6126599, e utiliza três tipos de tarefa: GETRF, TRSM e GEMM, das
+quais apenas GETRF, que fatora o bloco da diagonal, está restrita à CPU.
 
 *** Ambiente Experimental
 A Tabela [[tab:hw]] especifica o hardware das duas partições do cluster PCAD, no INF/UFRGS, utilizadas nos experimentos: tupi e poti.
 
 #+CAPTION: Especificação de hardware das partições utilizadas.
 #+NAME: tab:hw
-#+ATTR_LATEX: :align p{1.6cm}p{4.6cm}p{1.3cm}p{4.0cm}p{3.0cm}
-| Partição | CPU                                         |    RAM | GPU                    | Armazenamento              |
-|----------+----------------------------------------------+-------+-------------------------+-----------------------------|
-| tupi     | Intel Core i9-14900KF, 3,2 GHz, 24 núcleos    | 128 GB | NVIDIA RTX 4090, 24 GB  | 1,8 TB NVMe                 |
-| poti     | Intel Core i7-14700KF, 3,4 GHz, 20 núcleos    |  96 GB | NVIDIA RTX 4070, 12 GB  | 119,2 GB NVMe + 1,7 TB SSD  |
+#+ATTR_LATEX: :align p{1.3cm}p{4.3cm}p{1.3cm}p{1.2cm}p{3.3cm}p{1.9cm}
+| Partição | CPU                                        | P-cores | RAM    | GPU                    | GFLOPS teóricos em FP64 |
+|----------+--------------------------------------------+---------+--------+------------------------+--------------------|
+| tupi     | Intel Core i9-14900KF, 3,2 GHz, 24 núcleos |       8 | 128 GB | NVIDIA RTX 4090, 24 GB |              1.290 |
+| poti     | Intel Core i7-14700KF, 3,4 GHz, 20 núcleos |       8 |  96 GB | NVIDIA RTX 4070, 12 GB |                455 |
+
+A coluna P-cores indica o número de núcleos de alto desempenho; os núcleos
+restantes até o total informado na coluna CPU são núcleos de eficiência. A
+última coluna traz o pico teórico de desempenho de cada GPU em precisão dupla.
 
 Do ponto de vista de software, utilizamos o Chameleon na versão 1.4.0, com
-suporte a CUDA habilitado. Como runtimes de escalonamento, utilizamos o StarPU e
-uma versão do PaRSEC derivada de um fork mantido por desenvolvedores do próprio
-Chameleon, ambos também compilados com suporte a CUDA e com a coleta de rastros
-de execução habilitada. A reprodutibilidade de todo o ambiente é garantida por
-meio do gerenciador de pacotes Nix, com as dependências fixadas em um flake.
-
-A análise dos dados é realizada após a execução por meio de scripts escritos na
-linguagem R, utilizando o framework StarVZ cite:Pinto2021ProvidingIP para a
-visualização dos rastros de execução coletados pelo StarPU e pelo PaRSEC.
+suporte a CUDA habilitado. Como runtimes de escalonamento, utilizamos o StarPU
+1.4.7 e uma versão do PaRSEC derivada de um fork mantido por desenvolvedores do
+próprio Chameleon, ambos também compilados com suporte a CUDA e com a coleta de
+rastros de execução habilitada. Para equalizar o número de fluxos de execução em
+GPU entre os dois runtimes, fixamos STARPU_NWORKER_PER_CUDA=4; no PaRSEC esse
+número é definido em tempo de compilação (PARSEC_MAX_STREAMS=6, das quais
+quatro são de execução e duas de transferência), sem parâmetro equivalente
+configurável em tempo de execução. Utilizamos CUDA 12.4, gcc 13.3.0 e Debian (?)
+como sistema operacional, com driver NVIDIA (?). A
+reprodutibilidade de todo o
+ambiente é garantida por meio do gerenciador de pacotes Nix, com as
+dependências fixadas em um flake, publicado em
+[[https://github.com/matregnago/intro-hpc]]. A análise dos dados é
+realizada após a execução por meio de scripts escritos na linguagem R,
+utilizando o framework StarVZ cite:Pinto2021ProvidingIP para a visualização
+dos rastros de execução coletados pelo StarPU e pelo PaRSEC.
 
 *** Projeto Experimental
 
@@ -319,28 +336,29 @@ completo, usa esse tamanho de bloco ótimo para comparar o desempenho do StarPU 
 do PaRSEC em função do tamanho do problema. O terceiro projeto experimental usa
 rastros de execução para explicar, em nível de tarefa, a origem das diferenças
 de desempenho observadas no segundo projeto experimental. Em todos eles, a
-variável de resposta é o GFLOPS -- bilhões de operações de ponto flutuante por
-segundo -- relatado pela própria aplicação ao final da execução.
+variável de resposta é o GFLOPS, bilhões de operações de ponto flutuante por
+segundo, relatado pela própria aplicação ao final da execução.
 
 O primeiro projeto experimental tem como objetivo determinar o tamanho de bloco
 ideal para cada máquina, por meio de uma varredura sistemática de configurações
 de bloco em precisão dupla. Fixamos o tamanho da matriz de entrada em $N=40.000$
 com precisão dupla e variamos o tamanho do bloco dentro de um conjunto de
-valores. Cruzamos essas configurações com as duas fatorações (=potrf=,
-=getrf_nopiv=) e quatro combinações de runtime e escalonador. Ao longo do texto
-e das figuras, cada combinação é identificada na forma =runtime:escalonador=:
-=starpu:dmda=, =starpu:dmdas=, =parsec:lfq= e =parsec:gd=. Além disso, executamos o mesmo desenho
+valores. Escolhemos $N=40.000$ por ser grande o suficiente para saturar os
+recursos computacionais e expor com clareza o efeito do tamanho de bloco sobre
+o desempenho. Cruzamos essas configurações com as duas fatorações (=potrf=,
+=getrf_nopiv=) e quatro combinações de runtime e escalonador. Os dois escalonadores
+do StarPU são guiados por um modelo de desempenho medido em tempo de execução,
+enquanto os dois do PaRSEC decidem o uso da GPU de forma estática. A expectativa
+que orienta todos os três projetos experimentais, portanto, é a de que
+=starpu:dmda= e =starpu:dmdas= superem as duas configurações do PaRSEC.Além disso, executamos o mesmo desenho
 experimental em ambas as partições do PCAD, tupi e poti, variando apenas o
-número de threads de acordo com o número de núcleos físicos disponíveis em cada
-uma. A ordem de execução foi aleatória, com cinco repetições por
-configuração. O pico de GFLOPS observado em cada máquina, em precisão dupla,
-determina o tamanho de bloco utilizado no segundo e no terceiro projetos
-experimentais.
-# TODO(prof): justificar a escolha de N=40.000 no primeiro projeto experimental.
-# TODO(prof): mencionar se as threads usadas correspondem apenas aos núcleos P
-# ou também aos núcleos E. TODO(prof): justificar por que o tamanho de bloco
-# ótimo obtido em precisão dupla também é usado no segundo e no terceiro
-# projetos experimentais.
+número de threads de acordo com o número total de núcleos físicos disponíveis
+em cada uma. A ordem de execução foi
+aleatória, com cinco repetições por configuração, para
+caracterizar a variabilidade entre execuções de uma mesma configuração. 
+O pico de GFLOPS observado em cada máquina,
+em precisão dupla, determina o tamanho de bloco utilizado no segundo e no
+terceiro projetos experimentais.
 
 O segundo projeto experimental, um projeto fatorial completo, investiga os
 efeitos de interação entre três fatores que influenciam o desempenho das
@@ -353,24 +371,29 @@ dez níveis entre 5.000 e 60.000 na tupi, e seis níveis entre 5.000 e 60.000 na
 poti. Para cada uma das duas fatorações, executamos todas as combinações desse
 desenho fatorial em ordem aleatória, com três repetições na tupi e cinco na
 poti.
-# TODO(prof): justificar o intervalo e o número de níveis de N testados em cada
-# máquina. TODO(prof): justificar o número de repetições em cada máquina.
 
-Por fim, o terceiro projeto experimental tem como objetivo explicar, por meio
-dos rastros de execução do StarPU e do PaRSEC, por que o runtime que mantém um
-modelo de desempenho aprendido em tempo de execução (o StarPU, com os
-=starpu:dmda= e =starpu:dmdas=) não vence sistematicamente o PaRSEC, que decide
-o escalonamento de GPU de forma estática -- expectativa que o segundo projeto
-experimental mostrou não se confirmar em ambas as máquinas. Empregamos os
-mecanismos de coleta de rastros de execução do StarPU e do PaRSEC, por meio de
-oito execuções representativas por máquina, sem repetições. Fixamos o tamanho da
-matriz em $N=40.000$ e o tamanho de bloco no valor ótimo de cada máquina,
-variando as duas fatorações e as quatro combinações de runtime e escalonador.
-Fizemos essa análise com o auxílio do StarVZ cite:Pinto2021ProvidingIP.
-# TODO(prof): mencionar as adaptações necessárias para projetar os rastros do
-# PaRSEC no formato esperado pelo StarVZ.
+Por fim, o terceiro projeto experimental tem como objetivo explorar
+como cada escalonador se comporta em cada uma das aplicações e maquinas. 
+Empregamos os mecanismos de coleta de rastros de execução do StarPU e do
+PaRSEC, por meio de oito execuções representativas por máquina, uma para cada combinação entre as duas fatorações e as quatro
+combinações de runtime e escalonador. Como o StarVZ foi originalmente
+projetado para consumir rastros do StarPU, adaptamos o pipeline de análise
+para o PaRSEC, onde os rastros brutos são primeiro convertidos
+para o formato Paje por meio da ferramenta =dbp2paje= do próprio PaRSEC,
+preservando os nomes de containers necessários para o StarVZ identificar
+corretamente workers e streams de GPU. A partir do Paje gerado, o restante do
+pipeline de análise é idêntico ao utilizado para o StarPU, permitindo comparar
+os dois runtimes em um único ambiente de análise de rastros.
 
 ** Resultados
+
+Esta seção apresenta os resultados dos três projetos experimentais descritos na
+Seção 4, na mesma ordem em que eles se encadeiam. A Seção 5.1 usa a varredura de
+tamanho de bloco para fixar esse parâmetro em cada máquina. A Seção 5.2 usa esse valor para
+comparar os quatro pares de runtime e escalonador em função do tamanho do
+problema.
+A Seção 5.3 recorre aos rastros de execução para explicar, em nível de tarefa,
+por que o runtime vencedor muda de uma máquina para a outra.
 
 *** Escolha do tamanho de bloco
 
@@ -381,7 +404,24 @@ A Figura [[fig:gflops-b]] mostra o resultado da varredura de tamanho de bloco pa
 #+ATTR_LATEX: :width \linewidth :placement [h] :center t
 [[file:../../plots/final/gflops_vs_b_compare.pdf]]
 
-Na poti, as quatro configurações convergem para um pico em torno de $b=500$. Na tupi, por outro lado, há uma divergência estrutural entre os dois runtimes: o StarPU tem o seu pico em $b=1.000$, enquanto o PaRSEC só atinge seu melhor resultado em $b=2.000$ e cai mais acentuadamente para blocos menores ou maiores que o seu próprio ótimo.
+A figura traz o GFLOPS médio das cinco repetições em função do tamanho de bloco
+$b$. Cada ponto é uma configuração medida, os pontos de uma mesma configuração
+são ligados por uma linha, e a barra vertical marca o mínimo e o máximo
+observados entre as repetições. A cor identifica o runtime, e o tom e o marcador
+identificam o escalonador dentro dele: o StarPU aparece em tons de vermelho
+(=starpu:dmda= e =starpu:dmdas=) e o PaRSEC em tons de azul (=parsec:lfq= e
+=parsec:gd=). Os painéis estão dispostos em uma grade: cada linha é
+uma das duas fatorações e cada coluna é uma das duas máquinas. Como as duas
+máquinas foram varridas em grades de $b$ distintas e os patamares de GFLOPS
+diferem entre elas, os eixos não são compartilhados entre painéis.
+
+Na poti, as quatro configurações convergem para um pico em torno de $b=500$. Na
+tupi, por outro lado, há uma divergência estrutural entre os dois runtimes: o
+StarPU tem o seu pico em $b=1.000$, enquanto o PaRSEC só atinge seu melhor
+resultado em $b=2.000$ e cai mais acentuadamente para blocos menores ou maiores
+que o seu próprio ótimo. Os tamanhos de bloco adotados nas duas etapas seguintes
+são os que maximizam o GFLOPS em cada máquina: $b=1.000$ na tupi e $b=500$ na
+poti.
 
 *** Desempenho em função do tamanho do problema
 
@@ -392,54 +432,157 @@ A Figura [[fig:gflops-n]] apresenta o resultado do segundo projeto experimental.
 #+ATTR_LATEX: :width \linewidth :placement [h] :center t
 [[file:../../plots/final/gflops_vs_n_compare.pdf]]
 
-O padrão que aparece na Figura [[fig:gflops-n]] é a observação central que organiza o restante desta seção. Na poti, o StarPU lidera até $N\approx10.000$, mas a partir de $N\approx20.000$ o =parsec:gd= assume a liderança e a mantém até $N=60.000$, o maior valor testado. Na tupi, por sua vez, o StarPU lidera em toda a faixa de $N$, com a vantagem sobre o PaRSEC aumentando à medida que $N$ cresce. Esse resultado contraria a intuição de que o StarPU, por manter um modelo de desempenho aprendido em tempo de execução, deveria vencer sistematicamente o PaRSEC, que decide o escalonamento de GPU de forma estática, sem medir tempos reais de execução. A próxima seção usa os rastros de execução coletados nas configurações de $N=40.000$ para explicar por que o resultado se inverte entre as duas máquinas.
+A figura traz o GFLOPS médio em função da ordem $N$ da matriz de entrada, com
+cada máquina rodando no seu tamanho de bloco ótimo. Cada ponto é a média das
+repetições daquela configuração naquele $N$, os pontos são ligados por uma
+linha, e a barra vertical corresponde a um desvio-padrão para cada lado. Cores e
+marcadores identificam as configurações como na Figura [[fig:gflops-b]]. Os
+painéis novamente formam uma grade de fatoração por máquina; aqui, porém, o eixo
+horizontal é comum a todos os painéis e apenas o eixo vertical é livre por
+linha, de modo que a comparação entre as duas máquinas para uma mesma fatoração
+seja direta. O eixo vertical inclui o zero, para que as diferenças de altura
+entre as curvas possam ser lidas em proporção.
+
+O padrão que aparece na Figura [[fig:gflops-n]] é a observação central que organiza o restante desta seção. Na poti, o StarPU lidera até $N\approx10.000$, mas a partir de $N\approx20.000$ o =parsec:gd= assume a liderança e a mantém até $N=60.000$, o maior valor testado. Na tupi, por sua vez, o StarPU lidera em toda a faixa de $N$, com a vantagem sobre o PaRSEC aumentando à medida que $N$ cresce. Esse resultado contraria a intuição de que o StarPU, por manter um modelo de desempenho aprendido e refinado em tempo de execução, deveria vencer sistematicamente o PaRSEC, que decide o escalonamento de GPU de forma estática desconsiderando
+modelos de desempenho, sem medir tempos reais de execução. A próxima seção usa os rastros de execução coletados nas configurações de $N=40.000$ para explicar por que o resultado se inverte entre as duas máquinas.
 
 *** Análise de rastros de execução
-Para entender a inversão observada na seção anterior, analisamos em detalhe os rastros de execução coletados para a fatoração de Cholesky com $N=40.000$ e o bloco ideal de cada máquina.
+Para entender a inversão observada na seção anterior, analisamos em detalhe os rastros de execução coletados para a fatoração de Cholesky com $N=40.000$ e o bloco ideal de cada máquina: $b=1.000$ na tupi e $b=500$ na
+poti.
 
-O ponto de partida é a diferença de capacidade das duas GPUs em precisão dupla. A RTX 4070 da poti tem pico teórico de apenas 458 GFLOPS em FP64, um valor abaixo da capacidade agregada dos 20 núcleos de CPU do nó, enquanto a RTX 4090 da tupi tem pico de aproximadamente 1,3 TFLOPS, muito acima da capacidade da CPU da tupi.
+O ponto de partida é a relação entre a capacidade de cálculo da GPU e a da CPU
+em cada máquina, medida nos próprios rastros a partir da tarefa =gemm=, que
+responde pela quase totalidade das operações de ponto flutuante das duas
+fatorações. Na poti, a RTX 4070 sustenta 429 GFLOPS contra 601 a 768 GFLOPS dos
+19 /workers/ de CPU, conforme a configuração: a GPU vale pouco mais da metade da
+CPU. Na tupi, a relação se inverte, com a RTX 4090 sustentando 1.219 GFLOPS
+contra 698 a 740 GFLOPS dos 23 /workers/, quase o dobro da CPU.
 
-A Figura [[fig:gpu-split]] mostra o efeito dessa divisão sobre o desempenho total na poti, decompondo o GFLOPS entregue por cada classe de recurso. Na poti, a melhor estratégia é usar a GPU como recurso à parte, e é exatamente isso que o =parsec:gd= faz, porque sua fila global simples não introduz custo estrutural sobre os workers de CPU.
+A Figura [[fig:gpu-split]] decompõe, na poti, o desempenho de cada configuração
+nas parcelas entregues por cada classe de recurso. O eixo vertical traz o GFLOPS
+entregue, obtido dividindo as operações de ponto flutuante executadas por uma
+classe pelo /makespan/ da execução; as duas parcelas de uma mesma configuração
+são empilhadas, de modo que a altura total da barra é o desempenho da execução,
+repetido no rótulo acima dela. Cada barra é uma das quatro configurações, a cor
+distingue a classe de recurso e os dois painéis separam as duas fatorações.
+Diferentemente das Figuras [[fig:gflops-b]] e [[fig:gflops-n]], aqui a cor
+codifica a classe de recurso, e não a configuração.
+
 
 #+CAPTION: GFLOPS entregues por classe de recurso (CPU/GPU) na poti, por algoritmo e configuração.
 #+NAME: fig:gpu-split
 #+ATTR_LATEX: :width \linewidth :placement [h] :center t
 [[file:../../plots/final/why_gd_poti/gpu_split_contrib.pdf]]
 
-Duas assimetrias, uma em cada lado, explicam o resultado da poti. Do lado da CPU, a tarefa =gemm= custa cerca de 26% mais no StarPU do que no PaRSEC, pois o StarPU dedica quatro threads de worker à gestão da GPU, que disputam os mesmos núcleos físicos usados pelos workers de CPU comuns. Por outro lado, o PaRSEC gerencia a GPU sem thread dedicada, e por isso seus workers de CPU rendem mais por segundo ocupado. Do lado da GPU, porém, a tarefa =gemm= executa 2,9 vezes mais rápido no StarPU do que no PaRSEC na poti e cerca de 3 vezes mais rápido na tupi. O prefetching e o pipelining entre as fases de H2D, execução e D2H do StarPU tornam sua execução de GPU mais eficiente por tarefa em qualquer uma das duas máquinas.
+A leitura da figura desfaz a explicação intuitiva para o resultado da poti. A
+parcela entregue pela GPU é praticamente a mesma nas quatro configurações, entre
+391 e 416 GFLOPS na fatoração de Cholesky, apesar de os quatro escalonadores
+decidirem o uso da GPU de maneiras bastante diferentes. O que separa as
+configurações é a parcela entregue pela CPU, que varia de 553 a 663 GFLOPS. É na
+CPU, e não na GPU, que a corrida se decide na poti, e cada configuração chega ao
+seu resultado por um caminho distinto.
+
+O =parsec:gd= vence porque preserva a CPU. Ele trata a GPU como recurso
+acessório, despachado de forma oportunista pelo próprio /worker/ que obtém
+acesso ao dispositivo, sem nenhuma thread reservada para essa gestão; seus 19
+/workers/ permanecem inteiramente disponíveis para o cálculo e entregam 663
+GFLOPS, a maior parcela de CPU entre as quatro configurações. O StarPU coloca 41% das
+operações na GPU, contra 37% do =parsec:gd=, e essa é de fato a divisão que
+maximiza o desempenho do sistema que o seu modelo enxerga. Para equalizar o número de fluxos de
+execução em GPU entre os dois runtimes, configuramos o StarPU com quatro
+/workers/ CUDA, e essas quatro threads disputam os mesmos núcleos
+físicos usados pelos /workers/ de CPU comuns: a tarefa =gemm= executada em CPU
+custa 7,81 ms no =starpu:dmda= contra 6,19 ms no =parsec:gd=, 26% a mais.
+Cabe registrar que essas quatro threads são uma escolha
+de configuração nossa, feita para tornar a comparação justa, e não uma
+propriedade intrínseca do StarPU.
+
+O =parsec:lfq=, por sua vez, mostra que não basta ao PaRSEC deixar a CPU livre, é
+preciso ocupá-la: ele entrega a menor parcela de CPU das quatro configurações,
+553 GFLOPS, não por custo de gestão da GPU, mas porque seus /workers/ ficam
+ociosos em 27% do /makespan/, contra 13% do =parsec:gd= e cerca de 2% das duas
+configurações do StarPU.
+
 
 **** Painéis espaço-tempo e progressão do DAG
 
-A Figura [[fig:st-compare]] mostra os painéis espaço-tempo das quatro configurações na poti. O StarPU usa quatro /lanes/ de GPU dedicadas, sempre ocupadas por =gemm= do início ao fim da execução. Já o PaRSEC usa seis /lanes/ de /stream/: duas reservadas a transferências H2D/D2H e quatro de execução. Essas quatro /streams/ de execução são visivelmente menos ocupadas, o que é uma evidência visual do menor uso da GPU pelo PaRSEC discutido na seção anterior. As faixas de workers de CPU, por sua vez, aparecem igualmente saturadas nas quatro configurações.
+As duas figuras seguintes são painéis do StarVZ cite:Pinto2021ProvidingIP,GarciaPinto2018, e ambas trazem
+o tempo de execução no eixo horizontal, compartilhado entre os quatro painéis
+para que os /makespans/ possam ser comparados diretamente. Na Figura
+[[fig:st-compare]], cada linha do eixo vertical é um recurso de execução: os 19
+/workers/ de CPU e, abaixo deles, as /lanes/ de GPU. Cada retângulo é uma tarefa,
+posicionada no recurso em que executou e colorida pelo seu tipo (=potrf=, =trsm=,
+=syrk= ou =gemm=); espaço em branco significa recurso ocioso. Para não sobrepor
+rótulos, apenas o primeiro /worker/ de CPU do nó é identificado no eixo. Cada um
+dos quatro painéis é uma das configurações.
 
 #+CAPTION: Painéis espaço-tempo de StarPU e PaRSEC na poti.
 #+NAME: fig:st-compare
 #+ATTR_LATEX: :width \linewidth :placement [h] :center t
 [[file:../../plots/final/gpu_traces_poti_20260701_131857/st_compare_dpotrf.pdf]]
 
-A Figura [[fig:kiteration]] mostra a progressão da fatoração ao longo de suas iterações em função do tempo. O =starpu:dmda= progride de forma quase linear. O =starpu:dmdas= mostra uma dispersão, o que significa que sua política de priorização pelo caminho crítico adianta a execução de tarefas de iterações futuras. Já o =parsec:gd= e o =parsec:lfq= progridem de forma irregular, por conta da ausência de um modelo de desempenho guiando a ordem de despacho das tarefas para a GPU no PaRSEC.
+A figura dá forma visual à decomposição da seção anterior. O StarPU usa quatro
+/lanes/ de GPU, uma por /worker/ CUDA, ocupadas por =gemm= praticamente do início
+ao fim da execução. O PaRSEC dispõe de seis /streams/ CUDA, mas apenas quatro
+delas executam tarefas; as outras duas são reservadas às transferências entre a
+memória do /host/ e a do dispositivo (H2D, do /host/ para o dispositivo, e D2H,
+do dispositivo para o /host/) e, por não carregarem computação, não aparecem no
+painel. A comparação é, portanto, de quatro /lanes/ de execução contra quatro, o
+que foi deliberado; a diferença é que no StarPU esse número é um parâmetro de
+tempo de execução e no PaRSEC ele é definido em tempo de compilação. Nas faixas de CPU,
+por outro lado, as quatro configurações não se comportam da mesma forma: as duas
+do StarPU e, em menor grau, o =parsec:gd= aparecem saturadas, enquanto o
+=parsec:lfq= exibe lacunas brancas largas e recorrentes ao longo de toda a
+execução -- são esses intervalos que aparecem como os 27% de ociosidade de CPU
+relatados na seção anterior.
+
+A Figura [[fig:kiteration]] usa o mesmo eixo horizontal de tempo, mas traz no
+eixo vertical o índice $k$ da iteração da fatoração à qual cada tarefa pertence.
+Cada marca é uma tarefa, colorida pelo tipo como na figura anterior, e as duas
+linhas pretas que envolvem a nuvem de pontos ligam, para cada iteração, a
+primeira e a última tarefa executadas: a distância entre elas mede o quanto o
+runtime mantém iterações simultaneamente em andamento. Novamente há um painel
+por configuração. O =starpu:dmda= progride de forma quase linear, com as duas
+linhas praticamente coladas, o que significa que ele conclui uma iteração antes
+de avançar para a seguinte. O =starpu:dmdas= abre um envelope largo, sinal de que
+sua política de priorização pelo caminho crítico adianta tarefas de iterações
+futuras. Já o =parsec:gd= e o =parsec:lfq= progridem de forma irregular, em
+degraus, com o =parsec:lfq= exibindo os patamares mais longos, nos mesmos
+instantes em que a Figura [[fig:st-compare]] mostra a CPU ociosa.
 
 #+CAPTION: Progressão das iterações da fatoração de Cholesky ao longo do tempo, na poti.
 #+NAME: fig:kiteration
 #+ATTR_LATEX: :width \linewidth :placement [h] :center t
 [[file:../../plots/final/gpu_traces_poti_20260701_131857/kiteration_compare_dpotrf.pdf]]
 
-**** Transferências H2D/D2H: dois modelos de memória opostos
-
-A Figura [[fig:transfers]] mostra o volume de dados transferido entre host e device por cada configuração, medido pelos contadores nativos de cada runtime.
-
-#+CAPTION: Volume de transferência H2D/D2H na poti, por configuração.
-#+NAME: fig:transfers
-#+ATTR_LATEX: :width 0.7\linewidth :placement [h] :center t
-[[file:../../plots/final/gpu_traces_poti_20260701_131857/transfers_d2h.pdf]]
-
-Na poti, o StarPU transfere 36,4GB H2D contra apenas 6,0GB do PaRSEC. Isso acontece pois, como a matriz em precisão dupla não cabe na VRAM da RTX 4070, o cache do StarPU envia os mesmos blocos repetidamente para a GPU. O PaRSEC quase não re-envia dados, porque a sua política de afinidade de dispositivo e seu cache seguram a maior parte dos pedidos, mas devolve ao host todo bloco escrito por uma tarefa de GPU, imediatamente após a execução do kernel, o que gera um D2H muito maior. As duas direções têm custos diferentes na execução: o H2D é síncrono do ponto de vista do kernel, que só dispara quando o dado chega. O D2H do PaRSEC, por sair por um /stream/ dedicado e assíncrono, quase não custa tempo de computação apesar do volume maior.
 
 ** Conclusão
 
 Este trabalho comparou o desempenho dos runtimes StarPU e PaRSEC nas fatorações de Cholesky e LU sem pivotamento da biblioteca Chameleon, mantendo fixa a biblioteca de álgebra linear para isolar o efeito do runtime sobre o desempenho. Para viabilizar essa comparação, estendemos a interface DTD do PaRSEC com suporte à execução de tarefas em GPU e implementamos os codelets de GPU correspondentes no Chameleon, capacidades até então restritas ao caminho do StarPU.
 
-Os resultados mostram que o runtime vencedor depende do equilíbrio entre a capacidade de CPU e de GPU de cada máquina. Na poti, cuja GPU é fraca em precisão dupla, o =parsec:gd= venceu por tratar a GPU como recurso adicional, sem impor custo estrutural sobre os workers de CPU. Na tupi, cuja GPU é forte, o StarPU venceu com folga por ocupá-la de forma mais eficiente, apesar do custo adicional que suas threads dedicadas à gestão da GPU impõem sobre a CPU. A análise dos rastros de execução confirmou que essa inversão ocorre por conta das diferenças entre os dois runtimes, onde o StarPU obtém maior eficiência por tarefa de GPU graças ao prefetching e ao pipelining entre host e device, mas paga por isso reservando workers de CPU à gestão da GPU. Por outro lado, o PaRSEC gerencia a GPU de forma oportunista e mais barata para a CPU, mas devolve ao host todo bloco modificado por uma tarefa de GPU, gerando um volume de transferências D2H muito maior.
+Os resultados mostram que o runtime vencedor depende do equilíbrio entre a
+capacidade de CPU e de GPU de cada máquina. Na poti, onde a GPU vale pouco mais
+da metade da capacidade agregada da CPU em precisão dupla, o =parsec:gd= venceu
+por tratar a GPU como recurso acessório, sem impor custo estrutural sobre os
+/workers/ de CPU. Na tupi, onde a GPU vale quase o dobro da CPU, o StarPU venceu
+com folga. A análise dos rastros de execução mostrou que a inversão não se decide
+pela eficiência com que cada runtime executa uma tarefa na GPU: na poti, as
+quatro configurações extraem essencialmente o mesmo desempenho do dispositivo, e
+o que as separa é o quanto sobra de CPU. O StarPU reserva /workers/ à gestão da
+GPU, o que encarece em 26% cada tarefa executada em CPU, e recupera esse custo
+apenas quando a GPU é forte o bastante para justificá-lo.
+
+Como trabalho futuro, pretendemos: (i) instrumentar o PaRSEC para medir a
+duração de tarefas de GPU diretamente no dispositivo, em vez de no /host/,
+eliminando a sobreposição entre /streams/ que hoje impede comparar durações de
+tarefas de GPU entre os dois runtimes; (ii) estender a avaliação a um espectro
+maior de relações entre capacidade de CPU e de GPU, com outras GPUs e CPUs, para
+caracterizar com mais precisão o limiar em que a vantagem se inverte entre os
+runtimes; (iii) avaliar o desempenho em ambientes distribuídos multi-nó e
+multi-GPU, nos quais o escalonamento totalmente distribuído do PaRSEC foi
+projetado para ter vantagem sobre o modelo de gerenciamento por nó do StarPU; e
+(iv) estender as extensões de GPU desenvolvidas na interface DTD do PaRSEC a
+outras fatorações do Chameleon, como QR.
 
 ** Acknowledgments
 :PROPERTIES:
@@ -572,6 +715,21 @@ series = {ScalA '17}
   year={2021},
   pages={16-25},
   url={https://api.semanticscholar.org/CorpusID:235637707}
+}
+
+@article{GarciaPinto2018,
+  author   = {Garcia Pinto, Vin{\'i}cius and Mello Schnorr, Lucas and Stanisic, Luka and
+              Legrand, Arnaud and Thibault, Samuel and Danjean, Vincent},
+  title    = {A visual performance analysis framework for task-based parallel
+              applications running on hybrid clusters},
+  journal  = {Concurrency and Computation: Practice and Experience},
+  volume   = {30},
+  number   = {18},
+  pages    = {e4472},
+  year     = {2018},
+  doi      = {https://doi.org/10.1002/cpe.4472},
+  url      = {https://onlinelibrary.wiley.com/doi/abs/10.1002/cpe.4472},
+  keywords = {performance visualization, task-based applications, StarPU, hybrid platforms}
 }
 
 @INPROCEEDINGS{10025520,
