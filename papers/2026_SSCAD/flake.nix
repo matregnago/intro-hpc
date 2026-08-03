@@ -14,6 +14,9 @@
       in
       {
         packages.default = paper.pdf;
+        devShells.default = pkgs.mkShell {
+          nativeBuildInputs = [ paper.emacs pkgs.texliveFull ];
+        };
       }
     );
 }

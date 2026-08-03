@@ -47,7 +47,6 @@
         parsec = parsecPkg;
         runtime = "starpu";
         cudaPackages = cudapkgs.cudaPackages;
-        enableCuda = true;
       };
       chameleon_parsec = cudapkgs.callPackage ./chameleon.nix {
         stdenv = cudapkgs.gcc13Stdenv;

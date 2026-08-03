@@ -1,7 +1,7 @@
 library(DoE.base)
 library(tidyverse)
 
-reps <- 3
+reps <- 5
 n_sizes <- c(5000, 10000, 15000, 20000, 25000, 30000,
              35000, 40000, 50000, 60000)
 block <- 1000

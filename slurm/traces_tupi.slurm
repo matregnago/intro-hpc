@@ -1,6 +1,7 @@
 #!/bin/bash -l
 #SBATCH --job-name=traces_tupi
 #SBATCH --partition=tupi
+#SBATCH --exclude=tupi1,tupi2
 #SBATCH --time=04:00:00
 #SBATCH --output=%x_%j.out
 #SBATCH --error=%x_%j.err
@@ -31,7 +32,7 @@ export DESIGN_FILE="$RESULTS_DIR/design.csv"
 
 export THREADS=23
 export GPUS=1
-export TRACE=1 TRACE_FULL=1 TRACE_DAG=0 TRACE_STATS=1
+export TRACE=1 TRACE_FULL=1 TRACE_DAG=1 TRACE_STATS=1
 export CALIB_PASSES=2
 
 nixw nix develop .#starpu --impure --command bash -c '

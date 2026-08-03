@@ -1,7 +1,8 @@
 #!/bin/bash -l
 #SBATCH --job-name=n_size_tupi
 #SBATCH --partition=tupi
-#SBATCH --time=06:00:00
+#SBATCH --exclude=tupi1,tupi2
+#SBATCH --time=11:00:00
 #SBATCH --output=%x_%j.out
 #SBATCH --error=%x_%j.err
 

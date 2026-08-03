@@ -1,7 +1,7 @@
 #!/bin/bash -l
 #SBATCH --job-name=n_size_poti
 #SBATCH --partition=poti
-#SBATCH --time=06:00:00
+#SBATCH --time=11:00:00
 #SBATCH --output=%x_%j.out
 #SBATCH --error=%x_%j.err
 

@@ -31,7 +31,7 @@ export DESIGN_FILE="$RESULTS_DIR/design.csv"
 
 export THREADS=19
 export GPUS=1
-export TRACE=1 TRACE_FULL=1 TRACE_DAG=0 TRACE_STATS=1
+export TRACE=1 TRACE_FULL=1 TRACE_DAG=1 TRACE_STATS=1
 export CALIB_PASSES=2
 
 nixw nix develop .#starpu --impure --command bash -c '
