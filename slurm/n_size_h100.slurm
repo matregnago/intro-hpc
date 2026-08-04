@@ -1,10 +1,16 @@
-#!/bin/bash -l
-#SBATCH --job-name=n_size_poti
-#SBATCH --partition=poti
-#SBATCH --exclude=poti1
-#SBATCH --time=11:00:00
-#SBATCH --output=%x_%j.out
-#SBATCH --error=%x_%j.err
+#!/bin/bash
+#SBATCH -A avalgpu
+#SBATCH --nodes=1
+#SBATCH --job-name=n_size_h100
+#SBATCH --partition=petrobr-h100
+#SBATCH --time=08:00:00
+#SBATCH --output=./%x_%J/%J.out
+#SBATCH --error=./%x_%J/%J.err
+#SBATCH --gres=gpu:1
+#SBATCH --cpus-per-gpu=96
+
+module load arch_gpu_sc/current
+module load cuda/12.6
 
 set -euxo pipefail
 
@@ -27,10 +33,10 @@ trap copyback EXIT
 
 export RESULTS_DIR="$LOCAL_RESULTS_DIR"
 mkdir -p "$RESULTS_DIR"
-cp doe_n_size_poti.csv "$RESULTS_DIR/design.csv"
+cp doe_n_size_h100.csv "$RESULTS_DIR/design.csv"
 export DESIGN_FILE="$RESULTS_DIR/design.csv"
 
-export THREADS=19
+export THREADS=95
 export GPUS=1
 
 nixw nix develop .#starpu --impure --command bash -c '
