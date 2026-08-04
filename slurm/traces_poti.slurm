@@ -34,12 +34,12 @@ export GPUS=1
 export TRACE=1 TRACE_FULL=1 TRACE_DAG=1 TRACE_STATS=1
 export CALIB_PASSES=2
 
-nixw nix develop "git+file:.?submodules=1#starpu" --command bash -c '
+nixw nix develop .#starpu --impure --command bash -c '
 set -euo pipefail
 bash scripts/run.sh starpu
 '
 
-nixw nix develop "git+file:.?submodules=1#parsec" --command bash -c '
+nixw nix develop .#parsec --impure --command bash -c '
 set -euo pipefail
 bash scripts/run.sh parsec
 '
