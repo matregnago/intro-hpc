@@ -39,12 +39,12 @@ export DESIGN_FILE="$RESULTS_DIR/design.csv"
 export THREADS=95
 export GPUS=1
 
-nixw nix develop .#starpu --impure --command bash -c '
+nixw nix develop "git+file:.?submodules=1#starpu" --command bash -c '
 set -euo pipefail
 bash scripts/run.sh starpu
 '
 
-nixw nix develop .#parsec --impure --command bash -c '
+nixw nix develop "git+file:.?submodules=1#parsec" --command bash -c '
 set -euo pipefail
 bash scripts/run.sh parsec
 '
