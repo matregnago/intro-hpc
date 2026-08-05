@@ -355,7 +355,7 @@ experimental em ambas as partições do PCAD, tupi e poti, variando apenas o
 número de threads de acordo com o número total de núcleos físicos disponíveis
 em cada uma. A ordem de execução foi
 aleatória, com cinco repetições por configuração, para
-caracterizar a variabilidade entre execuções de uma mesma configuração. 
+caracterizar a variabilidade entre execuções de uma mesma configuração.
 O pico de GFLOPS observado em cada máquina,
 em precisão dupla, determina o tamanho de bloco utilizado no segundo e no
 terceiro projetos experimentais.
@@ -373,7 +373,7 @@ desenho fatorial em ordem aleatória, com três repetições na tupi e cinco na
 poti.
 
 Por fim, o terceiro projeto experimental tem como objetivo explorar
-como cada escalonador se comporta em cada uma das aplicações e maquinas. 
+como cada escalonador se comporta em cada uma das aplicações e maquinas.
 Empregamos os mecanismos de coleta de rastros de execução do StarPU e do
 PaRSEC, por meio de oito execuções representativas por máquina, uma para cada combinação entre as duas fatorações e as quatro
 combinações de runtime e escalonador. Como o StarVZ foi originalmente
@@ -472,7 +472,7 @@ codifica a classe de recurso, e não a configuração.
 #+CAPTION: GFLOPS entregues por classe de recurso (CPU/GPU) na poti, por algoritmo e configuração.
 #+NAME: fig:gpu-split
 #+ATTR_LATEX: :width \linewidth :placement [h] :center t
-[[file:../../plots/final/why_gd_poti/gpu_split_contrib.pdf]]
+[[file:../../plots/final/gpu_split_contrib.pdf]]
 
 A leitura da figura desfaz a explicação intuitiva para o resultado da poti. A
 parcela entregue pela GPU é praticamente a mesma nas quatro configurações, entre
