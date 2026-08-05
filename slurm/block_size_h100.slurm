@@ -13,7 +13,7 @@ module load arch_gpu_sc/current
 module load cuda/12.6
 
 set -euxo pipefail
-
+export SCRATCH="/tmp"
 WORK_DIR="$SCRATCH/intro_hpc"
 LOCAL_RESULTS_DIR="$WORK_DIR/local_results/${SLURM_JOB_NAME}_${SLURM_JOB_ID}"
 FINAL_RESULTS_DIR="$SLURM_SUBMIT_DIR/data/${SLURM_JOB_NAME}_${SLURM_JOB_ID}"
