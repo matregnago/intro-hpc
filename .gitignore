@@ -6,6 +6,9 @@ context
 .direnv
 teste
 chameleon-runtimes_782056
+/chameleon/
+/*.out
+/*.err
 data/*
 result
 result-*

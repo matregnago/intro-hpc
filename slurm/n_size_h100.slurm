@@ -4,8 +4,8 @@
 #SBATCH --job-name=n_size_h100
 #SBATCH --partition=petrobr-h100
 #SBATCH --time=08:00:00
-#SBATCH --output=./%x_%J/%J.out
-#SBATCH --error=./%x_%J/%J.err
+#SBATCH --output=%x_%j.out
+#SBATCH --error=%x_%j.err
 #SBATCH --gres=gpu:1
 #SBATCH --cpus-per-gpu=96
 
@@ -20,7 +20,19 @@ FINAL_RESULTS_DIR="$SLURM_SUBMIT_DIR/data/${SLURM_JOB_NAME}_${SLURM_JOB_ID}"
 
 rm -rf "$WORK_DIR"
 mkdir -p "$WORK_DIR" "$LOCAL_RESULTS_DIR" "$FINAL_RESULTS_DIR"
-cp -r "$SLURM_SUBMIT_DIR/." "$WORK_DIR/"
+rsync -a \
+  --exclude='/.git/' \
+  --exclude='/.direnv/' \
+  --exclude='/data/' \
+  --exclude='/papers/' \
+  --exclude='/slides/' \
+  --exclude='/plots/' \
+  --exclude='/context/' \
+  --exclude='/result' \
+  --exclude='/result-*' \
+  --exclude='/*.out' \
+  --exclude='/*.err' \
+  "$SLURM_SUBMIT_DIR/" "$WORK_DIR/"
 cd "$WORK_DIR"
 
 copyback() {

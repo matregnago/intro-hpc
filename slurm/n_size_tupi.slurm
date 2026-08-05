@@ -14,7 +14,19 @@ FINAL_RESULTS_DIR="$SLURM_SUBMIT_DIR/data/${SLURM_JOB_NAME}_${SLURM_JOB_ID}"
 
 rm -rf "$WORK_DIR"
 mkdir -p "$WORK_DIR" "$LOCAL_RESULTS_DIR" "$FINAL_RESULTS_DIR"
-cp -r "$SLURM_SUBMIT_DIR/." "$WORK_DIR/"
+rsync -a \
+  --exclude='/.git/' \
+  --exclude='/.direnv/' \
+  --exclude='/data/' \
+  --exclude='/papers/' \
+  --exclude='/slides/' \
+  --exclude='/plots/' \
+  --exclude='/context/' \
+  --exclude='/result' \
+  --exclude='/result-*' \
+  --exclude='/*.out' \
+  --exclude='/*.err' \
+  "$SLURM_SUBMIT_DIR/" "$WORK_DIR/"
 cd "$WORK_DIR"
 
 copyback() {

@@ -14,11 +14,12 @@ Adicione a linha a seguir em `~/.config/nix/nix.conf` ou `/etc/nix/nix.conf`:
 experimental-features = nix-command flakes
 ```
 
-3. Clonar o repositório:
+3. Clonar o repositório e o checkout do Chameleon:
 
 ```bash
 git clone https://github.com/matregnago/intro-hpc.git
 cd intro-hpc
+git clone --recurse-submodules https://github.com/matregnago/chameleon.git
 ```
 
 4. Entrar no ambiente do `nix` de desenvolvimento:
