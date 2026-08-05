@@ -33,12 +33,12 @@ export DESIGN_FILE="$RESULTS_DIR/design.csv"
 export THREADS=23
 export GPUS=1
 
-nixw nix develop .#starpu --impure --command bash -c '
+nixw nix develop .#starpu --command bash -c '
 set -euo pipefail
 bash scripts/run.sh starpu
 '
 
-nixw nix develop .#parsec --impure --command bash -c '
+nixw nix develop .#parsec --command bash -c '
 set -euo pipefail
 bash scripts/run.sh parsec
 '

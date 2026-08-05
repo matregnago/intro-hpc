@@ -1,6 +1,7 @@
 {
   stdenv,
   lib,
+  fetchgit,
   cmake,
   pkg-config,
   gfortran,
@@ -27,7 +28,12 @@ stdenv.mkDerivation {
   pname = "chameleon-${runtime}";
   version = "1.4.0";
 
-  src = ./chameleon;
+  src = fetchgit {
+    url = "https://github.com/matregnago/chameleon.git";
+    rev = "13960d0d8e529777bd7242d9f4563253b81dcb3b";
+    fetchSubmodules = true;
+    hash = "sha256-vUTdzbaLn0eYgQU7TDdSRknFFV0MEI6h6o8DYJfP7y4=";
+  };
 
   patches = [ ./patches/chameleon.patch ];
 
