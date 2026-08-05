@@ -178,44 +178,44 @@ Compatibilidade Chameleon e PaRSEC
 
 # Traces Cholesky - Poti
 
-![center h:550](../../plots/final/gpu_traces_poti_20260701_131857/st_compare_dpotrf.png)
+![center h:550](../../plots/final/traces_poti_812152/st_compare_dpotrf.png)
 
 ---
 
 # Traces Cholesky - Tupi
 
-![center h:550](../../plots/final/gpu_traces_tupi_20260701_131907/st_compare_dpotrf.png)
+![center h:550](../../plots/final/traces_tupi_811407/st_compare_dpotrf.png)
 
 ---
 
 # Tempos de cada tarefa Cholesky - Poti
 
-![center h:550 w:1100](../../plots/final/gpu_traces_poti_20260701_131857/task_times_mean.png)
+![center h:550 w:1100](../../plots/final/traces_poti_812152/task_times_mean.png)
 
 ---
 
 # Tempos de cada tarefa Cholesky - Tupi
 
-![center h:550 w:1100](../../plots/final/gpu_traces_tupi_20260701_131907/task_times_mean.png)
+![center h:550 w:1100](../../plots/final/traces_tupi_811407/task_times_mean.png)
 
 ---
 
 # K-Iteration Cholesky Poti
 
-![center h:550](../../plots/final/gpu_traces_poti_20260701_131857/kiteration_compare_dpotrf.png)
+![center h:550](../../plots/final/traces_poti_812152/kiteration_compare_dpotrf.png)
 
 
 ---
 
 # K-Iteration Cholesky Tupi
 
-![center h:550](../../plots/final/gpu_traces_tupi_20260701_131907/kiteration_compare_dpotrf.png)
+![center h:550](../../plots/final/traces_tupi_811407/kiteration_compare_dpotrf.png)
 
 ---
 
 # Transferência de dados Cholesky
 
-![w:560 h:520](../../plots/final/gpu_traces_poti_20260701_131857/transfers_d2h.png) ![w:560 h:520](../../plots/final/gpu_traces_tupi_20260701_131907/transfers_d2h.png)
+![w:560 h:520](../../plots/final/traces_poti_812152/transfers_d2h.png) ![w:560 h:520](../../plots/final/traces_tupi_811407/transfers_d2h.png)
 
 
 ---

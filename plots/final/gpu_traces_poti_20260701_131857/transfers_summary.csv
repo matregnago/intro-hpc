@@ -1,5 +1,0 @@
-"algo","runtime","cfg","h2d_mb","d2h_mb","d2h_xfers","gpu_kernels","d2h_mb_per_kernel"
-"dpotrf","starpu","starpu:dmda",36448.2,31065.2,16678,35202,0.882483949775581
-"dpotrf","starpu","starpu:dmdas",32506.9,26654.5,14310,35267,0.755791533161312
-"dpotrf","parsec","parsec:gd",6030,61400,NA,32964,1.86263802936537
-"dpotrf","parsec","parsec:lfq",6030,68060,NA,36539,1.8626672870084

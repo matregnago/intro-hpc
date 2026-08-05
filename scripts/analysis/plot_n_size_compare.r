@@ -5,7 +5,7 @@
 # ideal; o subtitulo deriva isso dos dados.
 #
 #   Rscript scripts/analysis/plot_n_size_compare.r poti_dir tupi_dir
-#   (default: data/gpu_n_size_poti_* e data/gpu_n_size_tupi_* mais recentes)
+#   (default: data/n_size_poti_* e data/n_size_tupi_* mais recentes)
 #
 # Saida: plots/final/gflops_vs_n_compare.{png,pdf}
 
@@ -24,17 +24,21 @@ dirs <- if (length(args) >= 2) {
 } else if (length(args) == 1) {
   stop("passe 0 ou 2 base_dirs (poti e tupi); recebeu 1")
 } else {
-  poti_cands <- sort(Sys.glob("data/gpu_n_size_poti_*"), decreasing = TRUE)
-  tupi_cands <- sort(Sys.glob("data/gpu_n_size_tupi_*"), decreasing = TRUE)
-  if (length(poti_cands) == 0) stop("nenhum data/gpu_n_size_poti_* encontrado")
-  if (length(tupi_cands) == 0) stop("nenhum data/gpu_n_size_tupi_* encontrado")
+  poti_cands <- sort(Sys.glob("data/n_size_poti_*"), decreasing = TRUE)
+  tupi_cands <- sort(Sys.glob("data/n_size_tupi_*"), decreasing = TRUE)
+  if (length(poti_cands) == 0) stop("nenhum data/n_size_poti_* encontrado")
+  if (length(tupi_cands) == 0) stop("nenhum data/n_size_tupi_* encontrado")
   c(poti_cands[1], tupi_cands[1])
 }
 
 read_one <- function(base_dir) {
   f <- file.path(base_dir, "results.csv")
   message("lendo ", f)
-  node <- sub(".*gpu_n_size_([a-z]+)_.*", "\\1", base_dir)
+  # node e extraido do nome do dir independente do prefixo; se nao casa, usa o
+  # proprio nome.
+  node <- basename(base_dir)
+  m    <- regexpr("poti|tupi", node)
+  if (m > 0) node <- regmatches(node, m)
   gpu <- switch(node,
     poti = "poti (RTX 4070)",
     tupi = "tupi (RTX 4090)",

@@ -519,7 +519,7 @@ dos quatro painéis é uma das configurações.
 #+CAPTION: Painéis espaço-tempo de StarPU e PaRSEC na poti.
 #+NAME: fig:st-compare
 #+ATTR_LATEX: :width \linewidth :placement [h] :center t
-[[file:../../plots/final/gpu_traces_poti_20260701_131857/st_compare_dpotrf.pdf]]
+[[file:../../plots/final/traces_poti_812152/st_compare_dpotrf.pdf]]
 
 A figura dá forma visual à decomposição da seção anterior. O StarPU usa quatro
 /lanes/ de GPU, uma por /worker/ CUDA, ocupadas por =gemm= praticamente do início
@@ -553,7 +553,7 @@ instantes em que a Figura [[fig:st-compare]] mostra a CPU ociosa.
 #+CAPTION: Progressão das iterações da fatoração de Cholesky ao longo do tempo, na poti.
 #+NAME: fig:kiteration
 #+ATTR_LATEX: :width \linewidth :placement [h] :center t
-[[file:../../plots/final/gpu_traces_poti_20260701_131857/kiteration_compare_dpotrf.pdf]]
+[[file:../../plots/final/traces_poti_812152/kiteration_compare_dpotrf.pdf]]
 
 
 ** Conclusão

@@ -1,13 +1,12 @@
 #!/usr/bin/env Rscript
 #
 # Comparativo poti vs tupi da montanha de block size: GFLOPS medio vs b (barras
-# min/max), facet_wrap(algorithm ~ node) com escalas livres, color = config.
-# So FP64. As grades de b dos dois jobs nao coincidem (poti: varredura densa;
-# tupi: {1000,2000,4000}); no plot a poti corta a cauda b=1000/2000/4000, mas o
-# block_size_peak_compare.csv vem da grade completa.
+# min/max), facet_grid(algorithm ~ node) com escalas livres, color = config.
+# So FP64. Os dois jobs varrem a mesma grade de b; o plot e o
+# block_size_peak_compare.csv usam a grade completa.
 #
 #   Rscript scripts/analysis/plot_block_size_compare.r poti_dir tupi_dir
-#   (default: data/gpu_tile_poti_* e data/gpu_tile_tupi_* mais recentes)
+#   (default: data/block_size_poti_* e data/block_size_tupi_* mais recentes)
 #
 # Saida: plots/final/gflops_vs_b_compare.{png,pdf}
 #      + plots/final/block_size_peak_compare.csv
@@ -28,17 +27,21 @@ dirs <- if (length(args) >= 2) {
 } else if (length(args) == 1) {
   stop("passe 0 ou 2 base_dirs (poti e tupi); recebeu 1")
 } else {
-  poti_cands <- sort(Sys.glob("data/gpu_tile_poti_*"), decreasing = TRUE)
-  tupi_cands <- sort(Sys.glob("data/gpu_tile_tupi_*"), decreasing = TRUE)
-  if (length(poti_cands) == 0) stop("nenhum data/gpu_tile_poti_* encontrado")
-  if (length(tupi_cands) == 0) stop("nenhum data/gpu_tile_tupi_* encontrado")
+  poti_cands <- sort(Sys.glob("data/block_size_poti_*"), decreasing = TRUE)
+  tupi_cands <- sort(Sys.glob("data/block_size_tupi_*"), decreasing = TRUE)
+  if (length(poti_cands) == 0) stop("nenhum data/block_size_poti_* encontrado")
+  if (length(tupi_cands) == 0) stop("nenhum data/block_size_tupi_* encontrado")
   c(poti_cands[1], tupi_cands[1])
 }
 
 read_one <- function(base_dir) {
   f <- file.path(base_dir, "results.csv")
   message("lendo ", f)
-  node <- sub(".*gpu_tile_([a-z]+)_.*", "\\1", base_dir)
+  # node e extraido do nome do dir independente do prefixo (block_size_poti_*,
+  # gpu_tile_poti_*, ...); se nao casa, usa o proprio nome.
+  node <- basename(base_dir)
+  m    <- regexpr("poti|tupi", node)
+  if (m > 0) node <- regmatches(node, m)
   gpu <- switch(node,
     poti = "poti (RTX 4070)",
     tupi = "tupi (RTX 4090)",
@@ -79,10 +82,8 @@ write_csv(
   file.path(out_dir, "block_size_peak_compare.csv")
 )
 
-# So no plot: poti sem a cauda plana, largura das barras relativa a grade de b
-# de cada no (as grades diferem ~4x).
+# Largura das barras de erro relativa a grade de b de cada no.
 plot_dat <- agg |>
-  filter(!(node == "poti" & b %in% c(1000, 2000, 4000))) |>
   group_by(node) |>
   mutate(ebw = 0.02 * max(b)) |>
   ungroup()

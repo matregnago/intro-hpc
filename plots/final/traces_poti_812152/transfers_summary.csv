@@ -1,0 +1,9 @@
+"algo","runtime","cfg","h2d_mb","d2h_mb","d2h_xfers","gpu_kernels","d2h_mb_per_kernel"
+"dpotrf","starpu","starpu:dmda",35543,34820.3,18694,36048,0.965942632046161
+"dpotrf","starpu","starpu:dmdas",30739.2,29502.4,15839,35818,0.823675247082473
+"dpotrf","parsec","parsec:gd",6030,62240,NA,33415,1.86263654047583
+"dpotrf","parsec","parsec:lfq",6030,71080,NA,38160,1.86268343815514
+"dgetrf_nopiv","starpu","starpu:dmda",76364.7,75968,40785,71694,1.05961447261974
+"dgetrf_nopiv","starpu","starpu:dmdas",98841.3,72935.6,39157,71023,1.02692930459147
+"dgetrf_nopiv","parsec","parsec:gd",11980,118860,NA,63813,1.86262987165625
+"dgetrf_nopiv","parsec","parsec:lfq",11980,138070,NA,74127,1.86261416218112

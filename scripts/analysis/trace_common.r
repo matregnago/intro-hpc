@@ -138,6 +138,23 @@ list_runs <- function(base_dir, pattern = NULL) {
   bind_cols(meta, avail) %>% arrange(.data$dir)
 }
 
+#' Length of the union of intervals [start, end], in the same unit as the
+#' inputs. Immune to overlaps (PaRSEC's host-observed GPU spans overlap across
+#' streams: a plain sum would inflate the device's active time).
+union_length <- function(start, end) {
+  stopifnot(length(start) == length(end))
+  keep <- !is.na(start) & !is.na(end) & end > start
+  s <- start[keep]; e <- end[keep]
+  if (length(s) == 0) return(0)
+  o   <- order(s)
+  s   <- s[o]; e <- e[o]
+  cme <- cummax(e)                        # max end up to i
+  brk <- c(TRUE, s[-1] > cme[-length(s)]) # TRUE where a new component opens
+  idx <- which(brk)                       # first element of each component
+  fin <- c(idx[-1] - 1, length(s))        # last element of each component
+  sum(cme[fin] - s[idx])
+}
+
 #' Scale that brings a run's dag/tasks/states times to MILLISECONDS. The offline
 #' PaRSEC converters -- the only writers of a states.parquet -- emit
 #' microseconds; StarVZ phase-1 parquets are already ms.
