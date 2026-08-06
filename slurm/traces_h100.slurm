@@ -48,7 +48,7 @@ mkdir -p "$RESULTS_DIR"
 cp doe_traces_h100.csv "$RESULTS_DIR/design.csv"
 export DESIGN_FILE="$RESULTS_DIR/design.csv"
 
-export THREADS=95
+export THREADS=47
 export GPUS=1
 export TRACE=1 TRACE_FULL=1 TRACE_DAG=1 TRACE_STATS=1
 export CALIB_PASSES=2

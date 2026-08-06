@@ -48,7 +48,7 @@ mkdir -p "$RESULTS_DIR"
 cp doe_n_size_h100.csv "$RESULTS_DIR/design.csv"
 export DESIGN_FILE="$RESULTS_DIR/design.csv"
 
-export THREADS=95
+export THREADS=47
 export GPUS=1
 
 bash "$SLURM_SUBMIT_DIR/scripts/nix-prefetch-tarballs.sh" "$SLURM_SUBMIT_DIR/tarballs"
