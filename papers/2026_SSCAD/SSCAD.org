@@ -110,10 +110,11 @@ Embora StarPU e PaRSEC compartilhem o objetivo de abstrair o escalonamento de
 tarefas em plataformas heterogêneas, os escalonadores de cada runtime avaliados
 neste trabalho diferem numa dimensão central: o StarPU decide o uso da GPU
 dinamicamente, orientado por um modelo de desempenho aprendido a partir do
-histórico de execuções, enquanto os escalonadores do PaRSEC decidem de forma
-estática, sem medir tempos reais de execução. Essa diferença de filosofia
+histórico de execuções, enquanto que os escalonadores do PaRSEC tomam
+as decisões de escalonamento desconsiderando modelos de desempenho.
+Essa diferença de filosofia
 sugere, à primeira vista, que o StarPU deveria ter vantagem sistemática sobre o
-PaRSEC em algoritmos de álgebra linear densa; um dos objetivos deste trabalho é
+PaRSEC em algoritmos de álgebra linear densa. Um dos objetivos deste trabalho é
 verificar empiricamente se essa expectativa se confirma.
 
 Diversos trabalhos avaliam runtimes task-based aplicados a algoritmos de álgebra
