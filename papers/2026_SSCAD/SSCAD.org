@@ -95,7 +95,7 @@ computacional e a disponibilidade de recursos, buscando otimizar o desempenho.
 Isso isola o desenvolvedor dos detalhes de escalonamento, permitindo
 criar aplicações mais simples e fáceis de escalar.
 #+latex: %
-PaRSEC cite:bosilca2011dague é outro desses runtimes, com foco em ambientes de
+PaRSEC cite:bosilca2011dague tem foco em ambientes de
 memória distribuída compostos por múltiplos nós multicore, possivelmente
 equipados com aceleradores. Diferentemente de runtimes baseados no modelo STF,
 como o StarPU, que instanciam explicitamente um nó de DAG na memória para cada
