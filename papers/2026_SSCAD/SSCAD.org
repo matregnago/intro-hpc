@@ -173,30 +173,33 @@ Apresentamos os runtimes StarPU e PaRSEC, e a biblioteca de álgebra
 linear Chameleon.
 
 #+latex: \noindent
-*StarPU* cite:starpu é um framework escrito em C para programação orientada a
-tarefas em plataformas híbridas compostas por CPUs e GPUs, com suporte também a
-ambientes distribuídos por meio da extensão StarPU-MPI. As tarefas de
-uma aplicação StarPU são definidas por meio de codelets, estruturas que agrupam
-uma ou mais implementações de uma mesma operação, além da forma como cada um de
-seus parâmetros é acessado. A partir da ordem de submissão das tarefas e dos
-modos de acesso declarados para cada dado, o StarPU desenrola implicitamente,
-tarefa a tarefa, o grafo acíclico dirigido (DAG) completo de dependências, sem
-que o programador precise expressá-lo manualmente. Em tempo de execução, o
-runtime escolhe qual das implementações disponíveis será utilizada para cada
-tarefa, considerando a disponibilidade dos recursos, a distribuição de carga
-entre os workers e o custo das cópias de dados envolvidas. O gerenciamento de
-memória nos aceleradores também é responsabilidade do StarPU, que realiza
-alocação e liberação de buffers na GPU, cópias entre a memória do host e do
-dispositivo, e a sobreposição dessas transferências com a computação por meio de
-prefetching.
-
-Neste trabalho utilizamos dois escalonadores do StarPU: o Deque Model Data Aware
-(=dmda=), que mantém um modelo de desempenho por par tarefa-recurso, estimado a
-partir do histórico de execuções, e atribui cada tarefa ao recurso que minimiza
-o tempo estimado de conclusão, somando o tempo de computação previsto ao custo
-estimado de transferência de dados; e o =dmdas=, uma variante
-que processa as tarefas seguindo a ordem de prioridade dada pela distância ao
-caminho crítico do DAG, ao custo de uma ordenação adicional.
+*StarPU* cite:starpu é um framework escrito em C para programação
+orientada a tarefas em plataformas híbridas compostas por CPUs e GPUs,
+com suporte também a ambientes distribuídos por meio da extensão
+StarPU-MPI. As tarefas de uma aplicação StarPU são definidas por meio
+de codelets, estruturas que agrupam uma ou mais implementações de uma
+mesma operação, além da forma como cada um de seus parâmetros é
+acessado. A partir da ordem de submissão das tarefas e dos modos de
+acesso declarados para cada dado, o StarPU desenrola implicitamente,
+tarefa a tarefa, o grafo acíclico dirigido (DAG) completo de
+dependências, sem que o programador precise expressá-lo
+manualmente. Em tempo de execução, o runtime escolhe qual das
+implementações disponíveis será utilizada para cada tarefa,
+considerando a disponibilidade dos recursos, a distribuição de carga
+entre os workers e o custo das cópias de dados envolvidas. O
+gerenciamento de memória nos aceleradores também é responsabilidade do
+StarPU, que realiza alocação e liberação de buffers na GPU, cópias
+entre a memória do host e do dispositivo, e a sobreposição dessas
+transferências com a computação por meio de prefetching.
+#+latex: %
+Empregamos dois escalonadores do StarPU: o =dmda= (Deque Model Data
+Aware), que mantém um modelo de desempenho por par tarefa-recurso,
+estimado a partir do histórico de execuções, e atribui cada tarefa ao
+recurso que minimiza o tempo estimado de conclusão, somando o tempo de
+computação previsto ao custo estimado de transferência de dados; e o
+=dmdas=, uma variante que processa as tarefas seguindo a ordem de
+prioridade dada pela distância ao caminho crítico do DAG, ao custo de
+uma ordenação adicional.
 
 #+latex: \noindent
 *PaRSEC* cite:bosilca2011dague é um framework para escalonamento de tarefas
@@ -215,12 +218,12 @@ dependências de dados do grafo, e tratadas de forma assíncrona por uma thread
 dedicada. Assim como o StarPU, o PaRSEC também oferece suporte a aceleradores
 por meio de múltiplas implementações para uma mesma tarefa, permitindo que o
 escalonador decida em tempo de execução em qual unidade.
-
-Neste trabalho utilizamos dois escalonadores do PaRSEC: o Global Dequeue (=gd=),
-que mantém uma única fila dupla compartilhada por todos os workers, com
-balanceamento natural de carga mas sem localidade de dados nem roubo de tarefas;
-e o Local Flat Queues (=lfq=), em que cada worker mantém uma fila local
-ordenada por prioridade e recorre ao roubo de tarefas das filas vizinhas, na
+#+latex: %
+Empregamos dois escalonadores do PaRSEC: o =gd= (Global Dequeue),
+que mantém uma única fila dupla compartilhada pelos workers, com
+balanceamento de carga mas sem localidade de dados nem roubo de tarefas;
+e o =lfq= (Local Flat Queues), onde cada worker mantém uma fila local
+ordenada por prioridade e usa roubo de tarefas das filas vizinhas, na
 ordem de distância na hierarquia de hardware, quando fica ocioso.
 
 #+latex: \noindent
@@ -239,10 +242,10 @@ correspondendo a uma tarefa cujas dependências de dados definem um DAG. Em vez
 de escalonar essas tarefas de forma estática, o Chameleon delega essa
 responsabilidade a um runtime de escalonamento de tarefas, como o StarPU, o
 PaRSEC ou o OpenMP, enquanto a implementação interna de cada tarefa reutiliza
-rotinas clássicas de alto desempenho. Essa separação entre a descrição do
-algoritmo, em termos de tarefas e dependências, e sua execução propriamente dita
+rotinas clássicas de alto desempenho. Esta separação entre o
+algoritmo, na forma de um grafo de tarefas, e sua execução,
 é o que permite ao Chameleon explorar arquiteturas heterogêneas compostas por
-CPUs e GPUs sem que o algoritmo precise ser reescrito para cada plataforma.
+CPUs e GPUs sem reescrita do algoritmo para cada plataforma.
 
 ** Métodos e Materiais
 Ao longo deste trabalho, identificamos que a comparação entre StarPU e PaRSEC
