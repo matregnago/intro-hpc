@@ -2,7 +2,7 @@ node,gpu,algorithm,n,runtime,scheduler,b_ideal,gflops_peak
 poti,poti (RTX 4070),dgetrf_nopiv,40000,parsec,gd,500,1025.3164
 poti,poti (RTX 4070),dgetrf_nopiv,40000,parsec,lfq,500,910.30336
 poti,poti (RTX 4070),dgetrf_nopiv,40000,starpu,dmda,500,950.59874
-poti,poti (RTX 4070),dgetrf_nopiv,40000,starpu,dmdas,1000,967.2948
+poti,poti (RTX 4070),dgetrf_nopiv,40000,starpu,dmdas,500,944.74896
 poti,poti (RTX 4070),dpotrf,40000,parsec,gd,500,995.46554
 poti,poti (RTX 4070),dpotrf,40000,parsec,lfq,500,888.0309599999999
 poti,poti (RTX 4070),dpotrf,40000,starpu,dmda,500,951.62048

@@ -470,35 +470,38 @@ fatorações. Na poti, a RTX 4070 sustenta 429 GFLOPS contra 601 a 768 GFLOPS do
 CPU. Na tupi, a relação se inverte, com a RTX 4090 sustentando 1.219 GFLOPS
 contra 698 a 740 GFLOPS dos 23 /workers/, quase o dobro da CPU.
 
-A Figura [[fig:gpu-split]] decompõe, na poti, o desempenho de cada configuração
-nas parcelas entregues por cada classe de recurso. O eixo vertical traz o GFLOPS
-entregue, obtido dividindo as operações de ponto flutuante executadas por uma
-classe pelo /makespan/ da execução; as duas parcelas de uma mesma configuração
-são empilhadas, de modo que a altura total da barra é o desempenho da execução,
-repetido no rótulo acima dela. Cada barra é uma das quatro configurações, a cor
-distingue a classe de recurso e os dois painéis separam as duas fatorações.
-Diferentemente das Figuras [[fig:gflops-b]] e [[fig:gflops-n]], aqui a cor
-codifica a classe de recurso, e não a configuração.
+A Figura [[fig:gpu-split]] decompõe, nas duas máquinas, o desempenho de cada
+configuração nas parcelas entregues por cada classe de recurso. O eixo vertical
+traz o GFLOPS entregue, obtido dividindo as operações de ponto flutuante
+executadas por uma classe pelo /makespan/ da execução; as duas parcelas de uma
+mesma configuração são empilhadas, de modo que a altura total da barra é o
+desempenho da execução, repetido no rótulo acima dela. Os painéis formam uma
+grade de fatoração (linhas) por máquina (colunas), cada um com sua própria
+escala vertical -- o teto de GFLOPS da RTX 4070 (poti) e da RTX 4090 (tupi)
+difere demais para compartilhar eixo. Diferentemente das Figuras [[fig:gflops-b]]
+e [[fig:gflops-n]], aqui a cor codifica a classe de recurso, e não a
+configuração.
 
 
-#+CAPTION: GFLOPS entregues por classe de recurso (CPU/GPU) na poti, por algoritmo e configuração.
+#+CAPTION: GFLOPS entregues por classe de recurso (CPU/GPU) na poti e na tupi, por algoritmo e configuração.
 #+NAME: fig:gpu-split
 #+ATTR_LATEX: :width \linewidth :placement [h] :center t
 [[file:../../plots/final/gpu_split_contrib.pdf]]
 
-A leitura da figura desfaz a explicação intuitiva para o resultado da poti. A
-parcela entregue pela GPU é praticamente a mesma nas quatro configurações, entre
-391 e 416 GFLOPS na fatoração de Cholesky, apesar de os quatro escalonadores
+A leitura da figura desfaz a explicação intuitiva para o resultado da poti, e
+revela um mecanismo que se repete, invertido, na tupi. Na poti, a parcela
+entregue pela GPU é praticamente a mesma nas quatro configurações, entre 364 e
+399 GFLOPS na fatoração de Cholesky, apesar de os quatro escalonadores
 decidirem o uso da GPU de maneiras bastante diferentes. O que separa as
-configurações é a parcela entregue pela CPU, que varia de 553 a 663 GFLOPS. É na
+configurações é a parcela entregue pela CPU, que varia de 534 a 607 GFLOPS. É na
 CPU, e não na GPU, que a corrida se decide na poti, e cada configuração chega ao
 seu resultado por um caminho distinto.
 
 O =parsec:gd= vence porque preserva a CPU. Ele trata a GPU como recurso
 acessório, despachado de forma oportunista pelo próprio /worker/ que obtém
 acesso ao dispositivo, sem nenhuma thread reservada para essa gestão; seus 19
-/workers/ permanecem inteiramente disponíveis para o cálculo e entregam 663
-GFLOPS, a maior parcela de CPU entre as quatro configurações. O StarPU coloca 41% das
+/workers/ permanecem inteiramente disponíveis para o cálculo e entregam 607
+GFLOPS, a maior parcela de CPU entre as quatro configurações. O StarPU coloca 42% das
 operações na GPU, contra 37% do =parsec:gd=, e essa é de fato a divisão que
 maximiza o desempenho do sistema que o seu modelo enxerga. Para equalizar o número de fluxos de
 execução em GPU entre os dois runtimes, configuramos o StarPU com quatro
@@ -511,9 +514,23 @@ propriedade intrínseca do StarPU.
 
 O =parsec:lfq=, por sua vez, mostra que não basta ao PaRSEC deixar a CPU livre, é
 preciso ocupá-la: ele entrega a menor parcela de CPU das quatro configurações,
-553 GFLOPS, não por custo de gestão da GPU, mas porque seus /workers/ ficam
+534 GFLOPS, não por custo de gestão da GPU, mas porque seus /workers/ ficam
 ociosos em 27% do /makespan/, contra 13% do =parsec:gd= e cerca de 2% das duas
 configurações do StarPU.
+
+Na tupi, o mesmo par de escalonadores do PaRSEC troca de papel: em vez de
+preservar a CPU, sobrecarrega a GPU. A partir da capacidade efetiva medida em
+cada run, a fração de FLOPs que equilibraria os dois recursos -- CPU e GPU
+terminando juntas -- fica entre 56% e 61% para a GPU nas quatro configurações,
+mas só o StarPU se aproxima desse valor, com 62% dos FLOPs na GPU e 1.110 a
+1.114 GFLOPS entregues por ela. O =parsec:gd= e o =parsec:lfq= ultrapassam esse
+ponto de equilíbrio, com 72% e 66% dos FLOPs na GPU respectivamente: a GPU vira
+o gargalo e entrega só 920 a 942 GFLOPS -- menos do que o StarPU, apesar da
+parcela maior -- enquanto a CPU, com menos trabalho do que poderia sustentar,
+faz o /makespan/ total crescer. O resultado é que o =parsec:gd= termina a
+fatoração de Cholesky em 16,2 s na tupi contra 12,0 s do =starpu:dmda=, uma
+diferença de 35% que a Figura [[fig:gflops-n]] já mostrava agregada sobre vários
+$N$.
 
 
 **** Painéis espaço-tempo e progressão do DAG
@@ -522,11 +539,12 @@ As duas figuras seguintes são painéis do StarVZ cite:Pinto2021ProvidingIP,Garc
 o tempo de execução no eixo horizontal, compartilhado entre os quatro painéis
 para que os /makespans/ possam ser comparados diretamente. Na Figura
 [[fig:st-compare]], cada linha do eixo vertical é um recurso de execução: os 19
-/workers/ de CPU e, abaixo deles, as /lanes/ de GPU. Cada retângulo é uma tarefa,
-posicionada no recurso em que executou e colorida pelo seu tipo (=potrf=, =trsm=,
-=syrk= ou =gemm=); espaço em branco significa recurso ocioso. Para não sobrepor
-rótulos, apenas o primeiro /worker/ de CPU do nó é identificado no eixo. Cada um
-dos quatro painéis é uma das configurações.
+/workers/ de CPU (=CPU0= a =CPU18=) e, abaixo deles, as quatro /lanes/ de GPU
+(=GPU0= a =GPU3=, numeradas por posição, já que StarPU e PaRSEC nomeiam seus
+/workers/ CUDA de forma diferente). Cada retângulo é uma tarefa, posicionada no
+recurso em que executou e colorida pelo seu tipo (=potrf=, =trsm=, =syrk= ou
+=gemm=); espaço em branco significa recurso ocioso. Cada um dos quatro painéis
+é uma das configurações.
 
 #+CAPTION: Painéis espaço-tempo de StarPU e PaRSEC na poti.
 #+NAME: fig:st-compare

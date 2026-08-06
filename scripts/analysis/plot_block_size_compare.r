@@ -55,6 +55,12 @@ read_one <- function(base_dir) {
 results <- bind_rows(lapply(dirs, read_one)) |>
   filter(precision == "FP64")
 
+# Teto de b por no: poti ate 800, tupi ate 2000 (b maior nao compensa o
+# overhead nessas maquinas).
+b_max <- c(poti = 800, tupi = 2000)
+results <- results |>
+  filter(b <= b_max[as.character(node)])
+
 agg <- results |>
   group_by(node, gpu, runtime, scheduler, algorithm, n, b) |>
   summarise(
