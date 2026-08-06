@@ -51,6 +51,8 @@ export DESIGN_FILE="$RESULTS_DIR/design.csv"
 export THREADS=95
 export GPUS=1
 
+bash "$SLURM_SUBMIT_DIR/scripts/nix-prefetch-tarballs.sh" "$SLURM_SUBMIT_DIR/tarballs"
+
 nixw nix develop .#starpu --command bash -c '
 set -euo pipefail
 bash scripts/run.sh starpu

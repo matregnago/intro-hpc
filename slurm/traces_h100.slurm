@@ -53,6 +53,8 @@ export GPUS=1
 export TRACE=1 TRACE_FULL=1 TRACE_DAG=1 TRACE_STATS=1
 export CALIB_PASSES=2
 
+bash "$SLURM_SUBMIT_DIR/scripts/nix-prefetch-tarballs.sh" "$SLURM_SUBMIT_DIR/tarballs"
+
 nixw nix develop .#starpu --command bash -c '
 set -euo pipefail
 bash scripts/run.sh starpu
