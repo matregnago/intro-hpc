@@ -101,9 +101,10 @@ equipados com aceleradores. Diferentemente de runtimes baseados no modelo STF,
 como o StarPU, que instanciam explicitamente um nó de DAG na memória para cada
 tarefa submetida, o PaRSEC representa as dependências entre tarefas de forma
 compacta e simbólica, o que lhe permite escalar para milhões de tarefas com
-baixo overhead de memória. O escalonamento é totalmente distribuído -- cada nó
-executa sua própria instância do escalonador, sem coordenação central -- o que
-favorece a sobreposição entre computação e comunicação.
+baixo overhead de memória. O escalonamento é totalmente distribuído, cada nó
+executa sua própria instância do escalonador, sem coordenação central, o que
+favorece a sobreposição entre computação e comunicação em estratégia
+similar aquela usada pelo StarPU-MPI.
 
 Embora StarPU e PaRSEC compartilhem o objetivo de abstrair o escalonamento de
 tarefas em plataformas heterogêneas, os escalonadores de cada runtime avaliados
