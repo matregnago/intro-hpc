@@ -169,9 +169,8 @@ seguida pelos resultados experimentais na Seção 5. Por fim, a Seção 6 conclu
 este trabalho.
 
 ** Fundamentação Teórica
-Nesta seção, apresentamos uma visão geral dos runtimes StarPU e
-PaRSEC, e da biblioteca de álgebra linear densa Chameleon, todos utilizados
-neste trabalho.
+Apresentamos os runtimes StarPU e PaRSEC, e a biblioteca de álgebra
+linear Chameleon.
 
 #+latex: \noindent
 *StarPU* cite:starpu é um framework escrito em C para programação orientada a
