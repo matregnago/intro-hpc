@@ -86,15 +86,15 @@ especificamente o StarPU e o PaRSEC por serem dois runtimes utilizados pelo
 Chameleon como backend para execução das tarefas e por estarem, entre os
 runtimes suportados, entre os mais maduros e amplamente utilizados para
 algoritmos de álgebra linear densa em plataformas heterogêneas.
-
-StarPU cite:starpu é um desses runtimes. Nele, o desenvolvedor pode fornecer
+#+latex: %
+No StarPU cite:starpu, o desenvolvedor deve fornecer
 diferentes implementações para uma mesma tarefa, uma para CPU e outra para GPU,
-por exemplo, e deixar que o próprio ambiente de execução selecione
+por exemplo. É o próprio ambiente de execução que seleciona
 automaticamente a implementação mais adequada, considerando o ambiente
 computacional e a disponibilidade de recursos, buscando otimizar o desempenho.
-Isso isola o desenvolvedor dos detalhes da arquitetura de destino, permitindo
+Isso isola o desenvolvedor dos detalhes de escalonamento, permitindo
 criar aplicações mais simples e fáceis de escalar.
-
+#+latex: %
 PaRSEC cite:bosilca2011dague é outro desses runtimes, com foco em ambientes de
 memória distribuída compostos por múltiplos nós multicore, possivelmente
 equipados com aceleradores. Diferentemente de runtimes baseados no modelo STF,
