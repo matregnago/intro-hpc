@@ -30,11 +30,16 @@
         };
       };
 
+      fxtPkg = starpu.packages.${system}.fxt.overrideAttrs (old: {
+        src = ./fxt-0.3.14.tar.gz;
+      });
+
       starpuPkg = starpu.packages.${system}.default.override {
         enableMPI = false;
         enableTrace = true;
         compileAsRelease = true;
         enableCUDA = true;
+        fxt = fxtPkg;
       };
       parsecPkg = cudapkgs.callPackage ./parsec.nix {
         stdenv = cudapkgs.gcc13Stdenv;
