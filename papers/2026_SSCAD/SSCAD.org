@@ -121,27 +121,27 @@ Diversos trabalhos avaliam runtimes task-based aplicados a algoritmos de álgebr
 linear densa, mas cada um deles isola apenas parte do problema, limitando a
 comparação a um único runtime ou comparando runtimes distintos por meio de
 bibliotecas de álgebra linear diferentes.
-
+#+latex: %
 Hoque et al. cite:10.1145/3148226.3148233 comparam os dois paradigmas de
 programação oferecidos pelo PaRSEC: o Parameterized Task Graph (PTG) e o Dynamic
 Task Discovery (DTD) utilizando o Chameleon em conjunto com PaRSEC, StarPU e
 QUARK. A avaliação, no entanto, é restrita a execuções somente em CPU, sem
 considerar aceleradores.
-
+#+latex: %
 Lisito et al. cite:11078555 avaliam a fatoração LU com pivotamento parcial,
 comparando o StarPU (com o Chameleon) e o PaRSEC (com o DPLASMA). Como cada
 runtime é avaliado em conjunto com uma biblioteca de álgebra linear diferente,
 eventuais diferenças de desempenho observadas podem ser atribuídas tanto ao
 runtime quanto à implementação específica de cada biblioteca.
-
+#+latex: %
 Agullo et al. cite:7284288 comparam o desempenho da fatoração de Cholesky sobre
 o StarPU com limites teóricos de desempenho em plataformas heterogêneas. O
 trabalho, contudo, considera apenas o StarPU, sem comparação direta com outro
 runtime de escalonamento de tarefas.
-
+#+latex: %
 Não foi encontrado nenhum trabalho anterior que compara StarPU e PaRSEC
 utilizando a mesma biblioteca de álgebra linear densa em um ambiente
-heterogêneo. Esse é o diferencial deste trabalho, no qual foi fixado o Chameleon
+heterogêneo, que combina CPUs e GPUs. Esse é o diferencial deste trabalho, no qual foi fixado o Chameleon
 como biblioteca única e variado apenas o runtime e o escalonador utilizado.
 
 Este trabalho utiliza o Chameleon cite:AGULLO2012473, uma biblioteca de álgebra
