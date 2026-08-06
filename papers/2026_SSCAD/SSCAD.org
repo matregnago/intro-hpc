@@ -89,7 +89,7 @@ algoritmos de álgebra linear densa em plataformas heterogêneas.
 #+latex: %
 No StarPU cite:starpu, o desenvolvedor deve fornecer
 diferentes implementações para uma mesma tarefa, uma para CPU e outra para GPU,
-por exemplo. É o próprio ambiente de execução que seleciona
+por exemplo, submetendo o grafo seguinte o modelo STF. É o próprio ambiente de execução que seleciona
 automaticamente a implementação mais adequada, considerando o ambiente
 computacional e a disponibilidade de recursos, buscando otimizar o desempenho.
 Isso isola o desenvolvedor dos detalhes de escalonamento, permitindo
