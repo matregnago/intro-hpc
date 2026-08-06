@@ -73,7 +73,7 @@ utilização de runtimes que utilizam o modelo Sequential Task Flow (STF). Nesse
 modelo, uma aplicação é decomposta em tarefas com dependências de dados
 explícitas, o que permite escalonar sua execução de forma dinâmica, conforme os
 recursos disponíveis cite:10025520.
-
+#+latex: %
 Para facilitar o uso desse paradigma, diversos runtimes de escalonamento de
 tarefas foram criados para mapear as tarefas de uma aplicação para os recursos
 computacionais disponíveis, de maneira transparente ao desenvolvedor. Esses sistemas
