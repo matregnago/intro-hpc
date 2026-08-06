@@ -18,7 +18,7 @@ for f in "$TARBALLS_DIR"/*.tar.gz "$TARBALLS_DIR"/*.tar.bz2 "$TARBALLS_DIR"/*.ta
   [ -f "$f" ] || continue
   name="$(basename "$f")"
   echo "Adding $name to Nix store ..."
-  nix-store --add-fixed sha256 "$f"
+  nixw nix store --add-fixed sha256 "$f"
 done
 
 echo "Nix store pre-populated from $TARBALLS_DIR"
