@@ -173,8 +173,8 @@ Nesta seção, apresentamos uma visão geral dos runtimes StarPU e
 PaRSEC, e da biblioteca de álgebra linear densa Chameleon, todos utilizados
 neste trabalho.
 
-*** StarPU
-StarPU cite:starpu é um framework escrito em C para programação orientada a
+#+latex: \noindent
+*StarPU* cite:starpu é um framework escrito em C para programação orientada a
 tarefas em plataformas híbridas compostas por CPUs e GPUs, com suporte também a
 ambientes distribuídos por meio da extensão StarPU-MPI. As tarefas de
 uma aplicação StarPU são definidas por meio de codelets, estruturas que agrupam
@@ -199,8 +199,8 @@ estimado de transferência de dados; e o =dmdas=, uma variante
 que processa as tarefas seguindo a ordem de prioridade dada pela distância ao
 caminho crítico do DAG, ao custo de uma ordenação adicional.
 
-*** PaRSEC
-PaRSEC cite:bosilca2011dague é um framework para escalonamento de tarefas
+#+latex: \noindent
+*PaRSEC* cite:bosilca2011dague é um framework para escalonamento de tarefas
 voltado a ambientes de memória distribuída compostos por múltiplos nós
 multicore. Diferentemente de runtimes STF como o StarPU, que desenrolam
 explicitamente, tarefa a tarefa, um DAG completo de dependências, o PaRSEC
@@ -224,8 +224,8 @@ e o Local Flat Queues (=lfq=), em que cada worker mantém uma fila local
 ordenada por prioridade e recorre ao roubo de tarefas das filas vizinhas, na
 ordem de distância na hierarquia de hardware, quando fica ocioso.
 
-*** Chameleon
-Chameleon cite:AGULLO2012473 é uma biblioteca escrita em C que fornece rotinas
+#+latex: \noindent
+*Chameleon* cite:AGULLO2012473 é uma biblioteca escrita em C que fornece rotinas
 para a resolução de sistemas lineares gerais densos, sistemas simétricos
 positivos definidos e problemas de mínimos quadrados lineares, por meio das
 fatorações LU, Cholesky, QR e LQ. Assim como as bibliotecas PLASMA e MAGMA, o
