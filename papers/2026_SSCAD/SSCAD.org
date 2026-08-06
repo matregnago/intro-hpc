@@ -111,15 +111,15 @@ tarefas em plataformas heterogêneas, os escalonadores de cada runtime avaliados
 neste trabalho diferem em uma dimensão central. O StarPU decide o escalonamento
 dinamicamente, sendo orientado por um modelo de desempenho aprendido a partir do
 histórico de execuções. Os escalonadores do PaRSEC realizam
-escalonamento sem tais modelos de desempenho. Essa diferença de filosofia
-sugere, à primeira vista, que o StarPU deveria ter vantagem sistemática sobre o
-PaRSEC em algoritmos de álgebra linear densa. Um dos objetivos deste trabalho é
-verificar empiricamente se essa expectativa se confirma.
-
-Diversos trabalhos avaliam runtimes task-based aplicados a algoritmos de álgebra
+escalonamento sem tais modelos de desempenho. Estas diferentes
+estratégias sugerem que a comparação do desempenho obtido nestes
+runtimes se faz necessária. 
+#+latex: %
+Uma análise do estado da arte nos permite estabelecer que 
+diversos trabalhos realizam tal comparação, inclusive com algoritmos de álgebra
 linear densa, mas cada um deles isola apenas parte do problema, limitando a
 comparação a um único runtime ou comparando runtimes distintos por meio de
-bibliotecas de álgebra linear diferentes.
+bibliotecas de álgebra linear diferentes. Por exemplo,
 #+latex: %
 Hoque et al. cite:10.1145/3148226.3148233 comparam os dois paradigmas de
 programação oferecidos pelo PaRSEC: o Parameterized Task Graph (PTG) e o Dynamic
@@ -133,25 +133,34 @@ runtime é avaliado em conjunto com uma biblioteca de álgebra linear diferente,
 eventuais diferenças de desempenho observadas podem ser atribuídas tanto ao
 runtime quanto à implementação específica de cada biblioteca.
 #+latex: %
-Agullo et al. cite:7284288 comparam o desempenho da fatoração de Cholesky sobre
-o StarPU com limites teóricos de desempenho em plataformas heterogêneas. O
-trabalho, contudo, considera apenas o StarPU, sem comparação direta com outro
+Agullo et al. cite:7284288 comparam a fatoração de Cholesky sobre
+o StarPU com limites teóricos de desempenho em plataformas
+heterogêneas. Eles considera apenas o StarPU, sem comparação direta com outro
 runtime de escalonamento de tarefas.
 #+latex: %
-Não foi encontrado nenhum trabalho anterior que compara StarPU e PaRSEC
-utilizando a mesma biblioteca de álgebra linear densa em um ambiente
-heterogêneo, que combina CPUs e GPUs. Esse é o diferencial deste trabalho, no qual foi fixado o Chameleon
-como biblioteca única e variado apenas o runtime e o escalonador utilizado.
 
-Este trabalho utiliza o Chameleon cite:AGULLO2012473, uma biblioteca de álgebra
-linear densa que implementa fatorações como LU, Cholesky e QR por meio de
-algoritmos por blocos cite:DBLP, delegando o escalonamento de suas tarefas a
-runtimes externos, o StarPU e o PaRSEC. Os experimentos foram executados em
-duas partições do cluster PCAD, no INF/UFRGS: (i) tupi, equipada com um
-processador Intel Core i9-14900KF (24 núcleos físicos, 3,2 GHz) e uma GPU NVIDIA
-GeForce RTX 4090 (24 GB); (ii) poti, equipada com um processador Intel Core
-i7-14700KF (20 núcleos físicos, 3,4 GHz) e uma GPU NVIDIA GeForce RTX 4070 (12
-GB).
+A diferença de estratégia de escalonamento entre StarPU e PaRSEC
+sugere, à primeira vista, que o StarPU deveria ter uma vantagem
+sistemática sobre o PaRSEC em algoritmos de álgebra linear densa. Um
+dos objetivos deste trabalho é verificar empiricamente se essa
+expectativa se confirma. Como não foi encontrado nenhum trabalho
+anterior que compara StarPU e PaRSEC utilizando a mesma biblioteca de
+álgebra linear densa em um ambiente heterogêneo, que combina CPUs e
+GPUs, este trabalho se diferencia do estado da arte por ser o
+primeiro, até onde nosso conhecimento alcança, de fixar uma biblioteca
+de álgebra linear densa única, variando apenas o runtime e o
+escalonador utilizado.
+#+latex: %
+Para colocar tal comparação em prática, este trabalho utiliza o
+Chameleon cite:AGULLO2012473, uma biblioteca de álgebra linear densa
+que implementa fatorações como LU, Cholesky e QR por meio de
+algoritmos por blocos cite:DBLP, delegando o escalonamento de suas
+tarefas a runtimes externos, o StarPU e o PaRSEC. Os experimentos
+foram executados em duas partições do cluster PCAD, no INF/UFRGS: (i)
+tupi, com 1\times Intel Core i9-14900KF e 1\times NVIDIA RTX 4090; (ii)
+poti, com 1\times Intel Core i7-14700KF e 1\times NVIDIA RTX 4070. Por
+intermédio de metodologia reprodutível baseada em Nix, os resultados
+indicam que .... TODO Matheus.
 
 O restante deste trabalho está organizado da seguinte forma. A Seção 2 descreve
 os conceitos utilizados neste trabalho, enquanto a Seção 3 apresenta os métodos
