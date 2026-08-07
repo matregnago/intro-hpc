@@ -248,12 +248,28 @@ para cada plataforma.
 
 ** Métodos e Materiais
 
-Nesta seção, apresentamos nossa metodologia experimental. Primeiro, damos uma
-visão geral das aplicações de álgebra linear densa consideradas neste estudo,
-depois, descrevemos o ambiente de execução utilizado nos experimentos e, por
-fim, detalhamos o projeto experimental adotado.
+Apresentamos nossos métodos e materiais, iniciando pelas cargas de
+trabalhos na forma de algoritmos de fatoração que fazem parte de um
+grande número de aplicações, pelas adaptações necessárias no Chameleon
+e PaRSEC para tornar possível este trabalho, seguido das configurações
+de hardware e software e o projeto experimental.
 
-*** Suporte GPU no PaRSEC
+*** Carga de trabalho: algoritmos de fatoração densa Cholesky e LU
+
+Consideramos dois algoritmos de fatoração disponíveis no Chameleon: a fatoração
+de Cholesky (=potrf=) e a fatoração LU sem pivotamento (=getrf_nopiv=). A
+fatoração de Cholesky decompõe uma matriz real simétrica positiva definida $A$,
+de ordem $n \times n$, na forma $A = LL^T$, em que $L$ é uma matriz real
+triangular inferior de ordem $n \times n$ com elementos diagonais positivos. O
+algoritmo por blocos utiliza quatro tipos de tarefa: POTRF, SYRK, TRSM e GEMM,
+todas com implementações em CPU e em GPU. Já a fatoração LU sem pivotamento
+decompõe uma matriz real $A$, de ordem $n \times n$, na forma $A = LU$, em que
+$L$ é triangular inferior e $U$ é triangular superior. O projeto desse algoritmo
+por blocos para sistemas acelerados por GPU é descrito por Agullo et al.
+cite:6126599, e utiliza três tipos de tarefa: GETRF, TRSM e GEMM, das quais
+apenas GETRF, que fatora o bloco da diagonal, está restrita à CPU.
+
+*** Implementação do Suporte à GPU no PaRSEC
 
 Identificamos que a comparação entre StarPU e PaRSEC não era
 diretamente possível a partir das versões atuais disponíveis do
