@@ -285,7 +285,8 @@ cuSOLVER, de forma análoga aos codelets equivalentes já existentes
 para o StarPU, associando-as à sua contraparte de CPU por meio da nova
 função de inserção de tarefas com suporte a CUDA.
 
-*** Aplicações
+*** Carga de trabalho: algoritmos de fatoração densa Cholesky e LU
+
 Consideramos dois algoritmos de fatoração disponíveis no Chameleon: a fatoração
 de Cholesky (=potrf=) e a fatoração LU sem pivotamento (=getrf_nopiv=). A
 fatoração de Cholesky decompõe uma matriz real simétrica positiva definida $A$,
@@ -299,7 +300,8 @@ por blocos para sistemas acelerados por GPU é descrito por Agullo et al.
 cite:6126599, e utiliza três tipos de tarefa: GETRF, TRSM e GEMM, das quais
 apenas GETRF, que fatora o bloco da diagonal, está restrita à CPU.
 
-*** Ambiente Experimental
+*** Configuração de Hardware e Software
+
 A Tabela [[tab:hw]] especifica o hardware das duas partições do cluster PCAD, no
 INF/UFRGS, utilizadas nos experimentos: tupi e poti.
 
