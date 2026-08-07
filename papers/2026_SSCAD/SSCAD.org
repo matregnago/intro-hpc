@@ -246,40 +246,37 @@ de um grafo de tarefas, e sua execução, é o que permite ao Chameleon explorar
 arquiteturas heterogêneas compostas por CPUs e GPUs sem reescrita do algoritmo
 para cada plataforma.
 
-** Métodos e Materiais
-Ao longo deste trabalho, identificamos que a comparação entre StarPU e PaRSEC
-não era diretamente possível a partir das versões atuais disponíveis do
-Chameleon e do PaRSEC, pois, enquanto os codelets do Chameleon para o StarPU já
-possuem suporte maduro a GPU, a interface de inserção dinâmica de tarefas do
-PaRSEC (DTD) não suportava a execução de tarefas em GPU, e os codelets do
-Chameleon para o PaRSEC estavam limitados à CPU. Esta seção descreve as
-principais modificações que desenvolvemos no PaRSEC e no Chameleon para permitir
-essa comparação.
+** Suporte GPU no PaRSEC
 
-A interface DTD do PaRSEC permitia associar a cada tarefa apenas uma
-implementação em CPU, diferentemente da interface estática PTG, que já suporta
-múltiplas implementações por tarefa. Adicionamos ao PaRSEC uma nova função, que
-permite registrar, além da implementação em CPU, uma implementação em GPU para a
-mesma tarefa. Em tempo de execução, o escalonador passa a tentar primeiro a
-implementação em GPU, delegando a submissão ao mesmo mecanismo de escalonamento
-de GPU já utilizado pelo backend PTG, usando a implementação em CPU apenas
-quando nenhum dispositivo está disponível.
+Identificamos que a comparação entre StarPU e PaRSEC não era
+diretamente possível a partir das versões atuais disponíveis do
+Chameleon e do PaRSEC. Enquanto os codelets do Chameleon para o StarPU
+já tem suporte maduro em GPU, a inserção dinâmica de tarefas do PaRSEC
+(DTD) não suportava a execução de tarefas em GPU. Além disso, os
+codelets do Chameleon para o PaRSEC estavam limitados à CPU. Assim,
+Adicionamos então ao PaRSEC uma nova função, que permite registrar,
+além da implementação em CPU, uma implementação em GPU para a mesma
+tarefa. Em tempo de execução, o escalonador passa a tentar primeiro a
+implementação em GPU, delegando a submissão ao mesmo mecanismo de
+escalonamento de GPU já utilizado pelo backend PTG. Assim, usa-se a
+implementação em CPU apenas quando nenhum acelerador está disponível.
 
-Essa mudança expôs um problema de coerência de dados: quando uma tarefa
-executada em CPU escrevia um bloco, o caminho de execução da DTD não invalidava
-corretamente eventuais cópias desse bloco já presentes na memória da GPU. Uma
-tarefa de GPU subsequente podia então ler dados desatualizados, produzindo
-resultados numericamente incorretos. Corrigimos o problema invalidando
-explicitamente as cópias de dispositivo de um bloco sempre que uma tarefa de CPU
-o modifica.
+Essa mudança expôs um problema de coerência de dados: quando uma
+tarefa executada em CPU escrevia um bloco, o caminho de execução da
+DTD não invalidava corretamente eventuais cópias desse bloco já
+presentes na memória da GPU. Uma tarefa de GPU subsequente podia então
+ler dados desatualizados, produzindo resultados numericamente
+incorretos. Corrigimos o problema invalidando explicitamente as cópias
+de dispositivo de um bloco sempre que uma tarefa de CPU o modifica.
 
-Com o suporte a GPU já disponível na interface DTD do PaRSEC, implementamos, no
-lado do Chameleon, as implementações em GPU dos codelets utilizados pelas
-fatorações avaliadas neste trabalho, que até então só possuíam implementação em
-CPU quando executadas com o PaRSEC. Cada uma dessas implementações delega o
-cálculo às bibliotecas cuBLAS e cuSOLVER, de forma análoga aos codelets
-equivalentes já existentes para o StarPU, associando-as à sua contraparte de CPU
-por meio da nova função de inserção de tarefas com suporte a CUDA.
+Com o suporte a GPU já disponível na interface DTD do PaRSEC,
+implementamos, no lado do Chameleon, versões em GPU dos codelets
+utilizados pelas fatorações avaliadas neste trabalho. Estas até então
+só possuíam implementação em CPU quando executadas com o PaRSEC. Cada
+uma dessas implementações delega o cálculo às bibliotecas cuBLAS e
+cuSOLVER, de forma análoga aos codelets equivalentes já existentes
+para o StarPU, associando-as à sua contraparte de CPU por meio da nova
+função de inserção de tarefas com suporte a CUDA.
 
 ** Metodologia
 Nesta seção, apresentamos nossa metodologia experimental. Primeiro, damos uma
