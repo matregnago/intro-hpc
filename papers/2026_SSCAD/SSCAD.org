@@ -438,11 +438,12 @@ na máquina poti.
 
 *** Desempenho em função do tamanho do problema
 A Figura [[fig:gflops-n]] apresenta o resultado do segundo projeto experimental.
+#+latex: %
 A figura traz o GFLOPS médio em função da ordem $N$ da matriz de entrada, com
 cada máquina rodando no seu tamanho de bloco ótimo. Cada ponto é a média das
 repetições daquela configuração naquele $N$ e a barra vertical corresponde a um
 desvio-padrão para cada lado.
-
+#+latex: %
 O padrão que aparece na Figura [[fig:gflops-n]] é a observação central que organiza
 o restante desta seção. Na máquina poti, o StarPU atinge um desempenho melhor
 até $N\approx10.000$, mas a partir de $20.000$ o =parsec:gd= obteve o melhor
@@ -464,7 +465,7 @@ Para entender o resultado observado na seção anterior, analisamos em detalhe o
 rastros de execução coletados para a fatoração de Cholesky com $N=40.000$ e o
 bloco ideal de cada máquina: $b=1.000$ na máquina tupi e $b=500$ na máquina
 poti.
-
+#+latex: %
 A Figura [[fig:gpu-split]] decompõe, nas duas máquinas, o desempenho de cada
 configuração nas parcelas entregues por CPU e por GPU, calculadas como as
 operações de ponto flutuante executadas por cada classe divididas pelo
@@ -476,7 +477,7 @@ nas quatro configurações, entre 364 e 399 GFLOPS na Cholesky. A ordem das barr
 é, portanto, decidida na CPU: o =parsec:gd= entrega 607 GFLOPS contra 542 do
 =starpu:dmda=, e esses 65 GFLOPS a mais compensam com folga os 26 a menos que
 ele entrega na GPU. O mesmo padrão se repete na fatoração LU.
-
+#+latex: %
 O =parsec:gd= vence porque preserva a CPU. Os dois runtimes recebem os mesmos 19
 /workers/ de CPU, mas o StarPU cria, além deles, uma thread dedicada para cada
 um dos quatro /workers/ CUDA, enquanto o PaRSEC despacha a GPU de forma
