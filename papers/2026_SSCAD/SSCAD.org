@@ -493,13 +493,17 @@ contra menos de 10% nas duas configurações do StarPU, porque a heurística
 estática de dispositivo do PaRSEC concentra o trabalho na GPU e esgota o que
 resta para a CPU antes do fim da execução.
 
-**** Painéis espaço-tempo e progressão do DAG
-As duas figuras seguintes são painéis do StarVZ
-cite:Pinto2021ProvidingIP,GarciaPinto2018, e ambas trazem o tempo de execução no
 #+CAPTION: GFLOPS entregues por classe de recurso (CPU/GPU) na poti e na tupi, por algoritmo e configuração.
 #+NAME: fig:gpu-split
 #+ATTR_LATEX: :width .9\linewidth :placement [!htb] :center t
 [[file:../../plots/final/gpu_split_contrib.pdf]]
+
+#+latex: \bigskip
+
+#+latex: \noindent
+*Painéis espaço-tempo e progressão do DAG.*
+As Figuras [[fig:st-compare]] e [[fig:kiteration]] são painéis do StarVZ
+cite:Pinto2021ProvidingIP,GarciaPinto2018. Ambas trazem o tempo de execução no
 eixo horizontal, compartilhado entre os quatro painéis para que os /makespans/
 possam ser comparados diretamente. Elas trazem apenas os rastros da poti, por
 ser a máquina mais representativa para esta análise, pois é nela que ocorre a
