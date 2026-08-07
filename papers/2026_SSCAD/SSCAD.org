@@ -341,61 +341,68 @@ visualização dos rastros de execução coletados pelo StarPU e pelo
 PaRSEC.
 
 *** Projeto Experimental
-Realizamos três projetos experimentais complementares para investigar a
-influência do escalonador, do tamanho do problema e da máquina alvo no
-desempenho das fatorações de Cholesky (=potrf=) e LU sem pivotamento
-(=getrf_nopiv=). O primeiro projeto experimental determina o tamanho de bloco
-ideal para cada máquina, um parâmetro que precisa estar fixo antes de comparar
-os runtimes entre si. O segundo projeto experimental, um projeto fatorial
-completo, usa esse tamanho de bloco ótimo para comparar o desempenho do StarPU e
-do PaRSEC em função do tamanho do problema. O terceiro projeto experimental usa
-rastros de execução para explicar, em nível de tarefa, a origem das diferenças
-de desempenho observadas no segundo projeto experimental. Em todos eles, a
-variável de resposta é o GFLOPS, bilhões de operações de ponto flutuante por
-segundo, relatado pela própria aplicação ao final da execução.
+Realizamos três projetos experimentais complementares para investigar
+a influência do escalonador, do tamanho do problema e da máquina alvo
+no desempenho das fatorações de Cholesky (=potrf=) e LU sem pivotamento
+(=getrf_nopiv=).  1/ O primeiro projeto experimental determina o tamanho
+de bloco ideal para cada máquina, um parâmetro que precisa estar fixo
+antes de comparar os runtimes entre si. 2/ O segundo projeto
+experimental, um projeto fatorial completo, usa esse tamanho de bloco
+ótimo para comparar o desempenho do StarPU e do PaRSEC em função do
+tamanho do problema. Por fim, 3/ o terceiro projeto experimental usa
+rastros de execução para explicar, em nível de tarefa, a origem das
+diferenças de desempenho observadas no segundo projeto
+experimental. Em todos eles, a variável de resposta é o GFLOPS em
+relatório da própria aplicação.
 
-O primeiro projeto experimental tem como objetivo determinar o tamanho de bloco
-ideal para cada máquina, por meio de uma varredura sistemática de configurações
-de bloco em precisão dupla. Fixamos o tamanho da matriz de entrada em $N=40.000$
-com precisão dupla e variamos o tamanho do bloco dentro de um conjunto de
-valores. Escolhemos $N=40.000$ por ser grande o suficiente para saturar os
-recursos computacionais e expor com clareza o efeito do tamanho de bloco sobre o
-desempenho. Cruzamos essas configurações com as duas fatorações (=potrf=,
-=getrf_nopiv=) e quatro combinações de runtime e escalonador. Os dois
-escalonadores do StarPU são guiados por um modelo de desempenho medido em tempo
-de execução, enquanto os dois do PaRSEC decidem o uso da GPU de forma estática.
-A expectativa que orienta todos os três projetos experimentais, portanto, é a de
-que =starpu:dmda= e =starpu:dmdas= superem as duas configurações do PaRSEC.Além
-disso, executamos o mesmo desenho experimental em ambas as partições do PCAD,
-tupi e poti, variando apenas o número de threads de acordo com o número total de
-núcleos físicos disponíveis em cada uma. A ordem de execução foi aleatória, com
-cinco repetições por configuração, para caracterizar a variabilidade entre
-execuções de uma mesma configuração. O pico de GFLOPS observado em cada máquina,
-em precisão dupla, determina o tamanho de bloco utilizado no segundo e no
-terceiro projetos experimentais.
+#+latex: \noindent
+*Determinar Tamanho de Bloco Ideal*.  Realizamos uma varredura
+sistemática de configurações de bloco em precisão dupla. Fixamos o
+tamanho da matriz de entrada em $N=40.000$ com precisão dupla e
+variamos o tamanho do bloco dentro de um conjunto de
+valores. Escolhemos $N=40.000$ por ser grande o suficiente para
+saturar os recursos computacionais e expor com clareza o efeito do
+tamanho de bloco sobre o desempenho. Cruzamos essas configurações com
+as duas fatorações (=potrf=, =getrf_nopiv=) e quatro combinações de
+runtime e escalonador. Os dois escalonadores do StarPU são guiados por
+um modelo de desempenho medido em tempo de execução, enquanto os dois
+do PaRSEC decidem o uso da GPU de forma estática.  A expectativa que
+orienta todos os três projetos experimentais, portanto, é a de que
+=starpu:dmda= e =starpu:dmdas= superem as duas configurações do
+PaRSEC. Além disso, executamos o mesmo desenho experimental nas duas
+partições empregadas, variando apenas o número de threads de acordo
+com o número total de núcleos físicos disponíveis em cada uma. A ordem
+de execução foi aleatória, com cinco repetições por configuração, para
+caracterizar a variabilidade entre execuções de uma mesma
+configuração. É o pico de GFLOPS FP64 observado em cada máquina que
+determina o tamanho de bloco a ser utilizado na sequência.
 
-O segundo projeto experimental, um projeto fatorial completo, investiga os
-efeitos de interação entre três fatores que influenciam o desempenho das
-fatorações em precisão dupla: a máquina utilizada (tupi ou poti), a combinação
-de runtime e escalonador, e o tamanho do problema, fixando o tamanho de bloco no
-valor ótimo identificado para cada máquina no primeiro projeto experimental. O
-tamanho do problema varia em dez níveis entre 5.000 e 60.000, os mesmos nas duas
-máquinas, de modo que o único fator que muda entre elas é o tamanho de bloco.
-Para cada uma das duas fatorações, executamos todas as combinações desse desenho
-fatorial em ordem aleatória, com cinco repetições por configuração.
+#+latex: \noindent
+*Efeitos de Interação entre Fatores*.  O segundo projeto experimental,
+um projeto fatorial completo, investiga os efeitos de interação entre
+três fatores que influenciam o desempenho das fatorações: a máquina
+utilizada, a combinação de runtime e escalonador, e o tamanho do
+problema. Este tem dez valores entre 5.000 e 60.000, os mesmos nas
+duas máquinas, de modo que o único fator que muda entre elas é o
+tamanho de bloco.  Para cada uma das duas fatorações, executamos todas
+as combinações desse desenho fatorial em ordem aleatória, novamente
+com cinco repetições por configuração.
 
-Por fim, o terceiro projeto experimental tem como objetivo explorar como cada
-escalonador se comporta em cada uma das aplicações e maquinas. Empregamos os
-mecanismos de coleta de rastros de execução do StarPU e do PaRSEC, por meio de
-oito execuções representativas por máquina, uma para cada combinação entre as
-duas fatorações e as quatro combinações de runtime e escalonador. Como o StarVZ
-foi originalmente projetado para consumir rastros do StarPU, adaptamos o
-pipeline de análise para o PaRSEC, onde os rastros brutos são primeiro
-convertidos para o formato Paje por meio da ferramenta =dbp2paje= do próprio
-PaRSEC, preservando os nomes de containers necessários para o StarVZ identificar
-corretamente workers e streams de GPU. A partir do Paje gerado, o restante do
-pipeline de análise é idêntico ao utilizado para o StarPU, permitindo comparar
-os dois runtimes em um único ambiente de análise de rastros.
+#+latex: \noindent
+*Rastreamento Comportamental.* Por fim, o terceiro projeto experimental
+tem como objetivo explorar como cada escalonador se comporta em cada
+uma das aplicações e maquinas. Empregamos os mecanismos de coleta de
+rastros de execução do StarPU e do PaRSEC, por meio de oito execuções
+representativas por máquina, uma para cada combinação entre as duas
+fatorações e as quatro combinações de runtime e escalonador. Como o
+StarVZ foi originalmente projetado para consumir rastros do StarPU,
+adaptamos o pipeline de análise para o PaRSEC, onde os rastros brutos
+são primeiro convertidos para o formato Paje por meio da ferramenta
+=dbp2paje= do próprio PaRSEC, preservando os nomes de containers
+necessários para o StarVZ identificar corretamente workers e streams
+de GPU. O restante do pipeline de análise é idêntico ao utilizado para
+o StarPU. Assim, temos um método único para comparar o escalonamento
+realizado por cada um dos runtimes em ambiente único de análise.
 
 ** Resultados
 Esta seção apresenta os resultados dos três projetos experimentais descritos na
