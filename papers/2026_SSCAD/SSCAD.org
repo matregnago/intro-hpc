@@ -583,7 +583,12 @@ outras fatorações do Chameleon, como QR.
 :UNNUMBERED: t
 :END:
 
-Who paid for this?
+Todos os experimentos deste trabalho foram realizados na plataforma
+PCAD, http://pcad.inf.ufrgs.br, do INF/UFRGS. Este trabalho foi
+parcialmente financiado pela Petrobras, por meio de um acordo com a
+UFRGS, com os projetos 2020/00182-5 e 2018/00263-5. Este estudo foi
+financiado pela Coordenação de Aperfeiçoamento de Pessoal de Nível
+Superior (CAPES), Brasil - Código de Financiamento 001.
 
 ** References                                                        :ignore:
 
