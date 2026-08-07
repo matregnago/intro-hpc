@@ -305,7 +305,7 @@ INF/UFRGS, utilizadas nos experimentos: tupi e poti.
 
 #+CAPTION: Especificação de hardware das partições utilizadas.
 #+NAME: tab:hw
-#+ATTR_LATEX: :align p{1.3cm}p{4.3cm}p{1.3cm}p{1.2cm}p{3.3cm}p{1.9cm}
+#+ATTR_LATEX: :align p{1.3cm}p{4.3cm}p{1.3cm}p{1.2cm}p{3.3cm}p{1.9cm} :booktabs true
 | Partição | CPU                                        | P-cores | RAM    | GPU                    | GFLOPS teóricos em FP64 |
 |----------+--------------------------------------------+---------+--------+------------------------+--------------------|
 | tupi     | Intel Core i9-14900KF, 3,2 GHz, 24 núcleos |       8 | 128 GB | NVIDIA RTX 4090, 24 GB |              1.290 |
