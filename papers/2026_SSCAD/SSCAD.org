@@ -446,7 +446,7 @@ desvio-padrão para cada lado.
 O padrão que aparece na Figura [[fig:gflops-n]] é a observação central que organiza
 o restante desta seção. Na máquina poti, o StarPU atinge um desempenho melhor
 até $N\approx10.000$, mas a partir de $20.000$ o =parsec:gd= obteve o melhor
-resultado.Na máquina tupi, por sua vez, o StarPU obteve o melhor resultado em
+resultado. Na máquina tupi, por sua vez, o StarPU obteve o melhor resultado em
 toda a faixa de $N$, com a vantagem sobre o PaRSEC aumentando à medida que $N$
 cresce. Esse resultado contraria a intuição de que o StarPU, por manter um
 modelo de desempenho aprendido e refinado em tempo de execução, deveria sempre
