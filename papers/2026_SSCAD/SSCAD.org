@@ -356,29 +356,28 @@ experimental. Em todos eles, a variável de resposta é o GFLOPS em
 relatório da própria aplicação.
 
 #+latex: \noindent
-*Determinar Tamanho de Bloco Ideal*.  Realizamos uma varredura
+*1/ Determinar Tamanho de Bloco Ideal*.  Realizamos uma varredura
 sistemática de configurações de bloco em precisão dupla. Fixamos o
-tamanho da matriz de entrada em $N=40.000$ com precisão dupla e
-variamos o tamanho do bloco dentro de um conjunto de
-valores. Escolhemos $N=40.000$ por ser grande o suficiente para
-saturar os recursos computacionais e expor com clareza o efeito do
-tamanho de bloco sobre o desempenho. Cruzamos essas configurações com
-as duas fatorações (=potrf=, =getrf_nopiv=) e quatro combinações de
-runtime e escalonador. Os dois escalonadores do StarPU são guiados por
-um modelo de desempenho medido em tempo de execução, enquanto os dois
-do PaRSEC decidem o uso da GPU de forma estática.  A expectativa que
-orienta todos os três projetos experimentais, portanto, é a de que
-=starpu:dmda= e =starpu:dmdas= superem as duas configurações do
-PaRSEC. Além disso, executamos o mesmo desenho experimental nas duas
-partições empregadas, variando apenas o número de threads de acordo
-com o número total de núcleos físicos disponíveis em cada uma. A ordem
-de execução foi aleatória, com cinco repetições por configuração, para
+tamanho da matriz de entrada em $N=40.000$ e variamos o tamanho do
+bloco dentro de um intervalo.  Esse tamanho de entrada foi escolhido
+por permitir a saturação dos recursos computacionais e expor com
+clareza o efeito do tamanho de bloco sobre o desempenho. Cruzamos
+essas configurações com as duas fatorações (=potrf=, =getrf_nopiv=) e
+quatro combinações de runtime e escalonador. Os dois escalonadores do
+StarPU são guiados por um modelo de desempenho medido em tempo de
+execução, enquanto os dois do PaRSEC decidem o uso da GPU de forma
+estática.  A expectativa que orienta todos os três projetos
+experimentais, portanto, é a de que =starpu:dmda= e =starpu:dmdas= superem
+as duas configurações do PaRSEC. Executamos o mesmo desenho
+experimental nas duas partições empregadas, considerando as
+particularidades (número de threads) individuais. A ordem de execução
+foi aleatória, com cinco repetições por configuração, para
 caracterizar a variabilidade entre execuções de uma mesma
 configuração. É o pico de GFLOPS FP64 observado em cada máquina que
 determina o tamanho de bloco a ser utilizado na sequência.
 
 #+latex: \noindent
-*Efeitos de Interação entre Fatores*.  O segundo projeto experimental,
+*2/ Efeitos de Interação entre Fatores*.  O segundo projeto experimental,
 um projeto fatorial completo, investiga os efeitos de interação entre
 três fatores que influenciam o desempenho das fatorações: a máquina
 utilizada, a combinação de runtime e escalonador, e o tamanho do
