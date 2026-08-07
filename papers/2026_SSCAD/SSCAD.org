@@ -477,7 +477,7 @@ acima de cada barra.
 #+ATTR_LATEX: :width \linewidth :placement [h] :center t
 [[file:../../plots/final/gpu_split_contrib.pdf]]
 
-Na poti (coluna à esquerda), a parcela entregue pela GPU é praticamente a mesma
+Na poti (coluna à esquerda da Figura [[fig:gpu-split]]), a parcela entregue pela GPU é praticamente a mesma
 nas quatro configurações, entre 364 e 399 GFLOPS na Cholesky. A ordem das barras
 é, portanto, decidida na CPU: o =parsec:gd= entrega 607 GFLOPS contra 542 do
 =starpu:dmda=, e esses 65 GFLOPS a mais compensam com folga os 26 a menos que
@@ -489,7 +489,7 @@ um dos quatro /workers/ CUDA, enquanto o PaRSEC despacha a GPU de forma
 oportunista, a partir do próprio /worker/ que obtém acesso ao dispositivo, sem
 nenhuma thread reservada para essa gestão.
 
-Na tupi (coluna à direita), esse mecanismo deixa de compensar. A GPU passa a ser
+Na tupi (coluna à direita da Figura [[fig:gpu-split]]), esse mecanismo deixa de compensar. A GPU passa a ser
 o recurso dominante, e as duas configurações do StarPU extraem dela mais de
 1.100 GFLOPS na Cholesky, contra 942 do =parsec:gd=. Mais decisivo, porém, é que
 o PaRSEC deixa de vencer também na CPU, invertendo o que se observa na poti: 371
