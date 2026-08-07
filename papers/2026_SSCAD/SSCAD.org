@@ -246,7 +246,14 @@ de um grafo de tarefas, e sua execução, é o que permite ao Chameleon explorar
 arquiteturas heterogêneas compostas por CPUs e GPUs sem reescrita do algoritmo
 para cada plataforma.
 
-** Suporte GPU no PaRSEC
+** Métodos e Materiais
+
+Nesta seção, apresentamos nossa metodologia experimental. Primeiro, damos uma
+visão geral das aplicações de álgebra linear densa consideradas neste estudo,
+depois, descrevemos o ambiente de execução utilizado nos experimentos e, por
+fim, detalhamos o projeto experimental adotado.
+
+*** Suporte GPU no PaRSEC
 
 Identificamos que a comparação entre StarPU e PaRSEC não era
 diretamente possível a partir das versões atuais disponíveis do
@@ -277,12 +284,6 @@ uma dessas implementações delega o cálculo às bibliotecas cuBLAS e
 cuSOLVER, de forma análoga aos codelets equivalentes já existentes
 para o StarPU, associando-as à sua contraparte de CPU por meio da nova
 função de inserção de tarefas com suporte a CUDA.
-
-** Metodologia
-Nesta seção, apresentamos nossa metodologia experimental. Primeiro, damos uma
-visão geral das aplicações de álgebra linear densa consideradas neste estudo,
-depois, descrevemos o ambiente de execução utilizado nos experimentos e, por
-fim, detalhamos o projeto experimental adotado.
 
 *** Aplicações
 Consideramos dois algoritmos de fatoração disponíveis no Chameleon: a fatoração
