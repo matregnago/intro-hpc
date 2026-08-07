@@ -303,36 +303,42 @@ função de inserção de tarefas com suporte a CUDA.
 
 *** Configuração de Hardware e Software
 
-A Tabela [[tab:hw]] especifica o hardware das duas partições do cluster PCAD, no
-INF/UFRGS, utilizadas nos experimentos: tupi e poti.
+A Tabela [[tab:hw]] especifica a configuração de hardware das partições do
+Parque Computacional de Alto Desempenho (PCAD), no INF/UFRGS,
+utilizadas nos experimentos, ambas equipadas com processadores da
+Intel e GPUs da NVIDIA. Indicamos a quantidade de P-cores (núcleos de
+alto desempenho), sendo que os núcleos restantes até o total informado
+na coluna CPU são núcleos de eficiência. A última coluna traz o pico
+teórico de desempenho de cada GPU em FP64.
 
 #+CAPTION: Especificação de hardware das partições utilizadas.
 #+NAME: tab:hw
-#+ATTR_LATEX: :align p{1.3cm}p{4.3cm}p{1.3cm}p{1.2cm}p{3.3cm}p{1.9cm} :booktabs true
-| Partição | CPU                                        | P-cores | RAM    | GPU                    | GFLOPS teóricos em FP64 |
-|----------+--------------------------------------------+---------+--------+------------------------+--------------------|
-| tupi     | Intel Core i9-14900KF, 3,2 GHz, 24 núcleos |       8 | 128 GB | NVIDIA RTX 4090, 24 GB |              1.290 |
-| poti     | Intel Core i7-14700KF, 3,4 GHz, 20 núcleos |       8 |  96 GB | NVIDIA RTX 4070, 12 GB |                455 |
+#+ATTR_LATEX: :align p{1.3cm}p{5cm}p{1.3cm}p{3cm}p{2.3cm} :booktabs true
+| *Partição* | *CPU*                          | *RAM*    | *GPU*           | *GFLOPS* |
+|----------+------------------------------+--------+---------------+--------|
+| tupi     | i9-14900KF, 24c (8\times P-cores) | 128 GB | RTX4090, 24GB |  1.290 |
+| poti     | i7-14700KF, 20c (8\times P-cores) | 96 GB  | RTX4070, 12GB |    455 |
 
-A coluna P-cores indica o número de núcleos de alto desempenho; os núcleos
-restantes até o total informado na coluna CPU são núcleos de eficiência. A
-última coluna traz o pico teórico de desempenho de cada GPU em precisão dupla.
-
-Do ponto de vista de software, utilizamos o Chameleon na versão 1.4.0, com
-suporte a CUDA habilitado. Como runtimes de escalonamento, utilizamos o StarPU
-1.4.7 e uma versão do PaRSEC derivada de um fork mantido por desenvolvedores do
-próprio Chameleon, ambos também compilados com suporte a CUDA e com a coleta de
-rastros de execução habilitada. Para equalizar o número de fluxos de execução em
-GPU entre os dois runtimes, fixamos STARPU_NWORKER_PER_CUDA=4; no PaRSEC esse
-número é definido em tempo de compilação (PARSEC_MAX_STREAMS=6, das quais quatro
-são de execução e duas de transferência), sem parâmetro equivalente configurável
-em tempo de execução. Utilizamos CUDA 12.4, gcc 13.3.0 e Debian 12 como sistema
-operacional, com driver NVIDIA (?). A reprodutibilidade de todo o ambiente é
-garantida por meio do gerenciador de pacotes Nix, com as dependências fixadas em
-um flake, publicado em [[https://github.com/matregnago/intro-hpc]]. A análise dos
-dados é realizada após a execução por meio de scripts escritos na linguagem R,
-utilizando o framework StarVZ cite:Pinto2021ProvidingIP para a visualização dos
-rastros de execução coletados pelo StarPU e pelo PaRSEC.
+#+latex: \noindent
+Utilizamos o Chameleon na versão 1.4.0, com suporte a CUDA
+habilitado. Como runtimes de escalonamento, utilizamos o StarPU 1.4.7
+e uma versão do PaRSEC derivada de um fork mantido por desenvolvedores
+do próprio Chameleon, ambos também compilados com suporte a CUDA e com
+a coleta de rastros de execução habilitada. Para equalizar o número de
+fluxos de execução em GPU entre os dois runtimes, fixamos
+=STARPU_NWORKER_PER_CUDA=4= (que finalmente indica a quantidade de CUDA
+/streams/). No PaRSEC, essa quantidade é definida em tempo de compilação
+(=PARSEC_MAX_STREAMS=6=, das quais quatro são de execução e duas de
+transferência), sem parâmetro equivalente configurável em tempo de
+execução. Utilizamos CUDA 12.4, gcc 13.3.0 e Debian 12 como sistema
+operacional, com driver NVIDIA recente. A reprodutibilidade de todo o
+ambiente é garantida por meio do gerenciador de pacotes Nix, com as
+dependências fixadas em um flake, publicado em
+[[https://github.com/matregnago/intro-hpc]]. A análise dos dados é
+realizada após a execução por meio de scripts escritos na linguagem R,
+utilizando o framework StarVZ cite:Pinto2021ProvidingIP para a
+visualização dos rastros de execução coletados pelo StarPU e pelo
+PaRSEC.
 
 *** Projeto Experimental
 Realizamos três projetos experimentais complementares para investigar a
