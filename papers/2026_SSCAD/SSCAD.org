@@ -438,12 +438,6 @@ na máquina poti.
 
 *** Desempenho em função do tamanho do problema
 A Figura [[fig:gflops-n]] apresenta o resultado do segundo projeto experimental.
-
-#+CAPTION: GFLOPS médio em função de $N$, por algoritmo e máquina.
-#+NAME: fig:gflops-n
-#+ATTR_LATEX: :width \linewidth :placement [h] :center t
-[[file:../../plots/final/gflops_vs_n_compare.pdf]]
-
 A figura traz o GFLOPS médio em função da ordem $N$ da matriz de entrada, com
 cada máquina rodando no seu tamanho de bloco ótimo. Cada ponto é a média das
 repetições daquela configuração naquele $N$ e a barra vertical corresponde a um
@@ -460,6 +454,11 @@ obter um desempenho melhor do que o PaRSEC, que decide o escalonamento de GPU de
 forma estática desconsiderando modelos de desempenho, sem medir tempos reais de
 execução.
 
+#+CAPTION: GFLOPS médio em função de $N$, por algoritmo e máquina.
+#+NAME: fig:gflops-n
+#+ATTR_LATEX: :width \linewidth :placement [!htb] :center nil
+[[file:../../plots/final/gflops_vs_n_compare.pdf]]
+
 *** Análise de rastros de execução
 Para entender o resultado observado na seção anterior, analisamos em detalhe os
 rastros de execução coletados para a fatoração de Cholesky com $N=40.000$ e o
@@ -471,11 +470,6 @@ configuração nas parcelas entregues por CPU e por GPU, calculadas como as
 operações de ponto flutuante executadas por cada classe divididas pelo
 /makespan/. As duas parcelas empilhadas somam o desempenho da execução, indicado
 acima de cada barra.
-
-#+CAPTION: GFLOPS entregues por classe de recurso (CPU/GPU) na poti e na tupi, por algoritmo e configuração.
-#+NAME: fig:gpu-split
-#+ATTR_LATEX: :width \linewidth :placement [h] :center t
-[[file:../../plots/final/gpu_split_contrib.pdf]]
 
 Na poti (coluna à esquerda da Figura [[fig:gpu-split]]), a parcela entregue pela GPU é praticamente a mesma
 nas quatro configurações, entre 364 e 399 GFLOPS na Cholesky. A ordem das barras
@@ -502,6 +496,10 @@ resta para a CPU antes do fim da execução.
 **** Painéis espaço-tempo e progressão do DAG
 As duas figuras seguintes são painéis do StarVZ
 cite:Pinto2021ProvidingIP,GarciaPinto2018, e ambas trazem o tempo de execução no
+#+CAPTION: GFLOPS entregues por classe de recurso (CPU/GPU) na poti e na tupi, por algoritmo e configuração.
+#+NAME: fig:gpu-split
+#+ATTR_LATEX: :width .9\linewidth :placement [!htb] :center t
+[[file:../../plots/final/gpu_split_contrib.pdf]]
 eixo horizontal, compartilhado entre os quatro painéis para que os /makespans/
 possam ser comparados diretamente. Elas trazem apenas os rastros da poti, por
 ser a máquina mais representativa para esta análise, pois é nela que ocorre a
@@ -512,7 +510,7 @@ no recurso em que executou e colorida pelo seu tipo.
 
 #+CAPTION: Painéis espaço-tempo de StarPU e PaRSEC na poti.
 #+NAME: fig:st-compare
-#+ATTR_LATEX: :width \linewidth :placement [h] :center t
+#+ATTR_LATEX: :width \linewidth :placement [!htb] :center t
 [[file:../../plots/final/traces_poti_812152/st_compare_dpotrf.pdf]]
 
 A figura dá forma visual à decomposição da seção anterior. Os dois runtimes
@@ -538,7 +536,7 @@ iterações antigas retidas nas filas.
 
 #+CAPTION: Progressão das iterações da fatoração de Cholesky ao longo do tempo, na poti.
 #+NAME: fig:kiteration
-#+ATTR_LATEX: :width \linewidth :placement [h] :center t
+#+ATTR_LATEX: :width \linewidth :placement [!htb] :center t
 [[file:../../plots/final/traces_poti_812152/kiteration_compare_dpotrf.pdf]]
 
 ** Conclusão
