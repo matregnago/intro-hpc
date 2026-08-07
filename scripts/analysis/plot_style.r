@@ -22,13 +22,15 @@ BASE_SIZE <- 14
 # simples antes. Mesma ordem usada nas linhas dos painéis espaço-tempo.
 CONFIG_ORDER <- c("starpu:dmda", "starpu:dmdas", "parsec:lfq", "parsec:gd")
 
-# StarPU = vermelhos, PaRSEC = azuis. Tons escolhidos do RdBu do ColorBrewer,
-# que mantêm contraste suficiente entre si dentro da mesma matiz.
+# StarPU = vermelhos, PaRSEC = azuis. Tons escolhidos das escalas sequenciais
+# Reds e Blues do ColorBrewer (e não do divergente RdBu, cujo tom claro do
+# vermelho puxa para o laranja): dentro de cada runtime só muda a luminosidade,
+# como o texto do artigo descreve -- a matiz é o runtime, o tom é o escalonador.
 CONFIG_COLORS <- c(
-  "starpu:dmda"  = "#b2182b",  # vermelho escuro
-  "starpu:dmdas" = "#ef8a62",  # vermelho claro
-  "parsec:lfq"   = "#67a9cf",  # azul claro
-  "parsec:gd"    = "#2166ac"   # azul escuro
+  "starpu:dmda"  = "#a50f15",  # vermelho escuro
+  "starpu:dmdas" = "#fb6a4a",  # vermelho claro
+  "parsec:lfq"   = "#6baed6",  # azul claro
+  "parsec:gd"    = "#08519c"   # azul escuro
 )
 
 # Shape redundante com a cor, para leitura em impressão P&B.

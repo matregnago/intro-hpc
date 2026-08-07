@@ -113,9 +113,9 @@ dinamicamente, sendo orientado por um modelo de desempenho aprendido a partir do
 histórico de execuções. Os escalonadores do PaRSEC realizam
 escalonamento sem tais modelos de desempenho. Estas diferentes
 estratégias sugerem que a comparação do desempenho obtido nestes
-runtimes se faz necessária. 
+runtimes se faz necessária.
 #+latex: %
-Uma análise do estado da arte nos permite estabelecer que 
+Uma análise do estado da arte nos permite estabelecer que
 diversos trabalhos realizam tal comparação, inclusive com algoritmos de álgebra
 linear densa, mas cada um deles isola apenas parte do problema, limitando a
 comparação a um único runtime ou comparando runtimes distintos por meio de
@@ -326,7 +326,7 @@ rastros de execução habilitada. Para equalizar o número de fluxos de execuç�
 GPU entre os dois runtimes, fixamos STARPU_NWORKER_PER_CUDA=4; no PaRSEC esse
 número é definido em tempo de compilação (PARSEC_MAX_STREAMS=6, das quais
 quatro são de execução e duas de transferência), sem parâmetro equivalente
-configurável em tempo de execução. Utilizamos CUDA 12.4, gcc 13.3.0 e Debian (?)
+configurável em tempo de execução. Utilizamos CUDA 12.4, gcc 13.3.0 e Debian 12
 como sistema operacional, com driver NVIDIA (?). A
 reprodutibilidade de todo o
 ambiente é garantida por meio do gerenciador de pacotes Nix, com as
@@ -377,12 +377,10 @@ efeitos de interação entre três fatores que influenciam o desempenho das
 fatorações em precisão dupla: a máquina utilizada (tupi ou poti), a combinação
 de runtime e escalonador, e o tamanho do problema, fixando o tamanho de bloco no
 valor ótimo identificado para cada máquina no primeiro projeto experimental.
-Como esse valor de bloco determina a granularidade computacional disponível para
-cada GPU, o intervalo de valores de N explorado também foi definido por máquina:
-dez níveis entre 5.000 e 60.000 na tupi, e seis níveis entre 5.000 e 60.000 na
-poti. Para cada uma das duas fatorações, executamos todas as combinações desse
-desenho fatorial em ordem aleatória, com três repetições na tupi e cinco na
-poti.
+O tamanho do problema varia em dez níveis entre 5.000 e 60.000, os mesmos nas
+duas máquinas, de modo que o único fator que muda entre elas é o tamanho de
+bloco. Para cada uma das duas fatorações, executamos todas as combinações desse
+desenho fatorial em ordem aleatória, com cinco repetições por configuração.
 
 Por fim, o terceiro projeto experimental tem como objetivo explorar
 como cada escalonador se comporta em cada uma das aplicações e maquinas.
@@ -424,16 +422,19 @@ identificam o escalonador dentro dele: o StarPU aparece em tons de vermelho
 (=starpu:dmda= e =starpu:dmdas=) e o PaRSEC em tons de azul (=parsec:lfq= e
 =parsec:gd=). Os painéis estão dispostos em uma grade: cada linha é
 uma das duas fatorações e cada coluna é uma das duas máquinas. Como as duas
-máquinas foram varridas em grades de $b$ distintas e os patamares de GFLOPS
-diferem entre elas, os eixos não são compartilhados entre painéis.
+máquinas são apresentadas em faixas de $b$ distintas, o eixo horizontal é livre
+por coluna; o eixo vertical é livre por linha, compartilhado pelas duas
+máquinas.
 
 Na poti, as quatro configurações convergem para um pico em torno de $b=500$. Na
 tupi, por outro lado, há uma divergência estrutural entre os dois runtimes: o
 StarPU tem o seu pico em $b=1.000$, enquanto o PaRSEC só atinge seu melhor
-resultado em $b=2.000$ e cai mais acentuadamente para blocos menores ou maiores
-que o seu próprio ótimo. Os tamanhos de bloco adotados nas duas etapas seguintes
-são os que maximizam o GFLOPS em cada máquina: $b=1.000$ na tupi e $b=500$ na
-poti.
+resultado em $b=2.000$ e cai mais acentuadamente para blocos menores
+que o seu próprio ótimo; a exceção é o pico isolado do =parsec:gd= em $b=500$ na
+fatoração de Cholesky, 8% acima do seu próprio patamar em $b=2.000$, que não se
+repete na fatoração LU nem nas demais configurações. Os tamanhos de bloco
+adotados nas duas etapas seguintes são os que maximizam o GFLOPS em cada
+máquina: $b=1.000$ na tupi e $b=500$ na poti.
 
 *** Desempenho em função do tamanho do problema
 

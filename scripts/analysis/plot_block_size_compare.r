@@ -94,9 +94,11 @@ plot_dat <- agg |>
   mutate(ebw = 0.02 * max(b)) |>
   ungroup()
 
-# scales="free": as grades de b e o teto de GFLOPS (4070 capada em FP64 vs
-# 4090) diferem demais para compartilhar eixos. facet_grid (e nao facet_wrap)
-# para que algoritmo e maquina sejam lidos como linhas x colunas.
+# facet_grid (como nas demais figuras do artigo) para que algoritmo e maquina
+# sejam lidos como linhas x colunas. scales="free" e nao "free_y" como no
+# plot_n_size_compare.r: aqui cada maquina e mostrada numa faixa de b diferente
+# (poti ate 800, tupi ate 2000), e um eixo x comum deixaria a poti espremida no
+# terco esquerdo do painel. O eixo y segue livre por linha.
 # Sem titulo/subtitulo: essa informacao vive no caption do artigo.
 p <- ggplot(plot_dat, aes(x = b, y = gflops_mean,
                           colour = config, shape = config)) +
