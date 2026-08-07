@@ -277,12 +277,12 @@ Chameleon e do PaRSEC. Enquanto os codelets do Chameleon para o StarPU
 já tem suporte maduro em GPU, a inserção dinâmica de tarefas do PaRSEC
 (DTD) não suportava a execução de tarefas em GPU. Além disso, os
 codelets do Chameleon para o PaRSEC estavam limitados à CPU. Assim,
-Adicionamos então ao PaRSEC uma nova função, que permite registrar,
-além da implementação em CPU, uma implementação em GPU para a mesma
-tarefa. Em tempo de execução, o escalonador passa a tentar primeiro a
-implementação em GPU, delegando a submissão ao mesmo mecanismo de
-escalonamento de GPU já utilizado pelo backend PTG. Assim, usa-se a
-implementação em CPU apenas quando nenhum acelerador está disponível.
+Adicionamos então ao PaRSEC uma nova função, que permite registrar
+adicionalmente uma implementação em GPU para a mesma
+tarefa. Assim, em tempo de execução, o escalonador tenta primeiro
+empregar a GPU, usando o mecanismo existente de
+escalonamento de GPU já utilizado pelo backend PTG. Usa-se
+a CPU apenas quando nenhum acelerador está disponível.
 
 Essa mudança expôs um problema de coerência de dados: quando uma
 tarefa executada em CPU escrevia um bloco, o caminho de execução da
