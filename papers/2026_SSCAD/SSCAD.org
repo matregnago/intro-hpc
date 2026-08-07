@@ -389,52 +389,53 @@ as combinações desse desenho fatorial em ordem aleatória, novamente
 com cinco repetições por configuração.
 
 #+latex: \noindent
-*Rastreamento Comportamental.* Por fim, o terceiro projeto experimental
-tem como objetivo explorar como cada escalonador se comporta em cada
-uma das aplicações e maquinas. Empregamos os mecanismos de coleta de
-rastros de execução do StarPU e do PaRSEC, por meio de oito execuções
-representativas por máquina, uma para cada combinação entre as duas
-fatorações e as quatro combinações de runtime e escalonador. Como o
-StarVZ foi originalmente projetado para consumir rastros do StarPU,
-adaptamos o pipeline de análise para o PaRSEC, onde os rastros brutos
-são primeiro convertidos para o formato Paje por meio da ferramenta
-=dbp2paje= do próprio PaRSEC, preservando os nomes de containers
-necessários para o StarVZ identificar corretamente workers e streams
-de GPU. O restante do pipeline de análise é idêntico ao utilizado para
-o StarPU. Assim, temos um método único para comparar o escalonamento
-realizado por cada um dos runtimes em ambiente único de análise.
+*3/ Rastreamento Comportamental.* O objetivo é explorar como cada
+escalonador se comporta em cada uma das aplicações e
+maquinas. Empregamos os mecanismos de coleta de rastros de execução do
+StarPU e do PaRSEC, por meio de oito execuções representativas por
+máquina, uma para cada combinação entre as duas fatorações e as quatro
+combinações de runtime e escalonador. Como o StarVZ foi originalmente
+projetado para consumir rastros do StarPU, adaptamos o pipeline de
+análise para o PaRSEC, onde os rastros brutos são primeiro convertidos
+para o formato Paje por meio da ferramenta =dbp2paje= do próprio PaRSEC,
+preservando os nomes de containers necessários para o StarVZ
+identificar corretamente workers e streams de GPU. O restante do
+pipeline de análise é idêntico ao utilizado para o StarPU. Assim,
+temos um método único para comparar o escalonamento realizado por cada
+um dos runtimes em ambiente único de análise.
 
 ** Resultados
-Esta seção apresenta os resultados dos três projetos experimentais descritos na
-Seção 4, na mesma ordem em que eles se encadeiam. A Seção 5.1 usa a varredura de
-tamanho de bloco para fixar esse parâmetro em cada máquina. A Seção 5.2 usa esse
-valor para comparar os quatro pares de runtime e escalonador em função do
-tamanho do problema. A Seção 5.3 recorre aos rastros de execução para explicar,
-em nível de tarefa, por que o runtime vencedor muda de uma máquina para a outra.
+Esta seção apresenta os resultados dos três projetos experimentais
+descritos na Seção anterior. A Seção 5.1 usa a varredura de tamanho de
+bloco para fixar esse parâmetro em cada máquina. A Seção 5.2 usa esse
+valor para comparar os quatro pares de runtime e escalonador em função
+do tamanho do problema. A Seção 5.3 recorre aos rastros de execução
+para explicar, em nível de tarefa, por que o runtime vencedor muda de
+uma máquina para a outra.
 
 *** Escolha do tamanho de bloco
-A Figura [[fig:gflops-b]] mostra o resultado da varredura de tamanho de bloco para
-as quatro combinações de runtime e escalonador em precisão dupla, com $N=40.000$
-fixo em cada máquina.
-
-#+CAPTION: GFLOPS em função do tamanho de bloco $b$, por algoritmo e máquina.
-#+NAME: fig:gflops-b
-#+ATTR_LATEX: :width \linewidth :placement [h] :center t
-[[file:../../plots/final/gflops_vs_b_compare.pdf]]
-
-A figura traz o GFLOPS médio das cinco repetições em função do tamanho de bloco
+A Figura [[fig:gflops-b]] mostra os resultados que nos permitem determinar
+o tamanho de bloco ideal para as quatro combinações de runtime e
+escalonador em precisão dupla, com $N=40.000$ fixo em cada máquina.
+#+latex:%
+A figura traz o GFLOPS médio em função do tamanho de bloco
 $b$. Cada ponto é uma configuração medida, e a barra vertical marca o mínimo e o
 máximo observados entre as repetições. A cor identifica o runtime, onde o StarPU
 aparece em tons de vermelho (=starpu:dmda= e =starpu:dmdas=) e o PaRSEC em tons
 de azul (=parsec:lfq= e =parsec:gd=). Os painéis estão dispostos em uma grade:
 cada linha é uma das duas fatorações e cada coluna é uma das duas máquinas.
-
+#+latex: %
 Na máquina poti, as quatro configurações convergem para um pico em torno de
 $b=500$; na máquina tupi, elas atingem um platô a partir de $b=1.000$, valor em
 que as duas configurações do StarPU alcançam seu máximo e a partir do qual as do
 PaRSEC variam pouco. Os tamanhos de bloco adotados nas duas etapas seguintes são
 os que maximizam o GFLOPS em cada máquina: $b=1.000$ na máquina tupi e $b=500$
 na máquina poti.
+
+#+CAPTION: GFLOPS em função do tamanho de bloco $b$, por algoritmo e máquina.
+#+NAME: fig:gflops-b
+#+ATTR_LATEX: :width \linewidth :placement [!htb] :center nil
+[[file:../../plots/final/gflops_vs_b_compare.pdf]]
 
 *** Desempenho em função do tamanho do problema
 A Figura [[fig:gflops-n]] apresenta o resultado do segundo projeto experimental.
