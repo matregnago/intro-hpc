@@ -539,7 +539,7 @@ iterações futuras. As duas configurações do PaRSEC progridem em degraus, com
 e 9,3 iterações em média, mas por outro motivo: são tarefas retardatárias de
 iterações antigas retidas nas filas.
 
-#+CAPTION: Progressão das iterações da fatoração de Cholesky ao longo do tempo, na poti.
+#+CAPTION: Progressão das iterações Cholesky ao longo do tempo, na poti.
 #+NAME: fig:kiteration
 #+ATTR_LATEX: :width \linewidth :placement [!htb] :center t
 [[file:../../plots/final/traces_poti_812152/kiteration_compare_dpotrf.pdf]]
