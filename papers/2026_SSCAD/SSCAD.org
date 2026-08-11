@@ -331,11 +331,11 @@ fluxos de execução em GPU entre os dois runtimes, fixamos
 (=PARSEC_MAX_STREAMS=6=, das quais quatro são de execução e duas de
 transferência), sem parâmetro equivalente configurável em tempo de
 execução. Utilizamos CUDA 12.4, gcc 13.3.0 e Debian 12 como sistema
-operacional, com driver NVIDIA recente. A reprodutibilidade de todo o
+operacional, com driver NVIDIA 590.44.01. A reprodutibilidade de todo o
 ambiente é garantida por meio do gerenciador de pacotes Nix, com as
 dependências fixadas em um flake, publicado em
 [[https://github.com/matregnago/intro-hpc]]. A análise dos dados ocorre
-usando ferramentas modernas de ciência de dados junto 
+usando ferramentas modernas de ciência de dados junto
 com o framework StarVZ cite:Pinto2021ProvidingIP para a
 visualização dos rastros de execução coletados pelo StarPU e pelo
 PaRSEC.
