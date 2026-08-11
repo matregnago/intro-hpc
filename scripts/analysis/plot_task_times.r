@@ -1,17 +1,14 @@
 #!/usr/bin/env Rscript
 #
-# Per-task-type timing compared across runtimes/schedulers, from each run's
-# application.parquet (fallback: tasks.parquet, the GPU-complete PaRSEC source
-# -- see read_exec). Splits every kernel by resource class (CPU vs GPU): NB
-# PaRSEC's GPU spans are host-observed and overlap across streams, so
-# GPU-class durations are inflated for PaRSEC; CPU vs CPU is like-for-like.
+# Duracao media por tipo de tarefa, comparada entre runtimes/escalonadores, a
+# partir do application.parquet de cada run (fallback: tasks.parquet -- ver
+# read_exec). Usado nos slides, nao no artigo.
 #
-# Usage:  plot_task_times.r [base_dir] [algo]
-# Output: plots/task_times_mean.{png,pdf}, plots/task_times_violin.{png,pdf}
-#         + task_times_summary.csv. Honours PLOTS_DIR.
+# Uso:  plot_task_times.r [base_dir] [algo]
+# Saida: <PLOTS_DIR>/task_times_mean.{png,pdf} + task_times_summary.csv
 
 suppressMessages({
-  library(arrow); library(dplyr); library(ggplot2); library(forcats)
+  library(arrow); library(dplyr); library(ggplot2)
 })
 
 this_file <- sub("^--file=", "",
@@ -31,7 +28,6 @@ if (nrow(runs) == 0) stop("no runs with application/tasks parquet under ", base_
                           if (!is.na(algo_sel)) paste0(" (algo=", algo_sel, ")") else "")
 message("runs: ", paste(runs$dir, collapse = ", "))
 
-# Per run: unified compute-kernel intervals, tagged with experiment metadata.
 read_kernels <- function(row) {
   ex <- read_exec(row$path)
   if (is.null(ex)) return(NULL)
@@ -46,20 +42,15 @@ dat <- bind_rows(lapply(seq_len(nrow(runs)), function(i) read_kernels(runs[i, ])
 if (nrow(dat) == 0) stop("no compute-kernel states found")
 message("fontes: ", paste(unique(paste0(dat$runtime, "=", dat$src)), collapse = ", "))
 
-# init/util kernels stay in the summary but out of the plots.
 core <- dat %>% filter(!.data$kernel %in% INIT_KERNELS)
 
-# Blindagem contra o artefato de medicao: os spans de GPU do PaRSEC sao abertos e
-# fechados no host e se sobrepoem entre as streams de execucao, o que infla a
-# duracao em ate 4x (observado ~2.9x). Comparar essa coluna com a GPU do StarPU
-# leva a concluir que o mesmo cuBLAS dgemm e 2.9x mais lento num runtime que no
-# outro, o que e falso. As linhas continuam no CSV (registro bruto), mas ficam
-# fora de qualquer figura, para que a comparacao indevida nao possa ser lida de
-# um grafico. Comparacoes cross-runtime: so CPU vs CPU.
+# Os spans de GPU do PaRSEC sao abertos/fechados no host e se sobrepoem entre as
+# streams, inflando a duracao (~2.9x observado). Compara-los com a GPU do StarPU
+# sugeriria que o mesmo cuBLAS dgemm e 2.9x mais lento num runtime, o que e
+# falso. Ficam no CSV como registro bruto, mas fora da figura.
 n_drop <- sum(core$runtime == "parsec" & core$class == "GPU")
 if (n_drop > 0)
-  message("suprimindo ", n_drop, " spans de GPU do PaRSEC das figuras ",
-          "(host-observados, sobrepostos entre streams); seguem no CSV")
+  message("suprimindo ", n_drop, " spans de GPU do PaRSEC da figura; seguem no CSV")
 core <- core %>% filter(!(.data$runtime == "parsec" & .data$class == "GPU"))
 
 summary_tbl <- dat %>%
@@ -71,17 +62,15 @@ summary_tbl <- dat %>%
 print(summary_tbl, n = Inf)
 write.csv(summary_tbl, file.path(plots_dir(), "task_times_summary.csv"), row.names = FALSE)
 
-# facet label = algo + kernel; with a single algorithm just the kernel.
+# faceta = algo + kernel; com um unico algoritmo, so o kernel
 one_algo <- n_distinct(core$algo) == 1
 core <- core %>%
   mutate(panel = if (one_algo) .data$kernel
          else paste0(.data$algo, ": ", .data$kernel))
 
-message("para o caption: ", base_dir, " | classe = onde o span executou ",
-        "(ResourceId); a GPU do PaRSEC nao aparece porque seus spans sao ",
-        "host-observados e se sobrepoem entre streams -- cross-runtime so CPU")
+message("para o caption: ", base_dir, " | classe = onde o span executou; ",
+        "cross-runtime so CPU vs CPU")
 
-# (1) mean duration bars, facet per algo+kernel, split CPU/GPU
 mean_tbl <- core %>%
   group_by(.data$panel, .data$cfg, .data$class) %>%
   summarise(mean_us = mean(.data$Duration),
@@ -98,16 +87,3 @@ p_mean <- ggplot(mean_tbl, aes(.data$cfg, .data$mean_us, fill = .data$class)) +
   theme_sscad(legend = "bottom") +
   theme(axis.text.x = element_text(angle = 30, hjust = 1))
 save_plot(p_mean, "task_times_mean", width = 12, height = 8)
-
-# (2) duration distribution (violin + boxplot) per algo+kernel
-p_violin <- ggplot(core, aes(.data$cfg, .data$Duration, fill = .data$class)) +
-  geom_violin(scale = "width", alpha = 0.5, colour = NA,
-              position = position_dodge(width = 0.8)) +
-  geom_boxplot(width = 0.15, outlier.size = 0.3, alpha = 0.8,
-               position = position_dodge(width = 0.8)) +
-  facet_wrap(~panel, scales = "free_y") +
-  scale_fill_brewer(palette = "Set1") +
-  labs(x = NULL, y = "duracao (ms)") +
-  theme_sscad(legend = "bottom") +
-  theme(axis.text.x = element_text(angle = 30, hjust = 1))
-save_plot(p_violin, "task_times_violin", width = 12, height = 8)

@@ -1,10 +1,9 @@
 #!/usr/bin/env Rscript
 #
-# Comparativo poti vs tupi de GFLOPS vs N (media +- 1 desvio-padrao entre
-# repeticoes), facet_grid(op ~ node), color = config. Cada no roda no seu b
-# ideal; o subtitulo deriva isso dos dados.
+# Figura 2 do artigo: GFLOPS vs N (media +- 1 desvio-padrao entre repeticoes),
+# facet_grid(op ~ maquina). Cada no roda no seu b ideal. So FP64.
 #
-#   Rscript scripts/analysis/plot_n_size_compare.r poti_dir tupi_dir
+#   Rscript scripts/analysis/plot_n_size_compare.r [poti_dir tupi_dir]
 #   (default: data/n_size_poti_* e data/n_size_tupi_* mais recentes)
 #
 # Saida: plots/final/gflops_vs_n_compare.{png,pdf}
@@ -34,8 +33,6 @@ dirs <- if (length(args) >= 2) {
 read_one <- function(base_dir) {
   f <- file.path(base_dir, "results.csv")
   message("lendo ", f)
-  # node e extraido do nome do dir independente do prefixo; se nao casa, usa o
-  # proprio nome.
   node <- basename(base_dir)
   m    <- regexpr("poti|tupi", node)
   if (m > 0) node <- regmatches(node, m)
@@ -65,15 +62,12 @@ agg <- results |>
     # 1 rep -> sd NA -> 0, p/ o ponto plotar sem barra
     gflops_sd = ifelse(is.na(gflops_sd), 0, gflops_sd)
   ) |>
-  # Largura da barra de erro em unidades de N: com o eixo X linear, uma largura
-  # fixa some. 1.5% da amplitude de N do proprio no.
+  # largura da barra de erro em unidades de N (o eixo X e linear)
   group_by(node) |>
   mutate(ebw = 0.015 * diff(range(n))) |>
   ungroup()
 
-# b ideal de cada no (constante dentro do job). Nao vira subtitulo: o revisor
-# pediu que o conteudo do titulo va para o caption do artigo -- imprimimos aqui
-# para que o texto do caption possa ser escrito a partir dos dados.
+# b ideal de cada no, para escrever o caption a partir dos dados.
 b_tbl <- results |>
   distinct(node, b) |>
   arrange(node)
@@ -81,9 +75,8 @@ message("para o caption: FP64, ",
         paste(sprintf("%s b=%d", b_tbl$node, b_tbl$b), collapse = ", "))
 
 # scales="free_y" libera o eixo por linha; as duas colunas (poti | tupi)
-# compartilham o eixo, entao a comparacao entre nos fica direta.
-# Eixo X LINEAR (era log10): em log a distancia entre os niveis de N engana a
-# leitura da curva. Eixo Y inclui o zero.
+# compartilham o eixo, entao a comparacao entre nos fica direta. Eixo X linear
+# (era log10): em log a distancia entre os niveis de N engana a leitura.
 p <- ggplot(agg, aes(x = n, y = gflops_mean,
                      colour = config, shape = config)) +
   geom_line() +
@@ -103,10 +96,10 @@ p <- ggplot(agg, aes(x = n, y = gflops_mean,
 
 out_dir <- "plots/final"
 dir.create(out_dir, showWarnings = FALSE, recursive = TRUE)
-# Mesmo canvas do plot_block_size_compare.r (era 13x7), pelo mesmo motivo: manter
-# a fonte renderizada no mesmo tamanho das outras figuras do artigo.
+# Mesma escala de gflops_vs_b_compare, pelo mesmo motivo (a fonte impressa e
+# BASE_SIZE/largura_salva, ja que tudo entra com :width \linewidth).
 ggsave(file.path(out_dir, "gflops_vs_n_compare.png"), p,
-       width = FIG_WIDTH_IN, height = 6, dpi = 140)
+       width = FIG_WIDTH_IN, height = 5.9, dpi = 140)
 ggsave(file.path(out_dir, "gflops_vs_n_compare.pdf"), p,
-       width = FIG_WIDTH_IN, height = 6)
+       width = FIG_WIDTH_IN, height = 5.9)
 message("escrito ", out_dir, "/gflops_vs_n_compare.{png,pdf}")

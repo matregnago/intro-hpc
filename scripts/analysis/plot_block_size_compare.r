@@ -1,20 +1,8 @@
 #!/usr/bin/env Rscript
-#
-# Comparativo poti vs tupi da montanha de block size: GFLOPS medio vs b (barras
-# min/max), facet_grid(algorithm ~ node) com escalas livres, color = config.
-# So FP64. Os dois jobs varrem a mesma grade de b; o plot e o
-# block_size_peak_compare.csv usam a grade completa.
-#
-#   Rscript scripts/analysis/plot_block_size_compare.r poti_dir tupi_dir
-#   (default: data/block_size_poti_* e data/block_size_tupi_* mais recentes)
-#
-# Saida: plots/final/gflops_vs_b_compare.{png,pdf}
-#      + plots/final/block_size_peak_compare.csv
 
 library(ggplot2)
 library(dplyr)
 library(readr)
-library(tidyr)
 
 this_file <- sub("^--file=", "",
                  grep("^--file=", commandArgs(FALSE), value = TRUE))
@@ -37,8 +25,6 @@ dirs <- if (length(args) >= 2) {
 read_one <- function(base_dir) {
   f <- file.path(base_dir, "results.csv")
   message("lendo ", f)
-  # node e extraido do nome do dir independente do prefixo (block_size_poti_*,
-  # gpu_tile_poti_*, ...); se nao casa, usa o proprio nome.
   node <- basename(base_dir)
   m    <- regexpr("poti|tupi", node)
   if (m > 0) node <- regmatches(node, m)
@@ -55,8 +41,7 @@ read_one <- function(base_dir) {
 results <- bind_rows(lapply(dirs, read_one)) |>
   filter(precision == "FP64")
 
-# Teto de b por no: poti ate 800, tupi ate 2000 (b maior nao compensa o
-# overhead nessas maquinas).
+# Teto de b por no: acima disso o overhead nao compensa nessas maquinas.
 b_max <- c(poti = 800, tupi = 2000)
 results <- results |>
   filter(b <= b_max[as.character(node)])
@@ -72,7 +57,6 @@ agg <- results |>
   mutate(config = cfg_factor(cfg_label(runtime, scheduler)),
          algo   = algo_label(algorithm))
 
-# Pico por (node, kernel, config): o b de maior GFLOPS medio = b ideal.
 peaks <- agg |>
   group_by(node, gpu, algorithm, config, runtime, scheduler, n) |>
   slice_max(gflops_mean, n = 1, with_ties = FALSE) |>
@@ -94,12 +78,6 @@ plot_dat <- agg |>
   mutate(ebw = 0.02 * max(b)) |>
   ungroup()
 
-# facet_grid (como nas demais figuras do artigo) para que algoritmo e maquina
-# sejam lidos como linhas x colunas. scales="free" e nao "free_y" como no
-# plot_n_size_compare.r: aqui cada maquina e mostrada numa faixa de b diferente
-# (poti ate 800, tupi ate 2000), e um eixo x comum deixaria a poti espremida no
-# terco esquerdo do painel. O eixo y segue livre por linha.
-# Sem titulo/subtitulo: essa informacao vive no caption do artigo.
 p <- ggplot(plot_dat, aes(x = b, y = gflops_mean,
                           colour = config, shape = config)) +
   geom_line() +
@@ -117,10 +95,7 @@ p <- ggplot(plot_dat, aes(x = b, y = gflops_mean,
   ) +
   theme_sscad()
 
-# Canvas em FIG_WIDTH_IN (era 13x7): a razao de aspecto e a mesma, entao a figura
-# ocupa a mesma area na pagina, mas a fonte renderizada sobe ~18% e passa a casar
-# com a das demais figuras do artigo.
 ggsave(file.path(out_dir, "gflops_vs_b_compare.png"), p,
-       width = FIG_WIDTH_IN, height = 6, dpi = 140)
+       width = FIG_WIDTH_IN, height = 5.9, dpi = 140)
 ggsave(file.path(out_dir, "gflops_vs_b_compare.pdf"), p,
-       width = FIG_WIDTH_IN, height = 6)
+       width = FIG_WIDTH_IN, height = 5.9)

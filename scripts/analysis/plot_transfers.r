@@ -1,14 +1,13 @@
 #!/usr/bin/env Rscript
 #
-# Painel de movimentacao de dados H2D/D2H a partir dos contadores nativos que
-# scripts/run.sh (TRACE_STATS=1) grava no .log de cada run -- funciona nos dois
-# runtimes, sem depender do trace:
+# Volume de dados H2D/D2H a partir dos contadores nativos que scripts/run.sh
+# (TRACE_STATS=1) grava no .log de cada run -- funciona nos dois runtimes, sem
+# depender do rastro. Usado nos slides, nao no artigo.
 #   StarPU: blocos "Data transfer stats" (STARPU_BUS_STATS) + "Worker stats".
 #   PaRSEC: linha "|All Devs |" (device_show_statistics).
 #
 # Uso:  plot_transfers.r [base_dir] [algo] [maquina]
-#   algo (opcional) filtra os runs; maquina rotula o painel (default extraido
-#   do base_dir). Saida: plots/transfers_d2h.{png,pdf} + transfers_summary.csv.
+# Saida: <PLOTS_DIR>/transfers_d2h.{png,pdf} + transfers_summary.csv
 
 suppressMessages({
   library(dplyr); library(ggplot2); library(stringr); library(tidyr)
@@ -36,7 +35,7 @@ parse_starpu <- function(lines) {
   h2d <- h2d[!is.na(h2d[, 1]), , drop = FALSE]
   d2h <- d2h[!is.na(d2h[, 1]), , drop = FALSE]
   if (nrow(h2d) == 0 && nrow(d2h) == 0) return(NULL)
-  # CUDA tasks: the "N task(s)" line(s) following a "CUDA <dev>" worker line.
+  # tarefas de CUDA: a linha "N task(s)" que segue cada linha de worker "CUDA <dev>".
   cuda_tasks <- 0L
   w <- grep("Worker stats", lines)
   if (length(w)) {
@@ -55,8 +54,8 @@ parse_starpu <- function(lines) {
   )
 }
 
-# PaRSEC: "|All Devs |" summary. PaRSEC scales the unit with the volume
-# ("21.09MB(33.33)", "61.40GB(100.00)"), so the parse must be unit-aware.
+# PaRSEC: resumo "|All Devs |". A unidade acompanha o volume ("21.09MB(33.33)",
+# "61.40GB(100.00)"), entao o parse precisa ser sensivel a unidade.
 parse_parsec <- function(lines) {
   ln <- grep("\\|All Devs", lines, value = TRUE)
   if (!length(ln)) return(NULL)
@@ -71,7 +70,7 @@ parse_parsec <- function(lines) {
   tibble(
     h2d_mb      = mb(f[6]),
     d2h_mb      = mb(f[8]),
-    d2h_xfers   = NA_real_,                       # PaRSEC reports MB, not op count
+    d2h_xfers   = NA_real_,                       # PaRSEC reporta MB, nao contagem
     gpu_kernels = as.integer(num(f[3]))
   )
 }
@@ -106,8 +105,6 @@ one_algo <- n_distinct(long$algo) == 1
 long <- long %>%
   mutate(panel = if (one_algo && !is.na(machine)) machine else .data$algo)
 
-# Sem titulo (vai para o caption). Barras coloridas por direcao com o Set1 do
-# ColorBrewer; as configs no eixo X seguem a ordem canonica.
 p <- ggplot(long, aes(cfg_factor(.data$cfg), .data$mb, fill = .data$dir)) +
   geom_col(position = position_dodge(width = 0.7), width = 0.65, alpha = 0.9) +
   geom_text(aes(label = sprintf("%.1f", .data$mb / 1000)),

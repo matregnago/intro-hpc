@@ -1,16 +1,17 @@
 #!/usr/bin/env Rscript
 #
-# k-iteration plot (iterations on Y, time on X) via StarVZ's panel_kiteration(),
-# to compare the schedulers' "signatures" across the outer factorization loop.
-# PaRSEC has no Application$Iteration in its trace; parsec_tasks_to_parquet.r
-# derives it, and panel_kiteration only needs $Application/$Colors/$config, so
-# a hand-built starvz_data list is enough (no starvz_read).
+# Figura 5 do artigo: k-iteration (iteracoes no Y, tempo no X) via
+# panel_kiteration() do StarVZ, para comparar a "assinatura" dos escalonadores ao
+# longo do laco externo da fatoracao.
 #
-# Usage:  plot_kiteration.r <run_dir|base_dir> [run_dir ...]
-#   run dirs need tasks.parquet with a non-NA Iteration column.
-# Output: one figure per algorithm, all schedulers/runtimes on a shared time
-#   axis: plots/kiteration_compare_<algo>.{png,pdf} (or kiteration_<cfg>_<algo>
-#   for a lone run). Honours PLOTS_DIR.
+# O PaRSEC nao tem Application$Iteration no rastro; parsec_tasks_to_parquet.r a
+# deriva. Como panel_kiteration so precisa de $Application/$Colors/$config, uma
+# lista starvz_data montada na mao basta (sem starvz_read).
+#
+# Uso:  plot_kiteration.r <run_dir|base_dir> [run_dir ...]
+#   run dirs precisam de tasks.parquet com coluna Iteration nao-NA.
+# Saida: uma figura por algoritmo, todas as configs no mesmo eixo de tempo:
+#   <PLOTS_DIR>/kiteration_compare_<algo>.{png,pdf}
 
 suppressMessages({
   library(ggplot2); library(starvz); library(patchwork)
@@ -22,8 +23,7 @@ script_dir <- if (length(this_file)) dirname(normalizePath(this_file)) else "."
 source(file.path(script_dir, "trace_common.r"))
 source(file.path(script_dir, "plot_style.r"))
 
-# Colors table in panel_kiteration's expected shape (Value character, no Use),
-# with the shared KERNEL_COLORS hues + hue_pal fallback.
+# Tabela Colors no formato que panel_kiteration espera (Value character, sem Use).
 build_colors <- function(values) {
   vals <- sort(unique(values))
   cols <- KERNEL_COLORS[vals]
@@ -32,7 +32,7 @@ build_colors <- function(values) {
   tibble(Value = vals, Color = unname(cols))
 }
 
-# panel_kiteration for one run; NULL if the run has no usable data.
+# panel_kiteration de um run; NULL se o run nao tem dado utilizavel.
 build_panel <- function(run_dir) {
   meta <- parse_run_id(run_dir)
   tasks <- read_tasks_norm(run_dir)            # StartTime/EndTime -> ms
@@ -52,8 +52,8 @@ build_panel <- function(run_dir) {
       End          = .data$EndTime,
       Value        = norm_kernel(.data$Name)
     ) %>%
-    # factorization work only: names(KERNEL_COLORS) is exactly the post-alias
-    # factorization kernel set (matrix-gen and runtime sinks drop out).
+    # so trabalho de fatoracao: names(KERNEL_COLORS) e exatamente esse conjunto
+    # apos o alias (geracao de matriz e sinks do runtime caem fora).
     filter(.data$Value %in% names(KERNEL_COLORS))
   if (nrow(app) == 0) { message("no timed iterated tasks in ", run_dir, ", skip"); return(NULL) }
 
@@ -63,7 +63,7 @@ build_panel <- function(run_dir) {
     config = list(
       base_size = BASE_SIZE, expand = 0.05,
       limits = list(start = NA, end = NA),
-      # subite/pernode must be explicit FALSE: panel_kiteration errors on NULL.
+      # subite/pernode precisam ser FALSE explicito: panel_kiteration erra em NULL.
       kiteration = list(subite = FALSE, pernode = FALSE,
                         middlelines = NULL, legend = TRUE)
     )
@@ -77,13 +77,13 @@ build_panel <- function(run_dir) {
        runtime   = ifelse(is.na(meta$runtime), "run", meta$runtime),
        scheduler = ifelse(is.na(meta$scheduler), basename(run_dir), meta$scheduler),
        algo      = ifelse(is.na(meta$algo), "run", meta$algo),
-       x_max = max(app$End), niter = max(app$Iteration) + 1L)
+       x_max = max(app$End))
 }
 
 args <- commandArgs(trailingOnly = TRUE)
 if (length(args) == 0) stop("usage: plot_kiteration.r <run_dir|base_dir> [run_dir ...]")
 
-# Each arg is a run dir (has tasks.parquet) or a base dir to expand to its runs.
+# Cada arg e um run dir (tem tasks.parquet) ou um base dir a expandir.
 expand_arg <- function(a) {
   if (file.exists(file.path(a, "tasks.parquet"))) return(a)
   subs <- list.dirs(a, recursive = FALSE)
@@ -96,39 +96,28 @@ if (length(run_dirs) == 0)
 panels <- Filter(Negate(is.null), lapply(run_dirs, build_panel))
 if (length(panels) == 0) stop("no runs with usable k-iteration data")
 
-# Ordem das linhas: CONFIG_ORDER vem de plot_style.r, a mesma usada nas cores e
-# no grid do plot_compare_st.r.
 config_rank <- function(p) {
   m <- match(cfg_label(p$runtime, p$scheduler), CONFIG_ORDER)
   if (is.na(m)) length(CONFIG_ORDER) + 1L else m
 }
-stem_of <- function(p) paste0("kiteration_", p$runtime, "_", p$scheduler, "_", p$algo)
 
-# One figure per algorithm: within an algo every run shares N/b, so a shared
-# time axis keeps makespans comparable.
+# Uma figura por algoritmo: dentro de um algo todos os runs compartilham N/b,
+# entao um eixo de tempo comum mantem os makespans comparaveis.
 by_algo <- split(panels, vapply(panels, function(p) p$algo, character(1)))
 for (algo in names(by_algo)) {
   grp <- by_algo[[algo]]
   grp <- grp[order(vapply(grp, config_rank, integer(1)))]
-  if (length(grp) == 1L) {
-    pn <- grp[[1]]
-    # Sem titulo: o rotulo do painel ja identifica a config, e algo/n/b vao para
-    # o caption do artigo (mesma regra das demais figuras).
-    message("para o caption: k-iteration, ", pn$label, ", ", algo)
-    save_plot(pn$panel, stem_of(pn), width = FIG_WIDTH_WIDE_IN, height = 6.9)
-    next
-  }
   x_end <- max(vapply(grp, function(p) p$x_max, numeric(1)))
-  combined <- wrap_plots(
+  # Legenda no topo, como nas demais figuras. Nao basta legend.position="top": o
+  # patchwork encaixa o guia coletado ABAIXO da linha dos ggtitle(), em cima do
+  # titulo do painel da direita. guide_area() reserva uma faixa propria acima de
+  # tudo, e heights da a ela so o que precisa.
+  combined <- (guide_area() / wrap_plots(
     lapply(grp, function(p) p$panel + coord_cartesian(xlim = c(0, x_end))),
     ncol = 2
-  ) +
-    plot_layout(guides = "collect") +
-    # Legenda no topo, como nas demais figuras do artigo. legend.justification
-    # explicito porque o default_theme() do starvz fixa "left", e a legenda
-    # coletada pelo patchwork herdaria isso e sairia encostada na esquerda.
-    plot_annotation(theme = theme(legend.position = "top",
-                                  legend.justification = "center"))
+  )) +
+    plot_layout(guides = "collect", heights = c(1, 22)) &
+    theme(legend.position = "top")
   # Canvas em FIG_WIDTH_WIDE_IN (era 16x4.5 por linha): mesma razao de aspecto,
   # mesma area na pagina, mas a fonte renderizada sobe ~33% -- este era o painel
   # com a menor fonte do artigo.
