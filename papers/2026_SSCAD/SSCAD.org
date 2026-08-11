@@ -511,7 +511,10 @@ ser a máquina mais representativa para esta análise, pois é nela que ocorre a
 inversão de desempenho que motiva a investigação. Na Figura [[fig:st-compare]],
 cada linha do eixo vertical é um recurso de execução: os /workers/ de CPU e,
 abaixo deles, as quatro /streams/ de GPU. Cada retângulo é uma tarefa, posicionada
-no recurso em que executou e colorida pelo seu tipo.
+no recurso em que executou e colorida pelo seu tipo. A faixa cinza vertical no
+início de cada painel marca o CPB (/Critical Path Bound/), o limite inferior de
+tempo imposto pelo caminho crítico do DAG, e o número rotacionado à direita é o
+/makespan/ da execução.
 #+latex: %
 A figura dá forma visual à decomposição da seção anterior. Os dois runtimes
 executam tarefas em quatro /streams/ de GPU: no StarPU, uma por /worker/ CUDA; no

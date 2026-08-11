@@ -193,9 +193,9 @@ p1 <- ggplot(dat, aes(.data$cfg, .data$contrib_gfps, fill = .data$class)) +
   cls_fill +
   scale_y_continuous(expand = expansion(mult = c(0, 0.12))) +
   labs(x = NULL, y = "GFLOPS entregues") +
-  theme_sscad(legend = "bottom") +
+  theme_sscad() +
   x_cfg
-save_plot(p1, "gpu_split_contrib", width = 11, height = 9)
+save_plot(p1, "gpu_split_contrib", width = FIG_WIDTH_IN, height = 9)
 
 # ---- (2) % dos flops na GPU vs split otimo r* ----
 shr <- dat %>% filter(.data$class == "GPU")
@@ -212,7 +212,7 @@ p2 <- ggplot(shr, aes(.data$cfg, 100 * .data$share_flops)) +
   labs(x = NULL, y = "% dos GFLOPS na GPU") +
   theme_sscad(legend = "none") +
   x_cfg
-save_plot(p2, "gpu_split_share", width = 11, height = 9)
+save_plot(p2, "gpu_split_share", width = FIG_WIDTH_IN, height = 9)
 
 # ---- (3) capacidade efetiva por classe ----
 message("para o caption (Fig. rates): ", paste(dirs, collapse = ", "),
@@ -227,6 +227,6 @@ p3 <- ggplot(dat, aes(.data$cfg, .data$capacity_gfps, fill = .data$class)) +
   cls_fill +
   expand_y_zero() +
   labs(x = NULL, y = "GFLOPS") +
-  theme_sscad(legend = "bottom") +
+  theme_sscad() +
   x_cfg
-save_plot(p3, "gpu_split_rates", width = 11, height = 9)
+save_plot(p3, "gpu_split_rates", width = FIG_WIDTH_IN, height = 9)

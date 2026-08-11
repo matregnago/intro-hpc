@@ -115,7 +115,7 @@ for (algo in names(by_algo)) {
     # Sem titulo: o rotulo do painel ja identifica a config, e algo/n/b vao para
     # o caption do artigo (mesma regra das demais figuras).
     message("para o caption: k-iteration, ", pn$label, ", ", algo)
-    save_plot(pn$panel, stem_of(pn), width = 14, height = 8)
+    save_plot(pn$panel, stem_of(pn), width = FIG_WIDTH_WIDE_IN, height = 6.9)
     next
   }
   x_end <- max(vapply(grp, function(p) p$x_max, numeric(1)))
@@ -124,7 +124,14 @@ for (algo in names(by_algo)) {
     ncol = 2
   ) +
     plot_layout(guides = "collect") +
-    plot_annotation(theme = theme(legend.position = "bottom"))
+    # Legenda no topo, como nas demais figuras do artigo. legend.justification
+    # explicito porque o default_theme() do starvz fixa "left", e a legenda
+    # coletada pelo patchwork herdaria isso e sairia encostada na esquerda.
+    plot_annotation(theme = theme(legend.position = "top",
+                                  legend.justification = "center"))
+  # Canvas em FIG_WIDTH_WIDE_IN (era 16x4.5 por linha): mesma razao de aspecto,
+  # mesma area na pagina, mas a fonte renderizada sobe ~33% -- este era o painel
+  # com a menor fonte do artigo.
   save_plot(combined, paste0("kiteration_compare_", algo),
-            width = 16, height = 4.5 * ceiling(length(grp) / 2))
+            width = FIG_WIDTH_WIDE_IN, height = 3.375 * ceiling(length(grp) / 2))
 }

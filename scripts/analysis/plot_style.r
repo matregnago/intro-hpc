@@ -8,15 +8,26 @@
 # e o escalonador pelo tom/marcador.
 #
 # Também centraliza: ordem canônica das configs, nomes dos algoritmos, tamanho
-# de fonte e tema. Qualquer figura nova deve usar daqui, para que o tamanho da
-# fonte dos elementos gráficos seja o mesmo em todas.
+# de fonte, largura de canvas e tema. Qualquer figura nova deve usar daqui, para
+# que o tamanho da fonte dos elementos gráficos seja o mesmo em todas.
 
 suppressMessages({
   library(ggplot2)
 })
 
-# Tamanho de fonte único para todas as figuras do artigo.
+# Tamanho de fonte único para todas as figuras do artigo -- em pt SOBRE O CANVAS
+# do ggsave, não sobre a página do artigo.
 BASE_SIZE <- 14
+
+# Largura do canvas, e por que ela importa tanto quanto o BASE_SIZE: as figuras
+# entram no LaTeX escaladas para \linewidth, então a fonte que o leitor enxerga é
+#
+#   fonte_renderizada = BASE_SIZE * (largura no LaTeX / largura do canvas)
+#
+# Fixar só o BASE_SIZE não padroniza nada: um canvas mais largo encolhe a fonte
+# na mesma proporção. Toda figura nova deve usar uma destas duas larguras.
+FIG_WIDTH_IN      <- 11   # padrão (figuras de linha/barra)
+FIG_WIDTH_WIDE_IN <- 12   # painéis de rastro, que precisam de mais eixo X
 
 # Ordem canônica: StarPU primeiro, e dentro de cada runtime o escalonador mais
 # simples antes. Mesma ordem usada nas linhas dos painéis espaço-tempo.
@@ -71,8 +82,10 @@ scale_config_shape <- function(name = NULL, ...) {
   scale_shape_manual(name = name, values = CONFIG_SHAPES, drop = FALSE, ...)
 }
 
-#' Tema único das figuras. `legend` controla a posição; o resto é fixo para
-#' garantir fontes idênticas entre figuras.
+#' Tema único das figuras. `legend` controla a posição -- o padrão é "top", que é
+#' onde a legenda de cores fica em todas as figuras do artigo (pedido do
+#' revisor); só use outro valor para "none". O resto é fixo, e junto com
+#' FIG_WIDTH_IN é o que garante fontes idênticas entre figuras.
 theme_sscad <- function(legend = "top") {
   theme_bw(base_size = BASE_SIZE) +
     theme(

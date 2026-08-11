@@ -103,7 +103,10 @@ p <- ggplot(agg, aes(x = n, y = gflops_mean,
 
 out_dir <- "plots/final"
 dir.create(out_dir, showWarnings = FALSE, recursive = TRUE)
+# Mesmo canvas do plot_block_size_compare.r (era 13x7), pelo mesmo motivo: manter
+# a fonte renderizada no mesmo tamanho das outras figuras do artigo.
 ggsave(file.path(out_dir, "gflops_vs_n_compare.png"), p,
-       width = 13, height = 7, dpi = 140)
-ggsave(file.path(out_dir, "gflops_vs_n_compare.pdf"), p, width = 13, height = 7)
+       width = FIG_WIDTH_IN, height = 6, dpi = 140)
+ggsave(file.path(out_dir, "gflops_vs_n_compare.pdf"), p,
+       width = FIG_WIDTH_IN, height = 6)
 message("escrito ", out_dir, "/gflops_vs_n_compare.{png,pdf}")

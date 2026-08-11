@@ -117,6 +117,10 @@ p <- ggplot(plot_dat, aes(x = b, y = gflops_mean,
   ) +
   theme_sscad()
 
+# Canvas em FIG_WIDTH_IN (era 13x7): a razao de aspecto e a mesma, entao a figura
+# ocupa a mesma area na pagina, mas a fonte renderizada sobe ~18% e passa a casar
+# com a das demais figuras do artigo.
 ggsave(file.path(out_dir, "gflops_vs_b_compare.png"), p,
-       width = 13, height = 7, dpi = 140)
-ggsave(file.path(out_dir, "gflops_vs_b_compare.pdf"), p, width = 13, height = 7)
+       width = FIG_WIDTH_IN, height = 6, dpi = 140)
+ggsave(file.path(out_dir, "gflops_vs_b_compare.pdf"), p,
+       width = FIG_WIDTH_IN, height = 6)

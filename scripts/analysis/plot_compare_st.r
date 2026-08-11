@@ -44,7 +44,7 @@ base_dir <- if (length(args) >= 1) args[[1]] else
 # antes) da espaco de sobra mas infla a figura o bastante para o LaTeX
 # flutua-la para uma pagina propria. 0.13 fica entre os dois.
 ST_Y_TEXT    <- 9
-ST_WIDTH_IN  <- 12
+ST_WIDTH_IN  <- FIG_WIDTH_WIDE_IN
 ST_UNIT_IN   <- 0.13
 # Titulo do painel (strip), eixo X e margens de UMA linha da grade de facetas:
 # o que cada linha gasta alem das lanes.
@@ -200,7 +200,7 @@ for (alg in sort(unique(runs$algo))) {
                        expand = c(0.05, 0)) +
     coord_cartesian(xlim = c(0, x_end), ylim = c(0, NA)) +
     labs(x = "Time [ms]", y = "Application Workers") +
-    theme_sscad(legend = "bottom") +
+    theme_sscad() +
     theme(axis.text.y = element_text(size = ST_Y_TEXT), panel.grid = element_blank())
 
   save_plot(p, paste0("st_compare_", alg), width = ST_WIDTH_IN,
