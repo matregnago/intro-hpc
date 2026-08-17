@@ -132,6 +132,14 @@ runtime é avaliado em conjunto com uma biblioteca de álgebra linear diferente,
 eventuais diferenças de desempenho observadas podem ser atribuídas tanto ao
 runtime quanto à implementação específica de cada biblioteca.
 #+latex: %
+Lacoste et al. cite:lacoste2014hybrid substituem o escalonador interno do solver
+direto esparso PaStiX pelo StarPU e pelo PaRSEC, mantendo a biblioteca fixa e
+avaliando ambos os runtimes em plataformas heterogêneas equipadas com
+aceleradores. A comparação, no entanto, se dá no contexto da álgebra linear
+esparsa, cujo grafo de tarefas é irregular e determinado pela estrutura de
+esparsidade da matriz, o que impede transferir suas conclusões para as
+fatorações densas por blocos consideradas aqui.
+#+latex: %
 Agullo et al. cite:7284288 comparam a fatoração de Cholesky sobre o StarPU com
 limites teóricos de desempenho em plataformas heterogêneas. Eles considera
 apenas o StarPU, sem comparação direta com outro runtime de escalonamento de
@@ -705,6 +713,17 @@ series = {ScalA '17}
   pages={1011-1022},
   keywords={Schedules;Runtime;Processor scheduling;Clustering algorithms;Linear algebra;Programming;Benchmark testing;Libraries;Supercomputers;Proposals;LU Partial pivoting;runtime system;task-based application;HPL},
   doi={10.1109/IPDPS64566.2025.00094}}
+
+@INPROCEEDINGS{lacoste2014hybrid,
+  author={Lacoste, Xavier and Faverge, Mathieu and Bosilca, George and Ramet, Pierre and Thibault, Samuel},
+  booktitle={2014 IEEE International Parallel \& Distributed Processing Symposium Workshops (IPDPSW)},
+  title={Taking Advantage of Hybrid Systems for Sparse Direct Solvers via Task-Based Runtimes},
+  year={2014},
+  volume={},
+  number={},
+  pages={29-38},
+  keywords={Sparse direct solver;PaStiX;task-based runtime;StarPU;PaRSEC;heterogeneous architectures;GPU},
+  doi={10.1109/IPDPSW.2014.9}}
 
 @INPROCEEDINGS{6126599,
   author={Agullo, Emmanuel and Augonnet, Cédric and Dongarra, Jack and Faverge, Mathieu and Langou, Julien and Ltaief, Hatem and Tomov, Stanimire},
